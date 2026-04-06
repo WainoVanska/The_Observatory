@@ -69,13 +69,16 @@ int main()
 
     //data for vertices
     GLfloat vertices[] = {
-        -1.0f, -1.0f, 1.0f, 0.3f, 1.0f,
-        -1.0f,  0.0f, 1.0f, 0.3f, 1.0f,
-         0.0f, -1.0f, 1.0f, 0.3f, 1.0f,
+        -1.0f, -1.0f,       1.0f, 0.3f, 1.0f,
+        -1.0f,  0.0f,       1.0f, 1.0f, 1.0f,
+         0.0f, -1.0f,       1.0f, 1.0f, 1.0f,
+         0.0f,  0.0f,       1.0f, 1.0f, 1.0f
+    };
 
-        -1.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-        0.0f,  0.0f, 1.0f, 1.0f, 1.0f,
-        0.0f, -1.0f, 1.0f, 1.0f, 1.0f
+    //indices for vertices
+    unsigned int indices[] = {
+        0,1,2,      //triangle 1
+        2,1,3       //triangle 2
     };
 
     // vertex array object init
@@ -84,10 +87,16 @@ int main()
     glBindVertexArray(VAO);
 
     // vertex buffer object init
-	unsigned int VBO; 
-	glGenBuffers(1, &VBO); 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);  
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);      
+    unsigned int VBO;
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    //element buffer object init
+	unsigned int EBO; 
+	glGenBuffers(1, &EBO); 
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);  
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);       // for pos
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));       // for rgb
@@ -192,7 +201,7 @@ int main()
 
         glUniform3f(offsetColor, colorOffset, -colorOffset, 0.0f);
 		glBindVertexArray(VAO);                     // ??
-		glDrawArrays(GL_TRIANGLES, 0, 6);           //draws triangles with the data
+		glDrawElements(GL_TRIANGLES, 6,GL_UNSIGNED_INT, 0);           //draws triangles with the data from elements
         
         //buffer swap to get the live feed, and polling the events
         glfwSwapBuffers(window);
