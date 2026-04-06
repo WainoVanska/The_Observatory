@@ -116,20 +116,52 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    GLfloat xOffset = 0.0f;
-    GLfloat yOffset = 0.0f;
+    GLfloat xOffset = 0.5f;
+    GLfloat yOffset = 1.3f;
+    GLfloat gravity = 0.00981f;
+    int index = 1;
+    bool bounced = false;
+    bool backwards = false;
 
     //render loop?
     while (!glfwWindowShouldClose(window))
     {
-        xOffset += 0.001f;          //each frame add a little bit to the offset
-        yOffset += 0.001f;
+        GLfloat speed = (gravity / 60) * index;
 
-        if (xOffset > 2.0f)
-            xOffset = -1.0f;
+        if (!bounced) {
+            yOffset -= speed;
+            index += 1;
+        }
 
-        if (yOffset > 2.0f)
-            yOffset = -1.0f;
+        if (bounced) {
+            yOffset += speed;
+            index -= 1;
+            if (index <= 0) {
+                bounced = false;
+                index = 1;
+            }
+        }
+        
+        if (yOffset < 0.0f) {
+            yOffset = 0.0f;
+            bounced = true;
+            index -= 1;
+        }
+
+        if (!backwards) {
+            xOffset += 0.002f;
+            if (xOffset >= 1.0f) {
+                backwards = true;
+            }
+
+        }
+        if (backwards) {
+            xOffset -= 0.002f;
+            if (xOffset < 0.0f) {
+                backwards = false;
+            }
+        }
+
 
         glClearColor(1.0f, 0.7f, 1.0f, 1.0f);       //color of the background
         glClear(GL_COLOR_BUFFER_BIT);               
