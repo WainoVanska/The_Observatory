@@ -70,15 +70,24 @@ int main()
     //data for vertices
     GLfloat vertices[] = {
         -1.0f, -1.0f,       1.0f, 0.3f, 1.0f,
-        -1.0f,  0.0f,       1.0f, 1.0f, 1.0f,
-         0.0f, -1.0f,       1.0f, 1.0f, 1.0f,
-         0.0f,  0.0f,       1.0f, 1.0f, 1.0f
+        -1.0f,  0.0f,       0.5f, 1.0f, 1.0f,
+         0.0f, -1.0f,       1.0f, 1.0f, 0.4f,
+         0.0f,  0.0f,       0.8f, 1.0f, 0.9f,
+
+        -0.75f, 0.0f,       1.0f, 0.3f, 1.0f,
+        -0.25f, 0.0f,       0.5f, 1.0f, 1.0f,
+        -0.75f, 0.5f,       1.0f, 1.0f, 0.4f,
+        -0.25f, 0.5f,       0.8f, 1.0f, 0.9f
     };
 
     //indices for vertices
     unsigned int indices[] = {
         0,1,2,      //triangle 1
-        2,1,3       //triangle 2
+        2,1,3,      //triangle 2
+
+        4,5,6,      //triangle 3
+        6,5,7       //triangle 4
+
     };
 
     // vertex array object init
@@ -127,7 +136,7 @@ int main()
     glDeleteShader(fragmentShader);
 
     GLfloat xOffset = 0.5f;
-    GLfloat yOffset = 1.3f;
+    GLfloat yOffset = 1.1f;
     GLfloat colorOffset = 0.0f;
     GLfloat gravity = 0.00981f;
     int index = 1;
@@ -190,7 +199,7 @@ int main()
         }
             
 
-        glClearColor(1.0f, 0.7f, 1.0f, 1.0f);       //color of the background
+        glClearColor(yOffset, xOffset, colorOffset, 1.0f);       //color of the background
         glClear(GL_COLOR_BUFFER_BIT);               
         glUseProgram(shaderProgram);                //using the shader program
 
@@ -201,11 +210,13 @@ int main()
 
         glUniform3f(offsetColor, colorOffset, -colorOffset, 0.0f);
 		glBindVertexArray(VAO);                     // ??
-		glDrawElements(GL_TRIANGLES, 6,GL_UNSIGNED_INT, 0);           //draws triangles with the data from elements
+		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);           //draws triangles with the data from elements
         
         //buffer swap to get the live feed, and polling the events
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        //pressing esc to quit simulation
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, 1);
         }
