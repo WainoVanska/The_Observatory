@@ -7,13 +7,14 @@ const char* vertexShaderSource =
 "#version 330 core\n"
 "layout (location = 0) in vec2 aPos;\n"
 "layout (location = 1) in vec3 aColor;\n"
-"uniform vec2 offset;\n"        //offset vec?
+"uniform vec2 offset;\n"        //offset vec
+"uniform vec3 offsetcolor;\n"   //color offset
 "out vec3 ourColor;\n"
 
 "void main()\n"
 "{\n"
 "    gl_Position = vec4(aPos + offset, 0.0, 1.0);\n"
-"    ourColor = aColor;\n"
+"    ourColor = clamp(aColor + offsetcolor, 0.0, 1.0);\n"
 "}\n";
 
 // source code saved as chars for GLSL language for fragment shader
@@ -118,10 +119,12 @@ int main()
 
     GLfloat xOffset = 0.5f;
     GLfloat yOffset = 1.3f;
+    GLfloat colorOffset = 0.0f;
     GLfloat gravity = 0.00981f;
     int index = 1;
     bool bounced = false;
     bool backwards = false;
+    bool changecolorback = false;
 
     //render loop?
     while (!glfwWindowShouldClose(window))
@@ -162,20 +165,41 @@ int main()
             }
         }
 
+        if (!changecolorback) {
+            colorOffset += 0.001f;
+            if (colorOffset >= 1.0f) {
+                colorOffset = 1.0f;
+                changecolorback = true;
+            }
+        }
+        else {
+            colorOffset -= 0.001f;
+            if (colorOffset <= 0.0f) {
+                colorOffset = 0.0f;
+                changecolorback = false;
+            }
+        }
+            
 
         glClearColor(1.0f, 0.7f, 1.0f, 1.0f);       //color of the background
         glClear(GL_COLOR_BUFFER_BIT);               
         glUseProgram(shaderProgram);                //using the shader program
 
-        int offsetLocation = glGetUniformLocation(shaderProgram, "offset");             //getting the offset location
+        GLint offsetLocation = glGetUniformLocation(shaderProgram, "offset");             //getting the offset location
         glUniform2f(offsetLocation, xOffset, yOffset);                // change the position by this offset
 
+        GLint offsetColor = glGetUniformLocation(shaderProgram, "offsetcolor");
+
+        glUniform3f(offsetColor, colorOffset, -colorOffset, 0.0f);
 		glBindVertexArray(VAO);                     // ??
 		glDrawArrays(GL_TRIANGLES, 0, 6);           //draws triangles with the data
         
         //buffer swap to get the live feed, and polling the events
         glfwSwapBuffers(window);
         glfwPollEvents();
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+            glfwSetWindowShouldClose(window, 1);
+        }
     }
     //termination
 
