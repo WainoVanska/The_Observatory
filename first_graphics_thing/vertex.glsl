@@ -1,5 +1,3 @@
-// source code saved as chars for GLSL language for vertex shader
-
 #version 330 core
 layout (location = 0) in vec2 aPos;
 layout (location = 1) in vec3 aColor;
@@ -11,4 +9,4 @@ void main()
 {
     gl_Position = vec4(aPos + offset, 0.0, 1.0);
     ourColor = clamp(aColor + offsetcolor, 0.0, 1.0);
-};
+}

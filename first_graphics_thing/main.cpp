@@ -4,51 +4,12 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <filesystem>
 
-// source code saved as chars for GLSL language for vertex shader
-/*
-
-const char* vertexShaderSource =
-"#version 330 core\n"
-"layout (location = 0) in vec2 aPos;\n"
-"layout (location = 1) in vec3 aColor;\n"
-"uniform vec2 offset;\n"        //offset vec
-"uniform vec3 offsetcolor;\n"   //color offset
-"out vec3 ourColor;\n"
-
-"void main()\n"
-"{\n"
-"    gl_Position = vec4(aPos + offset, 0.0, 1.0);\n"
-"    ourColor = clamp(aColor + offsetcolor, 0.0, 1.0);\n"
-"}\n";
-
-// source code saved as chars for GLSL language for fragment shader
-
-const char* fragmentShaderSource =
-"#version 330 core\n"
-"in vec3 ourColor;\n"
-
-"out vec4 FragColor;\n"
-
-"void main()\n"
-"{\n"
-"    FragColor = vec4(ourColor, 1.0);\n"
-"}\n";
-
-*/
-
-// shader file reading function
-
+// shader file reading function before main, so during compiling the shaders are ready
 std::string readShaderFile(const std::string& filePath)
 {
     std::ifstream file(filePath);
-
-    if (!file.is_open())
-    {
-        std::cout << "failure opening shader file " << filePath << '\n';
-        return "";
-    }
-
     std::stringstream buffer;
     buffer << file.rdbuf();
     return buffer.str();
@@ -56,6 +17,7 @@ std::string readShaderFile(const std::string& filePath)
 
 int main()
 {
+
     //initializing the glfw
     if (!glfwInit())
     {
@@ -75,6 +37,7 @@ int main()
         glfwTerminate();
         return -1;
     }
+
 
     // we establish the context
     glfwMakeContextCurrent(window);
@@ -115,7 +78,6 @@ int main()
     };
 
 
-
     // vertex array object init
 	unsigned int VAO;
     glGenVertexArrays(1, &VAO);
@@ -141,10 +103,10 @@ int main()
 
 
     //get the vertex and fragment shader codes from separate files
-    std::string vertexShaderCode = readShaderFile("Shaders/vertex.glsl");
-    std::string fragmentShaderCode = readShaderFile("Shaders/fragment.glsl");
+    std::string vertexShaderCode = readShaderFile("vertex.glsl");
+    std::string fragmentShaderCode = readShaderFile("fragment.glsl");
 
-    // glShaderSource func needs const char*, not std::str, hence the conversion
+    // glShaderSource func needs const char* in C string, not std::str, hence the conversion
     const char* vertexShaderSource = vertexShaderCode.c_str();
     const char* fragmentShaderSource = fragmentShaderCode.c_str();
 
@@ -177,7 +139,8 @@ int main()
     bool backwards = false;
     bool changecolorback = false;
 
-    //render loop?
+
+    //render loop
     while (!glfwWindowShouldClose(window))
     {
         GLfloat speed = (gravity / 60) * index;
