@@ -1,8 +1,13 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 // source code saved as chars for GLSL language for vertex shader
+/*
+
 const char* vertexShaderSource =
 "#version 330 core\n"
 "layout (location = 0) in vec2 aPos;\n"
@@ -29,6 +34,25 @@ const char* fragmentShaderSource =
 "{\n"
 "    FragColor = vec4(ourColor, 1.0);\n"
 "}\n";
+
+*/
+
+// shader file reading function
+
+std::string readShaderFile(const std::string& filePath)
+{
+    std::ifstream file(filePath);
+
+    if (!file.is_open())
+    {
+        std::cout << "failure opening shader file " << filePath << '\n';
+        return "";
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
+}
 
 int main()
 {
@@ -90,6 +114,8 @@ int main()
 
     };
 
+
+
     // vertex array object init
 	unsigned int VAO;
     glGenVertexArrays(1, &VAO);
@@ -114,6 +140,13 @@ int main()
     glEnableVertexAttribArray(1);
 
 
+    //get the vertex and fragment shader codes from separate files
+    std::string vertexShaderCode = readShaderFile("Shaders/vertex.glsl");
+    std::string fragmentShaderCode = readShaderFile("Shaders/fragment.glsl");
+
+    // glShaderSource func needs const char*, not std::str, hence the conversion
+    const char* vertexShaderSource = vertexShaderCode.c_str();
+    const char* fragmentShaderSource = fragmentShaderCode.c_str();
 
     //vertex shader creation
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);   
