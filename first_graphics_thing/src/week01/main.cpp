@@ -103,8 +103,8 @@ int main()
 
 
     //get the vertex and fragment shader codes from separate files
-    std::string vertexShaderCode = readShaderFile("vertex.glsl");
-    std::string fragmentShaderCode = readShaderFile("fragment.glsl");
+    std::string vertexShaderCode = readShaderFile("src/week01/vertex.glsl");
+    std::string fragmentShaderCode = readShaderFile("src/week01/fragment.glsl");
 
     // glShaderSource func needs const char* in C string, not std::str, hence the conversion
     const char* vertexShaderSource = vertexShaderCode.c_str();
