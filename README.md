@@ -4,9 +4,10 @@
 
 ## Weekly progress
 
-- I'm updating weekly reports on my graphics learning journey
+- Weekly updates on my graphics learning progress available in "learning_logs"
 
 
-## Books reading/read:
+## Learning material
 
 - "Fundamentals of Computer Graphics, Fifth Edition"     *reading*
+- Youtube (CMU lectures on computer graphics)
