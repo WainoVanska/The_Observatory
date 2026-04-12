@@ -9,7 +9,8 @@
 
 - how EBO works (with indices buffer) and why it's sometimes (most times?) better
 - color gradients to triangles/rectangles and color changing depending on the pos of rectangle
-- file organization
+- glm functions required for the most basic matrix transformations
+- file organization (what's maybe the ideal way organize in graphics context)
 
 ## I struggled with:
 
