@@ -113,16 +113,17 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
+    GLfloat offset = 0.0f;
+
 
 
     while (!glfwWindowShouldClose(window))
     {
 
+        offset += 0.2f;
         //vector init
-        glm::vec2 p(0.3f, 0.3f);
-        glm::vec2 t(1.2f, 0.2f);
 
-        glm::vec2 res = p + t;
+        glm::vec2 res(0.3f, 0.3f);
 
 
         glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
@@ -130,10 +131,23 @@ int main()
 
         glUseProgram(shaderProgram);
 
-        //transformation matrix creation
+        //identity matrix creation
         glm::mat4 transform = glm::mat4(1.0f);
-        transform = glm::scale(transform, glm::vec3(res, 0.0f));
-        //rotate(transform, transform.y, glm::vec3(-1.0f, 0.0f, 0.0f));     rotation 2D part 9.
+
+        //CONTINUE FROM EXERCISE: B2
+
+
+        //translation before scaling vs. after test
+        //transform = glm::translate(transform, glm::vec3(0.3f, 0.0f, 0.0f));                              //translates to a given point
+        //transform = glm::scale(transform, glm::vec3(2.0f, 2.0f, 2.0f));                                  //scaling
+
+
+        //basics
+        //transform = glm::translate(transform, glm::vec3(0.1f, 0.2f, 0.0f));                              //translates to a given point
+        //transform = glm::rotate(transform, glm::radians(offset), glm::vec3(0.0f, 0.0f, 1.0f));           //rotates around the z-axis
+        //transform = glm::scale(transform, glm::vec3(0.5f, 0.5f, 0.5f));                                  //scaling
+
+
 
         // communicate with vertex shader, get the mat4 transform matrix shader
         unsigned int transformLoc = glGetUniformLocation(shaderProgram, "transform");
