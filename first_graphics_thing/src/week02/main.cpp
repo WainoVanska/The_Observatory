@@ -49,19 +49,49 @@ int main()
     }
 
     glViewport(0, 0, 800, 600);
-
+    glEnable(GL_DEPTH_TEST);                    // enable depth in order to only see the closest face of an object
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     float vertices[] = {
         // positions           // colors
-        -0.25f, -0.25f, 0.0f,  1.0f, 0.3f, 1.0f,
-         0.25f, -0.25f, 0.0f,  0.5f, 1.0f, 1.0f,
-         0.25f,  0.25f, 0.0f,  1.0f, 1.0f, 0.4f,
-        -0.25f,  0.25f, 0.0f,  0.8f, 1.0f, 0.9f
+        -0.25f, -0.25f,-0.25f,  1.0f, 1.0f, 1.0f,    //front side
+         0.25f, -0.25f,-0.25f,  1.0f, 1.0f, 1.0f,
+         0.25f,  0.25f,-0.25f,  1.0f, 1.0f, 1.0f,
+        -0.25f,  0.25f,-0.25f,  1.0f, 1.0f, 1.0f,
+
+         0.25f, -0.25f,-0.25f,  0.7f, 0.7f, 0.3f,    //right side
+         0.25f, -0.25f, 0.25f,  0.7f, 0.7f, 0.3f,
+         0.25f,  0.25f, 0.25f,  0.7f, 0.7f, 0.3f,
+         0.25f,  0.25f,-0.25f,  0.7f, 0.7f, 0.3f,
+
+         0.25f, -0.25f, 0.25f,  0.0f, 0.5f, 0.5f,    //back side
+        -0.25f, -0.25f, 0.25f,  0.0f, 0.5f, 0.5f,
+        -0.25f,  0.25f, 0.25f,  0.0f, 0.5f, 0.5f,
+         0.25f,  0.25f, 0.25f,  0.0f, 0.5f, 0.5f,
+
+        -0.25f, -0.25f, 0.25f,  0.3f, 0.6f, 0.3f,    //left side
+        -0.25f, -0.25f,-0.25f,  0.3f, 0.6f, 0.3f,
+        -0.25f,  0.25f,-0.25f,  0.3f, 0.6f, 0.3f,
+        -0.25f,  0.25f, 0.25f,  0.3f, 0.6f, 0.3f,
+
+        -0.25f,  0.25f,-0.25f,  0.1f, 0.3f, 1.0f,    //top side
+         0.25f,  0.25f,-0.25f,  0.1f, 0.3f, 1.0f,
+         0.25f,  0.25f, 0.25f,  0.1f, 0.3f, 1.0f,
+        -0.25f,  0.25f, 0.25f,  0.1f, 0.3f, 1.0f,
+
+        -0.25f, -0.25f,-0.25f,  1.0f, 0.3f, 1.0f,    //bottom side
+         0.25f, -0.25f,-0.25f,  1.0f, 0.3f, 1.0f,
+         0.25f, -0.25f, 0.25f,  1.0f, 0.3f, 1.0f,
+        -0.25f, -0.25f, 0.25f,  1.0f, 0.3f, 1.0f
     };
 
     unsigned int indices[] = {
-        0, 1, 2,
-        2, 3, 0
+        0, 2, 1,   2, 0, 3,      // front
+        4, 6, 5,   6, 4, 7,      // right
+        8, 10,9,   10,8, 11,      // back
+        12,14,13,  14,12,15,      // left
+        16,18,17,  18,16,19,      // top
+        20,22,21,  22,20,23       // bottom
     };
 
 
@@ -94,7 +124,7 @@ int main()
     std::string vertexShaderCode = readShaderFile("src/week02/vertex.glsl");
     std::string fragmentShaderCode = readShaderFile("src/week02/fragment.glsl");
 
-    const char* vertexShaderSource = vertexShaderCode.c_str();
+    const char* vertexShaderSource = vertexShaderCode.c_str();              //??
     const char* fragmentShaderSource = fragmentShaderCode.c_str();
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -116,37 +146,45 @@ int main()
     GLfloat offset = 0.0f;
 
 
-
     while (!glfwWindowShouldClose(window))
     {
 
-        offset += 0.2f;
-        //vector init
+        offset += 0.4f;
 
-        glm::vec2 res(0.3f, 0.3f);
 
 
         glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);     // decide which surface is the closest through the depth buffer
 
         glUseProgram(shaderProgram);
 
         //identity matrix creation
         glm::mat4 transform = glm::mat4(1.0f);
 
-        //CONTINUE FROM EXERCISE: B2
+        //CONTINUE FROM EXERCISE: C2 make minecraft figure moving
+        /* 
+           ||||
+            ||
+        ----||----
+            ||
+           |  |
+        */
+        
 
 
         //translation before scaling vs. after test
         //transform = glm::translate(transform, glm::vec3(0.3f, 0.0f, 0.0f));                              //translates to a given point
         //transform = glm::scale(transform, glm::vec3(2.0f, 2.0f, 2.0f));                                  //scaling
+        //transform = glm::translate(transform, glm::vec3(0.5f, 0.5f, 0.0f));                              //translates to a given point
 
-
-        //basics
-        //transform = glm::translate(transform, glm::vec3(0.1f, 0.2f, 0.0f));                              //translates to a given point
-        //transform = glm::rotate(transform, glm::radians(offset), glm::vec3(0.0f, 0.0f, 1.0f));           //rotates around the z-axis
+        //transform = glm::translate(transform, glm::vec3(0.5f, 0.5f, 0.0f));                              //translates to a given point
+        transform = glm::rotate(transform, glm::radians(offset), glm::vec3(0.0f, 0.0f, 1.0f));           //rotates
         //transform = glm::scale(transform, glm::vec3(0.5f, 0.5f, 0.5f));                                  //scaling
 
+        transform = glm::translate(transform, glm::vec3(-0.5f, 0.0f, 0.0f));                              //translates to a given point
+
+        transform = glm::rotate(transform, glm::radians(offset * 2.0f), glm::vec3(1.0f, 0.0f, 0.0f));           //rotates
+        transform = glm::rotate(transform, glm::radians(offset * 1.5f), glm::vec3(0.0f, 1.0f, 0.0f));           //rotates
 
 
         // communicate with vertex shader, get the mat4 transform matrix shader
@@ -154,7 +192,7 @@ int main()
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
