@@ -21,6 +21,20 @@ std::string readShaderFile(const std::string& filePath)
 }
 
 
+float offset = 0.0f;
+
+
+
+
+//scalable cube creation function so you easily make more than one if needed
+void drawCube(GLuint VAO, GLuint transformLoc, const glm::mat4& transform)
+{
+    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+}
+
+
 int main()
 {
     // GLFW init
@@ -143,11 +157,12 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    GLfloat offset = 0.0f;
-
+    GLuint transformLoc = glGetUniformLocation(shaderProgram, "transform");
 
     while (!glfwWindowShouldClose(window))
     {
+        float legAngle = sin(glfwGetTime() * 5) * 30.0f;
+        float armAngle = sin(glfwGetTime() * 5) * 60.0f;
 
         offset += 0.4f;
 
@@ -157,11 +172,63 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);     // decide which surface is the closest through the depth buffer
 
         glUseProgram(shaderProgram);
+ 
+        //left leg
 
-        //identity matrix creation
-        glm::mat4 transform = glm::mat4(1.0f);
+        glm::mat4 leftLeg = glm::mat4(1.0f);
+        leftLeg = glm::translate(leftLeg, glm::vec3(0.05f, -0.12f, 0.0f));
+        leftLeg = glm::rotate(leftLeg, glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        leftLeg = glm::rotate(leftLeg, glm::radians(legAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+        leftLeg = glm::translate(leftLeg, glm::vec3(0.0f, -0.5f, 0.0f));
+        leftLeg = glm::scale(leftLeg, glm::vec3(0.2f, 2.0f, 0.2f));
+        drawCube(VAO, transformLoc, leftLeg);
 
-        //CONTINUE FROM EXERCISE: C2 make minecraft figure moving
+        //right leg
+
+        glm::mat4 rightLeg = glm::mat4(1.0f);
+        rightLeg = glm::translate(rightLeg, glm::vec3(0.45f, -0.12f, 0.0f));
+        rightLeg = glm::rotate(rightLeg, glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        rightLeg = glm::rotate(rightLeg, glm::radians(-legAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+        rightLeg = glm::translate(rightLeg, glm::vec3(0.0f, -0.5f, 0.0f));
+        rightLeg = glm::scale(rightLeg, glm::vec3(0.2f, 2.0f, 0.2f));
+        drawCube(VAO, transformLoc, rightLeg);
+
+        //body
+
+        glm::mat4 body = glm::mat4(1.0f);
+        body = glm::translate(body, glm::vec3(0.25f, 0.25f, 0.0f));
+        body = glm::rotate(body, glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        body = glm::scale(body, glm::vec3(0.9f, 1.5f, 0.4f));
+        drawCube(VAO, transformLoc, body);
+
+        //right arm
+
+        glm::mat4 leftArm = glm::mat4(1.0f);
+        leftArm = glm::translate(leftArm, glm::vec3(0.5f, 0.5f, -0.1f));
+        leftArm = glm::rotate(leftArm, glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 1.0f));
+        leftArm = glm::rotate(leftArm, glm::radians(armAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+        leftArm = glm::translate(leftArm, glm::vec3(0.0f, -0.5f, 0.0f));
+        leftArm = glm::scale(leftArm, glm::vec3(0.2f, 2.0f, 0.2f));
+        drawCube(VAO, transformLoc, leftArm);
+
+        //left arm
+
+        glm::mat4 rightArm = glm::mat4(1.0f);
+        rightArm = glm::translate(rightArm, glm::vec3(0.0f, 0.5f, -0.0f));
+        rightArm = glm::rotate(rightArm, glm::radians(30.0f), glm::vec3(0.0f, 1.0f, -1.0f));
+        rightArm = glm::rotate(rightArm, glm::radians(-armAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+        rightArm = glm::translate(rightArm, glm::vec3(0.0f, -0.5f, 0.0f));
+        rightArm = glm::scale(rightArm, glm::vec3(0.2f, 2.0f, 0.2f));
+        drawCube(VAO, transformLoc, rightArm);
+
+        //head
+
+        glm::mat4 head = glm::mat4(1.0f);
+        head = glm::translate(head, glm::vec3(0.25f, 0.8f, 0.0f));
+        head = glm::rotate(head, glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        head = glm::scale(head, glm::vec3(0.6f, 0.6f, 0.6f));
+        drawCube(VAO, transformLoc, head);
+
         /* 
            ||||
             ||
@@ -170,29 +237,6 @@ int main()
            |  |
         */
         
-
-
-        //translation before scaling vs. after test
-        //transform = glm::translate(transform, glm::vec3(0.3f, 0.0f, 0.0f));                              //translates to a given point
-        //transform = glm::scale(transform, glm::vec3(2.0f, 2.0f, 2.0f));                                  //scaling
-        //transform = glm::translate(transform, glm::vec3(0.5f, 0.5f, 0.0f));                              //translates to a given point
-
-        //transform = glm::translate(transform, glm::vec3(0.5f, 0.5f, 0.0f));                              //translates to a given point
-        transform = glm::rotate(transform, glm::radians(offset), glm::vec3(0.0f, 0.0f, 1.0f));           //rotates
-        //transform = glm::scale(transform, glm::vec3(0.5f, 0.5f, 0.5f));                                  //scaling
-
-        transform = glm::translate(transform, glm::vec3(-0.5f, 0.0f, 0.0f));                              //translates to a given point
-
-        transform = glm::rotate(transform, glm::radians(offset * 2.0f), glm::vec3(1.0f, 0.0f, 0.0f));           //rotates
-        transform = glm::rotate(transform, glm::radians(offset * 1.5f), glm::vec3(0.0f, 1.0f, 0.0f));           //rotates
-
-
-        // communicate with vertex shader, get the mat4 transform matrix shader
-        unsigned int transformLoc = glGetUniformLocation(shaderProgram, "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
-
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

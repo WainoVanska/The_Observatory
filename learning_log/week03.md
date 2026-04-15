@@ -12,7 +12,13 @@
 
 - how it necessary to enable the glEnable(GL_DEPTH_TEST) to actually make the cube depth (so it's not transparent)
 
+- How to create multiple objects in a more scalable way
+
+![Poster experiment](../learning_log_images/minecraft_figure_no_depth.png)
+
+
 ## I struggled with:
 
 - working with 3-dimensional space, the vertices and indices were quite difficult to get right at first --> in the end the depth enabling was missing
 - understanding how to have the correct order of transformations to get the type of movement you want, quite frustrating and didn't grasp this concept very deeply
+- figuring out how to determine anchor points of rotations 
