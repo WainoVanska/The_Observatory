@@ -198,7 +198,7 @@ int main()
 
         // head
         glm::mat4 head = character;
-        head = glm::translate(head, glm::vec3(0.0f, (headAngle / 100) + 0.55f, 0.0f));
+        head = glm::translate(head, glm::vec3(0.0f, (headAngle / 100) + 0.55f, 0.0f));          //slight head movement to make the character come alive more
         head = glm::scale(head, glm::vec3(0.6f, 0.6f, 0.6f));
         drawCube(VAO, transformLoc, head);
 
