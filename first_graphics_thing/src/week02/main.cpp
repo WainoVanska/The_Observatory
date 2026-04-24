@@ -20,20 +20,15 @@ std::string readShaderFile(const std::string& filePath)
     return buffer.str();
 }
 
-
 float offset = 0.0f;
 
-
-
-
 //scalable cube creation function so you easily make more than one if needed
-void drawCube(GLuint VAO, GLuint transformLoc, const glm::mat4& transform)
+void drawCube(GLuint VAO, GLuint modelLoc, const glm::mat4& model)
 {
-    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 }
-
 
 int main()
 {
@@ -108,6 +103,13 @@ int main()
         20,22,21,  22,20,23       // bottom
     };
 
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));     //view matrix, pushing the whole scene into the screen, away into the distance
+
+    glm::mat4 projection = glm::ortho(      //defines the viewing volume/borders of the frustrum (everything outside the range is not drawn)
+        -2.0f, 2.0f,   // left, right
+        -1.5f, 1.5f,   // bottom, top
+        0.1f, 100.0f   // near, far
+    );
 
     // VAO
     unsigned int VAO;
@@ -138,7 +140,7 @@ int main()
     std::string vertexShaderCode = readShaderFile("src/week02/vertex.glsl");
     std::string fragmentShaderCode = readShaderFile("src/week02/fragment.glsl");
 
-    const char* vertexShaderSource = vertexShaderCode.c_str();              //??
+    const char* vertexShaderSource = vertexShaderCode.c_str();
     const char* fragmentShaderSource = fragmentShaderCode.c_str();
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -157,7 +159,9 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    GLuint transformLoc = glGetUniformLocation(shaderProgram, "transform");
+    GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");         //get locations
+    GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
+    GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
 
     while (!glfwWindowShouldClose(window))
     {
@@ -169,38 +173,35 @@ int main()
 
         offset += 0.002f;
 
-        if (offset > 1.8) {
-            offset = -1.68f;
+        if (offset > 2.65f) {
+            offset = -2.65f;
 
         }
-
-
 
         glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);     // decide which surface is the closest through the depth buffer
 
         glUseProgram(shaderProgram);
+
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
  
         // character object creation so that child objects are then mounted to this
         glm::mat4 character = glm::mat4(1.0f);
-        character = glm::translate(character, glm::vec3(-offset, bodyMovement / 100, 0.0f));
-        character = glm::rotate(character, glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        //character = glm::rotate(character, glm::radians(cameraAngle), glm::vec3(0.0f, 1.0f, 0.0f));
-
-
-
+        character = glm::translate(character, glm::vec3(offset, bodyMovement / 100, 0.0f));
+        character = glm::rotate(character, glm::radians(210.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
         // body
         glm::mat4 body = character;
         body = glm::scale(body, glm::vec3(0.9f, 1.5f, 0.4f));
-        drawCube(VAO, transformLoc, body);
+        drawCube(VAO, modelLoc, body);
 
 
         // head
         glm::mat4 head = character;
         head = glm::translate(head, glm::vec3(0.0f, (headAngle / 100) + 0.55f, 0.0f));          //slight head movement to make the character come alive more
         head = glm::scale(head, glm::vec3(0.6f, 0.6f, 0.6f));
-        drawCube(VAO, transformLoc, head);
+        drawCube(VAO, modelLoc, head);
 
 
         // left leg
@@ -209,7 +210,7 @@ int main()
         leftLeg = glm::rotate(leftLeg, glm::radians(legAngle), glm::vec3(1.0f, 0.0f, 0.0f));
         leftLeg = glm::translate(leftLeg, glm::vec3(0.0f, -0.5f, 0.0f));
         leftLeg = glm::scale(leftLeg, glm::vec3(0.2f, 1.5f, 0.2f));
-        drawCube(VAO, transformLoc, leftLeg);
+        drawCube(VAO, modelLoc, leftLeg);
 
 
         // right leg
@@ -218,7 +219,7 @@ int main()
         rightLeg = glm::rotate(rightLeg, glm::radians(-legAngle), glm::vec3(1.0f, 0.0f, 0.0f));
         rightLeg = glm::translate(rightLeg, glm::vec3(0.0f, -0.5f, 0.0f));
         rightLeg = glm::scale(rightLeg, glm::vec3(0.2f, 1.5f, 0.2f));
-        drawCube(VAO, transformLoc, rightLeg);
+        drawCube(VAO, modelLoc, rightLeg);
 
 
         // left arm
@@ -227,7 +228,7 @@ int main()
         leftArm = glm::rotate(leftArm, glm::radians(-armAngle), glm::vec3(1.0f, 0.0f, 0.0f));
         leftArm = glm::translate(leftArm, glm::vec3(0.0f, -0.4f, 0.0f));
         leftArm = glm::scale(leftArm, glm::vec3(0.2f, 1.7f, 0.2f));
-        drawCube(VAO, transformLoc, leftArm);
+        drawCube(VAO, modelLoc, leftArm);
 
 
         // right arm
@@ -236,16 +237,7 @@ int main()
         rightArm = glm::rotate(rightArm, glm::radians(armAngle), glm::vec3(1.0f, 0.0f, 0.0f));
         rightArm = glm::translate(rightArm, glm::vec3(0.0f, -0.4f, 0.0f));
         rightArm = glm::scale(rightArm, glm::vec3(0.2f, 1.7f, 0.2f));
-        drawCube(VAO, transformLoc, rightArm);
-
-        /* 
-           ||||
-            ||
-        ----||----
-            ||
-           |  |
-        */
-        
+        drawCube(VAO, modelLoc, rightArm);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
