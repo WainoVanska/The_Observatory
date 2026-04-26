@@ -183,14 +183,17 @@ int main()
 
         float characterZ = -t * 0.5f;
 
+        float walkSpeed = 1.5f;
+        float groundX = -t * walkSpeed;
+
         // camera stays behind the character, but slowly increases distance
         float cameraDistance = 3.0f + t * 0.2f;
         float cameraZ = characterZ + cameraDistance;
 
         glm::mat4 view = glm::lookAt(
-            glm::vec3(0.0f, 1.0f, cameraZ),              // camera position ( where it's placed )
-            glm::vec3(0.0f, 0.3f, characterZ),           // look at character
-            glm::vec3(0.0f, 1.0f, 0.0f)                  // orientation??
+            glm::vec3(-offset, 1.0f + offset / 10, 3.0f - offset),           // camera position ( where it's placed )
+            glm::vec3(0.0f, 0.0f, 0.0f),           // look at character
+            glm::vec3(0.0f, 1.0f, 0.0f)            // orientation??
         );
 
         glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
@@ -203,8 +206,8 @@ int main()
  
         // character object creation so that child objects are then mounted to this
         glm::mat4 character = glm::mat4(1.0f);
-        character = glm::translate(character, glm::vec3(0.0f, bodyMovement / 100, characterZ));
-        character = glm::rotate(character, glm::radians(210.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        character = glm::translate(character, glm::vec3(0.0f, bodyMovement / 100, 0.0f));
+        character = glm::rotate(character, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
         // body
         glm::mat4 body = character;
@@ -253,6 +256,24 @@ int main()
         rightArm = glm::translate(rightArm, glm::vec3(0.0f, -0.4f, 0.0f));
         rightArm = glm::scale(rightArm, glm::vec3(0.2f, 1.7f, 0.2f));
         drawCube(VAO, modelLoc, rightArm);
+
+        // ground
+        float spacing = 2.0f;
+        float loopLength = 20.0f;
+
+        for (int i = 0; i < 10; i++)
+        {
+            float tileX = groundX + i * spacing;
+
+            while (tileX < -10.0f)
+                tileX += loopLength;
+
+            glm::mat4 tile = glm::mat4(1.0f);
+            tile = glm::translate(tile, glm::vec3(tileX, -1.2f, 0.0f));
+            tile = glm::scale(tile, glm::vec3(2.0f, 0.08f, 1.2f));
+            drawCube(VAO, modelLoc, tile);
+        }
+
 
         glfwSwapBuffers(window);
         glfwPollEvents();
