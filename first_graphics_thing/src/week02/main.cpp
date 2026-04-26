@@ -103,12 +103,12 @@ int main()
         20,22,21,  22,20,23       // bottom
     };
 
-    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));     //view matrix, pushing the whole scene into the screen, away into the distance
 
-    glm::mat4 projection = glm::ortho(      //defines the viewing volume/borders of the frustrum (everything outside the range is not drawn)
-        -2.0f, 2.0f,   // left, right
-        -1.5f, 1.5f,   // bottom, top
-        0.1f, 100.0f   // near, far
+    glm::mat4 projection = glm::perspective(  
+        glm::radians(45.0f),                    // fov in y direction
+        800.0f / 600.0f,                        // fov in x direction
+        0.1f,                                   // nearest visible spot
+        100.0f                                  // farthest visible spot
     );
 
     // VAO
@@ -165,18 +165,33 @@ int main()
 
     while (!glfwWindowShouldClose(window))
     {
-        float legAngle = sin(glfwGetTime() * 5) * 30.0f;
-        float armAngle = sin(glfwGetTime() * 5) * 60.0f;
-        float headAngle = sin(glfwGetTime() * 10) * 2.0f;
-        float bodyMovement = sin(glfwGetTime() * 10) * 2.0f;
-        float cameraAngle = glfwGetTime() * 50.0f;
 
         offset += 0.002f;
-
+        /*
         if (offset > 2.65f) {
             offset = -2.65f;
 
         }
+        */
+
+        float t = glfwGetTime();
+
+        float legAngle = sin(t * 5) * 30.0f;
+        float armAngle = sin(t * 5) * 60.0f;
+        float headAngle = sin(t * 10) * 2.0f;
+        float bodyMovement = sin(t * 10) * 2.0f;
+
+        float characterZ = -t * 0.5f;
+
+        // camera stays behind the character, but slowly increases distance
+        float cameraDistance = 3.0f + t * 0.2f;
+        float cameraZ = characterZ + cameraDistance;
+
+        glm::mat4 view = glm::lookAt(
+            glm::vec3(0.0f, 1.0f, cameraZ),              // camera position ( where it's placed )
+            glm::vec3(0.0f, 0.3f, characterZ),           // look at character
+            glm::vec3(0.0f, 1.0f, 0.0f)                  // orientation??
+        );
 
         glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);     // decide which surface is the closest through the depth buffer
@@ -188,7 +203,7 @@ int main()
  
         // character object creation so that child objects are then mounted to this
         glm::mat4 character = glm::mat4(1.0f);
-        character = glm::translate(character, glm::vec3(offset, bodyMovement / 100, 0.0f));
+        character = glm::translate(character, glm::vec3(0.0f, bodyMovement / 100, characterZ));
         character = glm::rotate(character, glm::radians(210.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
         // body
