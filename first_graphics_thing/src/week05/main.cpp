@@ -10,6 +10,8 @@
 #include <sstream>
 #include <string>
 
+#include "../common/cube.h"
+
 //shader files
 
 std::string readShaderFile(const std::string& filePath)
@@ -132,80 +134,12 @@ int main()
     glEnable(GL_DEPTH_TEST);                    // enable depth in order to only see the closest face of an object
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    float vertices[] = {
-        // positions           // colors
-        -0.25f, -0.25f,-0.25f,  1.0f, 1.0f, 1.0f,    //front side
-         0.25f, -0.25f,-0.25f,  1.0f, 1.0f, 1.0f,
-         0.25f,  0.25f,-0.25f,  1.0f, 1.0f, 1.0f,
-        -0.25f,  0.25f,-0.25f,  1.0f, 1.0f, 1.0f,
-
-         0.25f, -0.25f,-0.25f,  0.7f, 0.7f, 0.3f,    //right side
-         0.25f, -0.25f, 0.25f,  0.7f, 0.7f, 0.3f,
-         0.25f,  0.25f, 0.25f,  0.7f, 0.7f, 0.3f,
-         0.25f,  0.25f,-0.25f,  0.7f, 0.7f, 0.3f,
-
-         0.25f, -0.25f, 0.25f,  0.0f, 0.5f, 0.5f,    //back side
-        -0.25f, -0.25f, 0.25f,  0.0f, 0.5f, 0.5f,
-        -0.25f,  0.25f, 0.25f,  0.0f, 0.5f, 0.5f,
-         0.25f,  0.25f, 0.25f,  0.0f, 0.5f, 0.5f,
-
-        -0.25f, -0.25f, 0.25f,  0.3f, 0.6f, 0.3f,    //left side
-        -0.25f, -0.25f,-0.25f,  0.3f, 0.6f, 0.3f,
-        -0.25f,  0.25f,-0.25f,  0.3f, 0.6f, 0.3f,
-        -0.25f,  0.25f, 0.25f,  0.3f, 0.6f, 0.3f,
-
-        -0.25f,  0.25f,-0.25f,  0.1f, 0.3f, 1.0f,    //top side
-         0.25f,  0.25f,-0.25f,  0.1f, 0.3f, 1.0f,
-         0.25f,  0.25f, 0.25f,  0.1f, 0.3f, 1.0f,
-        -0.25f,  0.25f, 0.25f,  0.1f, 0.3f, 1.0f,
-
-        -0.25f, -0.25f,-0.25f,  1.0f, 0.3f, 1.0f,    //bottom side
-         0.25f, -0.25f,-0.25f,  1.0f, 0.3f, 1.0f,
-         0.25f, -0.25f, 0.25f,  1.0f, 0.3f, 1.0f,
-        -0.25f, -0.25f, 0.25f,  1.0f, 0.3f, 1.0f
-    };
-
-    unsigned int indices[] = {
-        0, 2, 1,   2, 0, 3,      // front
-        4, 6, 5,   6, 4, 7,      // right
-        8, 10,9,   10,8, 11,      // back
-        12,14,13,  14,12,15,      // left
-        16,18,17,  18,16,19,      // top
-        20,22,21,  22,20,23       // bottom
-    };
-
-
     glm::mat4 projection = glm::perspective(  
         glm::radians(45.0f),                    // fov in y direction
         800.0f / 600.0f,                        // fov in x direction
         0.1f,                                   // nearest visible spot
         100.0f                                  // farthest visible spot
     );
-
-    // VAO
-    unsigned int VAO;
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
-
-    // VBO
-    unsigned int VBO;
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // EBO
-    unsigned int EBO;
-    glGenBuffers(1, &EBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    // color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
 
     //shaders
     std::string vertexShaderCode = readShaderFile("src/week05/vertex.glsl");
@@ -234,6 +168,8 @@ int main()
     GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
     GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
 
+    CubeMesh cube = createCubeMesh();           // create the cube through externalized function
+
     float w = 0.0f;
     float s = 0.0f;
     float up = 0.0f;
@@ -244,9 +180,9 @@ int main()
 
     glm::vec3 cameraFront;
 
-    float yaw = -90.0f;
-    float pitch = 0.0f;
-    float sensitivity = 0.2f;
+    float yaw = -90.0f;             // turning left / right
+    float pitch = 0.0f;             // looking up / down
+    float sensitivity = 0.2f;       // sensitivity of the mouse
 
     while (!glfwWindowShouldClose(window))
     {
@@ -325,23 +261,20 @@ int main()
         glm::mat4 character1 = glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
         glm::mat4 character2 = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-        drawCharacter(VAO, modelLoc, t, character1);
-        drawCharacter(VAO, modelLoc, t + 1.0f, character2);
+        drawCharacter(cube.VAO, modelLoc, t, character1);
+        drawCharacter(cube.VAO, modelLoc, t + 1.0f, character2);
 
-        drawGround(VAO, modelLoc, t);
+        drawGround(cube.VAO, modelLoc, t);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
 
-        //pressing esc to quit simulation
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, 1);
         }
     }
 
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
+    deleteCubeMesh(cube);
     glDeleteProgram(shaderProgram);
 
     glfwTerminate();

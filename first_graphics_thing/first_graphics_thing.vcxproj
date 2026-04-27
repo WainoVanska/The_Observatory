@@ -136,7 +136,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dependencies\glad\src\glad.c" />
+    <ClCompile Include="src\common\cube.cpp" />
     <ClCompile Include="src\week05\main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\common\cube.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

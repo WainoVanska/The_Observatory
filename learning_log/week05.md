@@ -11,3 +11,4 @@
 - differences between the camera position and the direction of the camera
 - understanding the camera formulas with sines and cosines
 - getting the camera pos working relative to all camera directions when moving with WASD and mouse together
+- yaw and pitch
