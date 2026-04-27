@@ -22,12 +22,82 @@ std::string readShaderFile(const std::string& filePath)
 
 float offset = 0.0f;
 
-//scalable cube creation function so you easily make more than one if needed
-void drawCube(GLuint VAO, GLuint modelLoc, const glm::mat4& model)
+static void drawCube(GLuint VAO, GLuint modelLoc, const glm::mat4& model)
 {
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+}
+
+static void drawCharacter(GLuint VAO, GLuint modelLoc, float t, const glm::mat4& baseTransform)
+{
+    float legAngle = sin(t * 5.0f) * 30.0f;
+    float armAngle = sin(t * 5.0f) * 60.0f;
+    float headAngle = sin(t * 10.0f) * 2.0f;
+    float bodyMovement = sin(t * 10.0f) * 2.0f;
+
+    glm::mat4 character = baseTransform;
+
+    character = glm::translate(character, glm::vec3(0.0f, bodyMovement / 100.0f, 0.0f));
+    character = glm::rotate(character, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+    glm::mat4 body = character;
+    body = glm::scale(body, glm::vec3(0.9f, 1.5f, 0.4f));
+    drawCube(VAO, modelLoc, body);
+
+    glm::mat4 head = character;
+    head = glm::translate(head, glm::vec3(0.0f, (headAngle / 100.0f) + 0.55f, 0.0f));
+    head = glm::scale(head, glm::vec3(0.6f, 0.6f, 0.6f));
+    drawCube(VAO, modelLoc, head);
+
+    glm::mat4 leftLeg = character;
+    leftLeg = glm::translate(leftLeg, glm::vec3(-0.20f, -0.22f, 0.0f));
+    leftLeg = glm::rotate(leftLeg, glm::radians(legAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+    leftLeg = glm::translate(leftLeg, glm::vec3(0.0f, -0.5f, 0.0f));
+    leftLeg = glm::scale(leftLeg, glm::vec3(0.2f, 1.5f, 0.2f));
+    drawCube(VAO, modelLoc, leftLeg);
+
+    glm::mat4 rightLeg = character;
+    rightLeg = glm::translate(rightLeg, glm::vec3(0.20f, -0.22f, 0.0f));
+    rightLeg = glm::rotate(rightLeg, glm::radians(-legAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+    rightLeg = glm::translate(rightLeg, glm::vec3(0.0f, -0.5f, 0.0f));
+    rightLeg = glm::scale(rightLeg, glm::vec3(0.2f, 1.5f, 0.2f));
+    drawCube(VAO, modelLoc, rightLeg);
+
+    glm::mat4 leftArm = character;
+    leftArm = glm::translate(leftArm, glm::vec3(-0.35f, 0.20f, 0.1f));
+    leftArm = glm::rotate(leftArm, glm::radians(-armAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+    leftArm = glm::translate(leftArm, glm::vec3(0.0f, -0.4f, 0.0f));
+    leftArm = glm::scale(leftArm, glm::vec3(0.2f, 1.7f, 0.2f));
+    drawCube(VAO, modelLoc, leftArm);
+
+    glm::mat4 rightArm = character;
+    rightArm = glm::translate(rightArm, glm::vec3(0.35f, 0.20f, -0.1f));
+    rightArm = glm::rotate(rightArm, glm::radians(armAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+    rightArm = glm::translate(rightArm, glm::vec3(0.0f, -0.4f, 0.0f));
+    rightArm = glm::scale(rightArm, glm::vec3(0.2f, 1.7f, 0.2f));
+    drawCube(VAO, modelLoc, rightArm);
+}
+
+static void drawGround(GLuint VAO, GLuint modelLoc, float t) {
+    float walkSpeed = 1.5f;
+    float groundX = -t * walkSpeed;
+
+    float spacing = 2.0f;
+    float loopLength = 20.0f;
+
+    for (int i = 0; i < 10; i++)
+    {
+        float tileX = groundX + i * spacing;
+
+        while (tileX < -10.0f)
+            tileX += loopLength;
+
+        glm::mat4 tile = glm::mat4(1.0f);
+        tile = glm::translate(tile, glm::vec3(tileX, -1.2f, 0.0f));
+        tile = glm::scale(tile, glm::vec3(2.0f, 0.08f, 1.2f));
+        drawCube(VAO, modelLoc, tile);
+    }
 }
 
 int main()
@@ -50,6 +120,7 @@ int main()
     }
 
     glfwMakeContextCurrent(window);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);        // enable the mouse rotation to go over 360 degrees
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cerr << "GLAD loading failed\n";
@@ -159,9 +230,23 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");         //get locations
+    GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");         // return the location of the model in the shader memory
     GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
     GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+
+    float w = 0.0f;
+    float s = 0.0f;
+    float up = 0.0f;
+    double lastMousePosX = 0.0f;
+    double lastMousePosY = 0.0f;
+    float cameraMouseX = 0.0f;
+    float cameraMouseY = 0.0f;
+
+    glm::vec3 cameraFront;
+
+    float yaw = -90.0f;
+    float pitch = 0.0f;
+    float sensitivity = 0.2f;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -170,24 +255,63 @@ int main()
 
         float t = glfwGetTime();
 
-        float legAngle = sin(t * 5) * 30.0f;
-        float armAngle = sin(t * 5) * 60.0f;
-        float headAngle = sin(t * 10) * 2.0f;
-        float bodyMovement = sin(t * 10) * 2.0f;
-
         float characterZ = -t * 0.5f;
 
-        float walkSpeed = 1.5f;
-        float groundX = -t * walkSpeed;
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            w -= 0.01f;
+        }
 
-        // camera stays behind the character, but slowly increases distance
-        float cameraDistance = 3.0f + t * 0.2f;
-        float cameraZ = characterZ + cameraDistance;
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            w += 0.01f;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            s += 0.01f;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            s -= 0.01f;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            up += 0.01f;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+            up -= 0.01f;
+        }
+
+        double mousePosX;
+        double mousePosY;
+
+        glfwGetCursorPos(window, &mousePosX, &mousePosY);
+        
+        float mouseOffsetX = mousePosX - lastMousePosX;
+        float mouseOffsetY = mousePosY - lastMousePosY;
+
+        lastMousePosX = mousePosX;
+        lastMousePosY = mousePosY;
+
+        cameraMouseX += mouseOffsetX * 0.02f;
+        cameraMouseY += mouseOffsetY * 0.02f;
+
+        glm::vec3 cameraPos = glm::vec3(s, 1.0f + up, 3.0f + w);
+
+        yaw += mouseOffsetX * sensitivity;
+        pitch -= mouseOffsetY * sensitivity;
+
+        glm::vec3 cameraFront;
+
+        cameraFront.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));          // ???
+        cameraFront.y = sin(glm::radians(pitch));
+        cameraFront.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+
+        cameraFront = glm::normalize(cameraFront);          // normalize back to [0,1] range
 
         glm::mat4 view = glm::lookAt(
-            glm::vec3(0.0f, 1.0f, 3.0f),           // camera position ( where it's placed )
-            glm::vec3(0.0f, 0.0f, 0.0f),           // look at character
-            glm::vec3(0.0f, 1.0f, 0.0f)            // orientation??
+            cameraPos,                              // camera position, where it's placed
+            cameraPos + cameraFront,                // look at character, what direction the camera is in
+            glm::vec3(0.0f, 1.0f, 0.0f)             // orientation, basically rotation of the camera itself
         );
 
         glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
@@ -197,77 +321,14 @@ int main()
 
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
- 
-        // character object creation so that child objects are then mounted to this
-        glm::mat4 character = glm::mat4(1.0f);
-        character = glm::translate(character, glm::vec3(0.0f, bodyMovement / 100, 0.0f));
-        character = glm::rotate(character, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        
+        glm::mat4 character1 = glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
+        glm::mat4 character2 = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-        // body
-        glm::mat4 body = character;
-        body = glm::scale(body, glm::vec3(0.9f, 1.5f, 0.4f));
-        drawCube(VAO, modelLoc, body);
+        drawCharacter(VAO, modelLoc, t, character1);
+        drawCharacter(VAO, modelLoc, t + 1.0f, character2);
 
-
-        // head
-        glm::mat4 head = character;
-        head = glm::translate(head, glm::vec3(0.0f, (headAngle / 100) + 0.55f, 0.0f));          //slight head movement to make the character come alive more
-        head = glm::scale(head, glm::vec3(0.6f, 0.6f, 0.6f));
-        drawCube(VAO, modelLoc, head);
-
-
-        // left leg
-        glm::mat4 leftLeg = character;
-        leftLeg = glm::translate(leftLeg, glm::vec3(-0.20f, -0.22f, 0.0f)); 
-        leftLeg = glm::rotate(leftLeg, glm::radians(legAngle), glm::vec3(1.0f, 0.0f, 0.0f));
-        leftLeg = glm::translate(leftLeg, glm::vec3(0.0f, -0.5f, 0.0f));
-        leftLeg = glm::scale(leftLeg, glm::vec3(0.2f, 1.5f, 0.2f));
-        drawCube(VAO, modelLoc, leftLeg);
-
-
-        // right leg
-        glm::mat4 rightLeg = character;
-        rightLeg = glm::translate(rightLeg, glm::vec3(0.20f, -0.22f, 0.0f));
-        rightLeg = glm::rotate(rightLeg, glm::radians(-legAngle), glm::vec3(1.0f, 0.0f, 0.0f));
-        rightLeg = glm::translate(rightLeg, glm::vec3(0.0f, -0.5f, 0.0f));
-        rightLeg = glm::scale(rightLeg, glm::vec3(0.2f, 1.5f, 0.2f));
-        drawCube(VAO, modelLoc, rightLeg);
-
-
-        // left arm
-        glm::mat4 leftArm = character;
-        leftArm = glm::translate(leftArm, glm::vec3(-0.35f, 0.20f, 0.1f)); 
-        leftArm = glm::rotate(leftArm, glm::radians(-armAngle), glm::vec3(1.0f, 0.0f, 0.0f));
-        leftArm = glm::translate(leftArm, glm::vec3(0.0f, -0.4f, 0.0f));
-        leftArm = glm::scale(leftArm, glm::vec3(0.2f, 1.7f, 0.2f));
-        drawCube(VAO, modelLoc, leftArm);
-
-
-        // right arm
-        glm::mat4 rightArm = character;
-        rightArm = glm::translate(rightArm, glm::vec3(0.35f, 0.20f, -0.1f));
-        rightArm = glm::rotate(rightArm, glm::radians(armAngle), glm::vec3(1.0f, 0.0f, 0.0f));
-        rightArm = glm::translate(rightArm, glm::vec3(0.0f, -0.4f, 0.0f));
-        rightArm = glm::scale(rightArm, glm::vec3(0.2f, 1.7f, 0.2f));
-        drawCube(VAO, modelLoc, rightArm);
-
-        // ground
-        float spacing = 2.0f;
-        float loopLength = 20.0f;
-
-        for (int i = 0; i < 10; i++)
-        {
-            float tileX = groundX + i * spacing;
-
-            while (tileX < -10.0f)
-                tileX += loopLength;
-
-            glm::mat4 tile = glm::mat4(1.0f);
-            tile = glm::translate(tile, glm::vec3(tileX, -1.2f, 0.0f));
-            tile = glm::scale(tile, glm::vec3(2.0f, 0.08f, 1.2f));
-            drawCube(VAO, modelLoc, tile);
-        }
-
+        drawGround(VAO, modelLoc, t);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
