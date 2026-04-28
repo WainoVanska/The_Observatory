@@ -114,18 +114,17 @@ int main()
 
     CubeMesh cube = createCubeMesh();           // create the cube through externalized function
 
-    float w = 0.0f;
-    float s = 0.0f;
-    float up = 0.0f;
+    glm::vec3 cameraPos = glm::vec3(0.0f, 1.0f, 3.0f);          // the place in 3D space where the camera is located 
+    float cameraSpeed = 0.01f;
     double lastMousePosX = 0.0f;
     double lastMousePosY = 0.0f;
     float cameraMouseX = 0.0f;
     float cameraMouseY = 0.0f;
 
-    glm::vec3 cameraFront;
+    glm::vec3 cameraFront;          // the direction the camera is looking
 
-    float yaw = -90.0f;             // turning left / right
-    float pitch = 0.0f;             // looking up / down
+    float yaw = -90.0f;             // turning left / right ("FPS POV" around the Y-axis)
+    float pitch = 0.0f;             // looking up / down ( around the X-axis)
     float sensitivity = 0.05f;       // sensitivity of the mouse
 
     while (!glfwWindowShouldClose(window))
@@ -137,28 +136,30 @@ int main()
 
         float characterZ = -t * 0.5f;
 
+        glm::vec3 cameraRight = glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f, 0.0f)));       // gives perpendicular vector to the camera (vec to the right)
+
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            w -= 0.01f;
+            cameraPos += cameraSpeed * cameraFront;
         }
 
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            w += 0.01f;
+            cameraPos -= cameraSpeed * cameraFront;
         }
 
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            s += 0.01f;
+            cameraPos += cameraSpeed * cameraRight;
         }
 
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            s -= 0.01f;
+            cameraPos -= cameraSpeed * cameraRight;
         }
 
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            up += 0.01f;
+            cameraPos += cameraSpeed;
         }
 
         if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-            up -= 0.01f;
+            cameraPos -= cameraSpeed;
         }
 
         double mousePosX;
@@ -175,17 +176,14 @@ int main()
         cameraMouseX += mouseOffsetX * 0.02f;
         cameraMouseY += mouseOffsetY * 0.02f;
 
-        glm::vec3 cameraPos = glm::vec3(s, 1.0f + up, 3.0f + w);
-
         yaw += mouseOffsetX * sensitivity;
         pitch -= mouseOffsetY * sensitivity;
 
-        glm::vec3 cameraFront;
-
-        cameraFront.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));          // ???
+        //converts the mouse's x and y values to angles --> then make them direction vectors
+        cameraFront.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
         cameraFront.y = sin(glm::radians(pitch));
         cameraFront.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-
+        
         cameraFront = glm::normalize(cameraFront);          // normalize back to [0,1] range
 
         glm::mat4 view = glm::lookAt(
