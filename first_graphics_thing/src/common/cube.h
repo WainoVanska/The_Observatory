@@ -1,5 +1,6 @@
-#pragma once
+#pragma once			// tells the compiler that if you've already included this file once, ignore further includes of it
 
+#include <glm/glm.hpp>
 #include <glad/glad.h>
 
 struct CubeMesh {
@@ -10,3 +11,5 @@ struct CubeMesh {
 
 CubeMesh createCubeMesh();
 void deleteCubeMesh(const CubeMesh& cube);
+
+void drawCube(GLuint VAO, GLuint modelLoc, const glm::mat4& model);

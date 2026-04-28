@@ -1,4 +1,5 @@
 #include "cube.h"
+#include <glm/gtc/type_ptr.hpp>
 
 CubeMesh createCubeMesh()
 {
@@ -74,4 +75,11 @@ void deleteCubeMesh(const CubeMesh& cube)
     glDeleteVertexArrays(1, &cube.VAO);
     glDeleteBuffers(1, &cube.VBO);
     glDeleteBuffers(1, &cube.EBO);
+}
+
+void drawCube(GLuint VAO, GLuint modelLoc, const glm::mat4& model)
+{
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 }
