@@ -4,36 +4,36 @@
 CubeMesh createCubeMesh()
 {
     float vertices[] = {
-        // positions           // colors
-        -0.25f, -0.25f,-0.25f,  1.0f, 1.0f, 1.0f,    //front side
-         0.25f, -0.25f,-0.25f,  1.0f, 1.0f, 1.0f,
-         0.25f,  0.25f,-0.25f,  1.0f, 1.0f, 1.0f,
-        -0.25f,  0.25f,-0.25f,  1.0f, 1.0f, 1.0f,
+        // positions            // colors           // UVs 
+        -0.25f, -0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   0.0f, 0.0f,    //front side
+         0.25f, -0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   1.0f, 0.0f, 
+         0.25f,  0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   1.0f, 1.0f,
+        -0.25f,  0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   0.0f, 1.0f,
 
-         0.25f, -0.25f,-0.25f,  0.7f, 0.7f, 0.3f,    //right side
-         0.25f, -0.25f, 0.25f,  0.7f, 0.7f, 0.3f,
-         0.25f,  0.25f, 0.25f,  0.7f, 0.7f, 0.3f,
-         0.25f,  0.25f,-0.25f,  0.7f, 0.7f, 0.3f,
+         0.25f, -0.25f,-0.25f,  0.7f, 0.7f, 0.3f,   0.0f, 0.0f,    //right side
+         0.25f, -0.25f, 0.25f,  0.7f, 0.7f, 0.3f,   1.0f, 0.0f,
+         0.25f,  0.25f, 0.25f,  0.7f, 0.7f, 0.3f,   1.0f, 1.0f,
+         0.25f,  0.25f,-0.25f,  0.7f, 0.7f, 0.3f,   0.0f, 1.0f,
 
-         0.25f, -0.25f, 0.25f,  0.0f, 0.5f, 0.5f,    //back side
-        -0.25f, -0.25f, 0.25f,  0.0f, 0.5f, 0.5f,
-        -0.25f,  0.25f, 0.25f,  0.0f, 0.5f, 0.5f,
-         0.25f,  0.25f, 0.25f,  0.0f, 0.5f, 0.5f,
+         0.25f, -0.25f, 0.25f,  0.0f, 0.5f, 0.5f,   0.0f, 0.0f,    //back side
+        -0.25f, -0.25f, 0.25f,  0.0f, 0.5f, 0.5f,   1.0f, 0.0f,
+        -0.25f,  0.25f, 0.25f,  0.0f, 0.5f, 0.5f,   1.0f, 1.0f,
+         0.25f,  0.25f, 0.25f,  0.0f, 0.5f, 0.5f,   0.0f, 1.0f, 
 
-        -0.25f, -0.25f, 0.25f,  0.3f, 0.6f, 0.3f,    //left side
-        -0.25f, -0.25f,-0.25f,  0.3f, 0.6f, 0.3f,
-        -0.25f,  0.25f,-0.25f,  0.3f, 0.6f, 0.3f,
-        -0.25f,  0.25f, 0.25f,  0.3f, 0.6f, 0.3f,
+        -0.25f, -0.25f, 0.25f,  0.3f, 0.6f, 0.3f,   0.0f, 0.0f,    //left side
+        -0.25f, -0.25f,-0.25f,  0.3f, 0.6f, 0.3f,   1.0f, 0.0f,
+        -0.25f,  0.25f,-0.25f,  0.3f, 0.6f, 0.3f,   1.0f, 1.0f,
+        -0.25f,  0.25f, 0.25f,  0.3f, 0.6f, 0.3f,   0.0f, 1.0f,
 
-        -0.25f,  0.25f,-0.25f,  0.1f, 0.3f, 1.0f,    //top side
-         0.25f,  0.25f,-0.25f,  0.1f, 0.3f, 1.0f,
-         0.25f,  0.25f, 0.25f,  0.1f, 0.3f, 1.0f,
-        -0.25f,  0.25f, 0.25f,  0.1f, 0.3f, 1.0f,
+        -0.25f,  0.25f,-0.25f,  0.1f, 0.3f, 1.0f,   0.0f, 0.0f,    //top side
+         0.25f,  0.25f,-0.25f,  0.1f, 0.3f, 1.0f,   1.0f, 0.0f,
+         0.25f,  0.25f, 0.25f,  0.1f, 0.3f, 1.0f,   1.0f, 1.0f,
+        -0.25f,  0.25f, 0.25f,  0.1f, 0.3f, 1.0f,   0.0f, 1.0f,
 
-        -0.25f, -0.25f,-0.25f,  1.0f, 0.3f, 1.0f,    //bottom side
-         0.25f, -0.25f,-0.25f,  1.0f, 0.3f, 1.0f,
-         0.25f, -0.25f, 0.25f,  1.0f, 0.3f, 1.0f,
-        -0.25f, -0.25f, 0.25f,  1.0f, 0.3f, 1.0f
+        -0.25f, -0.25f,-0.25f,  1.0f, 0.3f, 1.0f,   0.0f, 0.0f,    //bottom side
+         0.25f, -0.25f,-0.25f,  1.0f, 0.3f, 1.0f,   1.0f, 0.0f,
+         0.25f, -0.25f, 0.25f,  1.0f, 0.3f, 1.0f,   1.0f, 1.0f,
+        -0.25f, -0.25f, 0.25f,  1.0f, 0.3f, 1.0f,   0.0f, 1.0f,
     };
 
     unsigned int indices[] = {
@@ -59,11 +59,17 @@ CubeMesh createCubeMesh()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube.EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    // position
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    // color
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    // UV
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     glBindVertexArray(0);
 
