@@ -12,6 +12,7 @@
 
 #include "../common/character.h"
 #include "../common/cube.h"
+#include "../common/free_camera.h"
 
 //shader files
 
@@ -22,8 +23,6 @@ std::string readShaderFile(const std::string& filePath)
     buffer << file.rdbuf();
     return buffer.str();
 }
-
-float offset = 0.0f;
 
 static void drawGround(GLuint VAO, GLuint modelLoc, float t) {
     float walkSpeed = 1.5f;
@@ -85,6 +84,8 @@ int main()
         100.0f                                  // farthest visible spot
     );
 
+    FreeCamera camera;              // creates the camera with the free_camera.cpp file functions
+
     //shaders
     std::string vertexShaderCode = readShaderFile("src/week05/vertex.glsl");
     std::string fragmentShaderCode = readShaderFile("src/week05/fragment.glsl");
@@ -114,83 +115,13 @@ int main()
 
     CubeMesh cube = createCubeMesh();           // create the cube through externalized function
 
-    glm::vec3 cameraPos = glm::vec3(0.0f, 1.0f, 3.0f);          // the place in 3D space where the camera is located 
-    float cameraSpeed = 0.01f;
-    double lastMousePosX = 0.0f;
-    double lastMousePosY = 0.0f;
-    float cameraMouseX = 0.0f;
-    float cameraMouseY = 0.0f;
-
-    glm::vec3 cameraFront;          // the direction the camera is looking
-
-    float yaw = -90.0f;             // turning left / right ("FPS POV" around the Y-axis)
-    float pitch = 0.0f;             // looking up / down ( around the X-axis)
-    float sensitivity = 0.05f;       // sensitivity of the mouse
-
     while (!glfwWindowShouldClose(window))
     {
+        camera.update(window);
 
-        offset += 0.002f;
+        glm::mat4 view = camera.getViewMatrix();
 
         float t = glfwGetTime();
-
-        float characterZ = -t * 0.5f;
-
-        glm::vec3 cameraRight = glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f, 0.0f)));       // gives perpendicular vector to the camera (vec to the right)
-
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            cameraPos += cameraSpeed * cameraFront;
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            cameraPos -= cameraSpeed * cameraFront;
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            cameraPos += cameraSpeed * cameraRight;
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            cameraPos -= cameraSpeed * cameraRight;
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            cameraPos += cameraSpeed;
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-            cameraPos -= cameraSpeed;
-        }
-
-        double mousePosX;
-        double mousePosY;
-
-        glfwGetCursorPos(window, &mousePosX, &mousePosY);
-        
-        float mouseOffsetX = mousePosX - lastMousePosX;
-        float mouseOffsetY = mousePosY - lastMousePosY;
-
-        lastMousePosX = mousePosX;
-        lastMousePosY = mousePosY;
-
-        cameraMouseX += mouseOffsetX * 0.02f;
-        cameraMouseY += mouseOffsetY * 0.02f;
-
-        yaw += mouseOffsetX * sensitivity;
-        pitch -= mouseOffsetY * sensitivity;
-
-        //converts the mouse's x and y values to angles --> then make them direction vectors
-        cameraFront.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-        cameraFront.y = sin(glm::radians(pitch));
-        cameraFront.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-        
-        cameraFront = glm::normalize(cameraFront);          // normalize back to [0,1] range
-
-        glm::mat4 view = glm::lookAt(
-            cameraPos,                              // camera position, where it's placed
-            cameraPos + cameraFront,                // look at character, what direction the camera is in
-            glm::vec3(0.0f, 1.0f, 0.0f)             // orientation, basically rotation of the camera itself
-        );
 
         glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);     // decide which surface is the closest through the depth buffer
