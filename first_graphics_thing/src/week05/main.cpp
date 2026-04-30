@@ -143,6 +143,11 @@ int main()
         drawCharacter(cube.VAO, modelLoc, t, character1);
         drawCharacter(cube.VAO, modelLoc, t + 1.0f, character2);
 
+        //test for cube texture
+        glm::mat4 testCube = glm::mat4(1.0f);
+        testCube = glm::translate(testCube, glm::vec3(0.0f, 0.0f, 0.0f));
+        drawCube(cube.VAO, modelLoc, testCube);
+
         drawGround(cube.VAO, modelLoc, t);
 
         glfwSwapBuffers(window);

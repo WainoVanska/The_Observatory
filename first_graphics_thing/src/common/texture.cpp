@@ -41,10 +41,12 @@ GLuint loadTexture(const std::string& path)
             << " original channels=" << nrChannels
             << " forced channels=3\n";
 
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);      // "do not assume that rows are padded to 4 bytes since I have 250x250 texture"
+
         glTexImage2D(
             GL_TEXTURE_2D,
             0,
-            GL_RGB,
+            GL_RGB,     
             width,
             height,
             0,
