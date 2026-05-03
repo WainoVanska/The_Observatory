@@ -9,6 +9,10 @@
 
 ![Poster experiment](../learning_log_images/texture_adding_3.png)
 
+- how to add complete character textures (with different faces) in scalable way from one .jpg/.png file
+
+![Poster experiment](../learning_log_images/minecraft_char_texture.png)
+
 
 ## I struggled:
 
@@ -18,7 +22,9 @@
 
 - getting the texture stretched out to the cube correctly, I used a 250x250 image so I had to add in the GLPixelStorei() function to get OpenGL to not assume that 
 there are 4 bytes by default in the pixel
-- understanding the texture pipeline on the host side (CPU), a lot of different function calls for this
+- understanding the texture pipeline on the host side (CPU), a lot of different function calls for this.
+
+- getting the UV coordinates right, since in the character textures were there were many faces in the same file. By troubleshooting with AI I implemented a helper function and appropriate structs for the task
 
 ## Thoughts:
 
