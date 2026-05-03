@@ -137,6 +137,7 @@
   <ItemGroup>
     <ClCompile Include="dependencies\glad\src\glad.c" />
     <ClCompile Include="src\common\character.cpp" />
+    <ClCompile Include="src\common\character_skin.cpp" />
     <ClCompile Include="src\common\cube.cpp" />
     <ClCompile Include="src\common\free_camera.cpp" />
     <ClCompile Include="src\common\texture.cpp" />
@@ -144,6 +145,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\common\character.h" />
+    <ClInclude Include="src\common\character_skin.h" />
     <ClInclude Include="src\common\cube.h" />
     <ClInclude Include="src\common\free_camera.h" />
     <ClInclude Include="src\common\texture.h" />

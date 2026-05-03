@@ -1,7 +1,3 @@
-# Summary
-
-
-
 ## Weekly progress
 
 - Weekly updates on my graphics learning progress available in "learning_logs"

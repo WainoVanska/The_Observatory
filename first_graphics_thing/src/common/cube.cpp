@@ -89,3 +89,86 @@ void drawCube(GLuint VAO, GLuint modelLoc, const glm::mat4& model)
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 }
+
+void drawTexturedCube(GLuint VAO, GLuint modelLoc, const glm::mat4& model, GLuint texture)
+{
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    drawCube(VAO, modelLoc, model);
+}
+
+static void setFaceUV(float* vertices, int faceIndex, const FaceUV& uv)
+{
+    int startVertex = faceIndex * 4;
+
+    // Each vertex has 8 floats:
+    // position 3 + color 3 + uv 2
+    int stride = 8;
+
+    float faceUVs[4][2] = {
+        { uv.u1, uv.v1 },
+        { uv.u2, uv.v1 },
+        { uv.u2, uv.v2 },
+        { uv.u1, uv.v2 }
+    };
+
+    for (int i = 0; i < 4; i++)
+    {
+        int vertexIndex = startVertex + i;
+        vertices[vertexIndex * stride + 6] = faceUVs[i][0];
+        vertices[vertexIndex * stride + 7] = faceUVs[i][1];
+    }
+}
+
+void drawCubeWithUVs(
+    const CubeMesh& cube,
+    GLuint modelLoc,
+    const glm::mat4& model,
+    const BoxUVs& uvs
+)
+{
+    float vertices[] = {
+        // positions            // colors           // UVs 
+        -0.25f, -0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   0.0f, 0.0f,
+         0.25f, -0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   1.0f, 0.0f,
+         0.25f,  0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   1.0f, 1.0f,
+        -0.25f,  0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   0.0f, 1.0f,
+
+         0.25f, -0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   0.0f, 0.0f,
+         0.25f, -0.25f, 0.25f,  1.0f, 1.0f, 1.0f,   1.0f, 0.0f,
+         0.25f,  0.25f, 0.25f,  1.0f, 1.0f, 1.0f,   1.0f, 1.0f,
+         0.25f,  0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   0.0f, 1.0f,
+
+         0.25f, -0.25f, 0.25f,  1.0f, 1.0f, 1.0f,   0.0f, 0.0f,
+        -0.25f, -0.25f, 0.25f,  1.0f, 1.0f, 1.0f,   1.0f, 0.0f,
+        -0.25f,  0.25f, 0.25f,  1.0f, 1.0f, 1.0f,   1.0f, 1.0f,
+         0.25f,  0.25f, 0.25f,  1.0f, 1.0f, 1.0f,   0.0f, 1.0f,
+
+        -0.25f, -0.25f, 0.25f,  1.0f, 1.0f, 1.0f,   0.0f, 0.0f,
+        -0.25f, -0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   1.0f, 0.0f,
+        -0.25f,  0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   1.0f, 1.0f,
+        -0.25f,  0.25f, 0.25f,  1.0f, 1.0f, 1.0f,   0.0f, 1.0f,
+
+        -0.25f,  0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   0.0f, 0.0f,
+         0.25f,  0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   1.0f, 0.0f,
+         0.25f,  0.25f, 0.25f,  1.0f, 1.0f, 1.0f,   1.0f, 1.0f,
+        -0.25f,  0.25f, 0.25f,  1.0f, 1.0f, 1.0f,   0.0f, 1.0f,
+
+        -0.25f, -0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   0.0f, 0.0f,
+         0.25f, -0.25f,-0.25f,  1.0f, 1.0f, 1.0f,   1.0f, 0.0f,
+         0.25f, -0.25f, 0.25f,  1.0f, 1.0f, 1.0f,   1.0f, 1.0f,
+        -0.25f, -0.25f, 0.25f,  1.0f, 1.0f, 1.0f,   0.0f, 1.0f,
+    };
+
+    setFaceUV(vertices, 0, uvs.front);
+    setFaceUV(vertices, 1, uvs.right);
+    setFaceUV(vertices, 2, uvs.back);
+    setFaceUV(vertices, 3, uvs.left);
+    setFaceUV(vertices, 4, uvs.top);
+    setFaceUV(vertices, 5, uvs.bottom);
+
+    glBindBuffer(GL_ARRAY_BUFFER, cube.VBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+
+    drawCube(cube.VAO, modelLoc, model);
+}

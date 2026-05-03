@@ -2,10 +2,13 @@
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include "character_skin.h"
+#include "cube.h"
 
 void drawCharacter(
-    GLuint VAO,
+    const CubeMesh& cube,
     GLuint modelLoc,
     float t,
-    const glm::mat4& baseTransform
+    const glm::mat4& baseTransform,
+    const CharacterSkin& skin
 );

@@ -14,6 +14,7 @@
 #include "../common/cube.h"
 #include "../common/free_camera.h"
 #include "../common/texture.h"
+#include "../common/character_skin.h"
 
 //shader files
 
@@ -25,7 +26,7 @@ std::string readShaderFile(const std::string& filePath)
     return buffer.str();
 }
 
-static void drawGround(GLuint VAO, GLuint modelLoc, float t) {
+static void drawGround(GLuint VAO, GLuint modelLoc, float t, GLuint texture) {
     float walkSpeed = 1.5f;
     float groundX = -t * walkSpeed;
 
@@ -42,7 +43,7 @@ static void drawGround(GLuint VAO, GLuint modelLoc, float t) {
         glm::mat4 tile = glm::mat4(1.0f);
         tile = glm::translate(tile, glm::vec3(tileX, -1.2f, 0.0f));
         tile = glm::scale(tile, glm::vec3(2.0f, 0.08f, 1.2f));
-        drawCube(VAO, modelLoc, tile);
+        drawTexturedCube(VAO, modelLoc, tile, texture);
     }
 }
 
@@ -110,13 +111,19 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    GLuint texture = loadTexture("assets/textures/checkerboard.png");
+    // textures
+    GLuint checkerboard = loadTexture("assets/textures/checkerboard.png");
+    GLuint ground = loadTexture("assets/textures/ground.jpg");
+    GLuint face = loadTexture("assets/textures/face.jpg");
+    CharacterSkin skin = loadCharacterSkin("assets/textures/character_skin.png");
 
+    CubeMesh cube = createCubeMesh();           
+    CubeMesh characterCube = createCubeMesh();
+
+    //perspective view
     GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");         // return the location of the model in the shader memory
     GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
     GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
-
-    CubeMesh cube = createCubeMesh();           // create the cube through externalized function
 
     while (!glfwWindowShouldClose(window))
     {
@@ -131,24 +138,21 @@ int main()
 
         glUseProgram(shaderProgram);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
-
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
         
         glm::mat4 character1 = glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
         glm::mat4 character2 = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-        drawCharacter(cube.VAO, modelLoc, t, character1);
-        drawCharacter(cube.VAO, modelLoc, t + 1.0f, character2);
+        drawCharacter(characterCube, modelLoc, t, character1, skin);
+        drawCharacter(characterCube, modelLoc, t + 1.0f, character2, skin);
 
         //test for cube texture
         glm::mat4 testCube = glm::mat4(1.0f);
         testCube = glm::translate(testCube, glm::vec3(0.0f, 0.0f, 0.0f));
-        drawCube(cube.VAO, modelLoc, testCube);
+        drawTexturedCube(cube.VAO, modelLoc, testCube, checkerboard);
 
-        drawGround(cube.VAO, modelLoc, t);
+        drawGround(cube.VAO, modelLoc, t, ground);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -159,6 +163,7 @@ int main()
     }
 
     deleteCubeMesh(cube);
+    deleteCubeMesh(characterCube);
     glDeleteProgram(shaderProgram);
 
     glfwTerminate();
