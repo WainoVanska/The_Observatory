@@ -114,8 +114,8 @@ int main()
     // textures
     GLuint checkerboard = loadTexture("assets/textures/checkerboard.png");
     GLuint ground = loadTexture("assets/textures/ground.jpg");
-    GLuint face = loadTexture("assets/textures/face.jpg");
-    CharacterSkin skin = loadCharacterSkin("assets/textures/character_skin.png");
+    CharacterSkin skin1 = loadCharacterSkin("assets/textures/squirrel_boy.png");
+    CharacterSkin skin2 = loadCharacterSkin("assets/textures/squirrel_girl.png");
 
     CubeMesh cube = createCubeMesh();           
     CubeMesh characterCube = createCubeMesh();
@@ -144,8 +144,8 @@ int main()
         glm::mat4 character1 = glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
         glm::mat4 character2 = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-        drawCharacter(characterCube, modelLoc, t, character1, skin);
-        drawCharacter(characterCube, modelLoc, t + 1.0f, character2, skin);
+        drawCharacter(characterCube, modelLoc, t, character1, skin1);
+        drawCharacter(characterCube, modelLoc, t + 1.0f, character2, skin2);
 
         //test for cube texture
         glm::mat4 testCube = glm::mat4(1.0f);
