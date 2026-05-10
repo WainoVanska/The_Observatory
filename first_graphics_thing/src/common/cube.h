@@ -23,3 +23,5 @@ void drawCubeWithUVs(
     const glm::mat4& model,
     const BoxUVs& uvs
 );
+
+void drawSkyboxCube(const CubeMesh& cube);

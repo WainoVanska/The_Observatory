@@ -15,6 +15,8 @@
 #include "../common/free_camera.h"
 #include "../common/texture.h"
 #include "../common/character_skin.h"
+#include "../common/cubemap_texture.h"
+#include "../common/skybox.h"
 
 //shader files
 
@@ -87,6 +89,7 @@ int main()
     );
 
     FreeCamera camera;              // creates the camera with the free_camera.cpp file functions
+    SkyBox skybox(&camera);         //creates skybox
 
     //shaders
     std::string vertexShaderCode = readShaderFile("src/week05/vertex.glsl");
@@ -119,6 +122,19 @@ int main()
 
     CubeMesh cube = createCubeMesh();           
     CubeMesh characterCube = createCubeMesh();
+
+    //sky box
+    if (!skybox.Init(
+        "assets/textures/skybox1",
+        "px.png",
+        "nx.png",
+        "py.png",
+        "ny.png",
+        "pz.png",
+        "nz.png"
+    )) {
+        std::cout << "Skybox failed to load\n";
+    }
 
     //perspective view
     GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");         // return the location of the model in the shader memory
@@ -153,6 +169,8 @@ int main()
         drawTexturedCube(cube.VAO, modelLoc, testCube, checkerboard);
 
         drawGround(cube.VAO, modelLoc, t, ground);
+
+        skybox.Render(projection);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

@@ -172,3 +172,10 @@ void drawCubeWithUVs(
 
     drawCube(cube.VAO, modelLoc, model);
 }
+
+void drawSkyboxCube(const CubeMesh& cube)
+{
+    glBindVertexArray(cube.VAO);
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+}
