@@ -78,7 +78,7 @@ bool SkyBox::Init(
 {
     shaderProgram = createSkyboxShaderProgram();
 
-    gWVPLoc = glGetUniformLocation(shaderProgram, "gWVP");
+    gWVPLoc = glGetUniformLocation(shaderProgram, "gWVP");              //??
     cubemapLoc = glGetUniformLocation(shaderProgram, "gCubemapTexture");
 
     glUseProgram(shaderProgram);

@@ -156,12 +156,24 @@ int main()
 
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+        glm::vec3 lightPos(0.0f, 2.0f, 2.0f);
+        glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+
+        glUniform3fv(glGetUniformLocation(shaderProgram, "lightPos"), 1, glm::value_ptr(lightPos));
+        glUniform3fv(glGetUniformLocation(shaderProgram, "lightColor"), 1, glm::value_ptr(lightColor));
+
+        glm::mat4 lightModel = glm::mat4(1.0f);
+        lightModel = glm::translate(lightModel, lightPos);
+        lightModel = glm::scale(lightModel, glm::vec3(0.15f));
         
         glm::mat4 character1 = glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
         glm::mat4 character2 = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
         drawCharacter(characterCube, modelLoc, t, character1, skin1);
         drawCharacter(characterCube, modelLoc, t + 1.0f, character2, skin2);
+
+        drawTexturedCube(cube.VAO, modelLoc, lightModel, checkerboard);     // draw the light source, looks a bit buggy for now
 
         //test for cube texture
         glm::mat4 testCube = glm::mat4(1.0f);
