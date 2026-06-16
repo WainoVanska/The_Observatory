@@ -146,6 +146,7 @@
     <ClCompile Include="src\common\skybox.cpp" />
     <ClCompile Include="src\common\sphere.cpp" />
     <ClCompile Include="src\common\texture.cpp" />
+    <ClCompile Include="src\common\window.cpp" />
     <ClCompile Include="src\week09\main.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -13,44 +13,25 @@
 #include "../common/sphere.h"
 #include "../common/light_controller.h"
 #include "../common/shader.h"
+#include "../common/window.h"
 
 int main()
 {
     // GLFW init
-    if (!glfwInit()) {
-        std::cerr << "GLFW init failed\n";
-        return -1;
-    }
+    const int windowWidth = 800;
+    const int windowHeight = 600;
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    GLFWwindow* window = createWindow(windowWidth, windowHeight, "W9");
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "W9", nullptr, nullptr);
     if (!window) {
-        std::cerr << "Window creation failed\n";
-        glfwTerminate();
         return -1;
     }
 
-    glfwMakeContextCurrent(window);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);        // enable the mouse rotation to go over 360 degrees
-
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cerr << "GLAD loading failed\n";
-        glfwTerminate();
-        return -1;
-    }
-
-    glViewport(0, 0, 800, 600);
-    glEnable(GL_DEPTH_TEST);                    // enable depth in order to only see the closest face of an object
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-    glm::mat4 projection = glm::perspective(  
-        glm::radians(70.0f),                    // fov in y direction
-        800.0f / 600.0f,                        // fov in x direction
-        0.1f,                                   // nearest visible spot
-        100.0f                                  // farthest visible spot
+    glm::mat4 projection = glm::perspective(
+        glm::radians(70.0f),                            // fov in y dir.
+        (float)windowWidth / (float)windowHeight,       //fov in x dir.
+        0.1f,
+        100.0f
     );
 
     FreeCamera camera;              // creates the camera with the free_camera.cpp file functions
@@ -116,14 +97,14 @@ int main()
 
         // test cube
         glm::mat4 testCube = glm::mat4(1.0f);
-        testCube = glm::translate(testCube, glm::vec3(-0.2f, 0.0f, 0.0f));
+        testCube = glm::translate(testCube, glm::vec3(-0.2f, -0.6f, 0.0f));
 
         glUniform3f(objectColorLoc, 0.9f, 0.4f, 0.2f);
         drawTexturedCube(cube.VAO, modelLoc, testCube, checkerboard);
 
         // test sphere
         glm::mat4 testSphere = glm::mat4(1.0f);
-        testSphere = glm::translate(testSphere, glm::vec3(0.8f, 0.0f, 0.0f));
+        testSphere = glm::translate(testSphere, glm::vec3(0.8f, -0.4f, 0.0f));
 
         glUniform3f(objectColorLoc, 0.2f, 0.5f, 1.0f);
         drawSphere(sphere, modelLoc, testSphere);
