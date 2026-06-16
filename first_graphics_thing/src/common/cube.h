@@ -25,3 +25,5 @@ void drawCubeWithUVs(
 );
 
 void drawSkyboxCube(const CubeMesh& cube);
+
+void drawClosedRoom(GLuint VAO, GLuint modelLoc, GLuint texture);

@@ -142,8 +142,9 @@
     <ClCompile Include="src\common\cubemap_texture.cpp" />
     <ClCompile Include="src\common\free_camera.cpp" />
     <ClCompile Include="src\common\skybox.cpp" />
+    <ClCompile Include="src\common\sphere.cpp" />
     <ClCompile Include="src\common\texture.cpp" />
-    <ClCompile Include="src\week05\main.cpp" />
+    <ClCompile Include="src\week09\main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\common\character.h" />
@@ -152,6 +153,7 @@
     <ClInclude Include="src\common\cubemap_texture.h" />
     <ClInclude Include="src\common\free_camera.h" />
     <ClInclude Include="src\common\skybox.h" />
+    <ClInclude Include="src\common\sphere.h" />
     <ClInclude Include="src\common\texture.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

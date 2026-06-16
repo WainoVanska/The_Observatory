@@ -2,7 +2,7 @@
 
 FreeCamera::FreeCamera()
 {
-    cameraPos = glm::vec3(0.0f, 1.0f, 3.0f);         // the place in 3D space where the camera is located 
+    cameraPos = glm::vec3(0.0f, 1.0f, 0.0f);         // the place in 3D space where the camera is located 
     cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
     cameraRight = glm::vec3(1.0f, 0.0f, 0.0f);
 
@@ -73,3 +73,8 @@ glm::mat4 FreeCamera::getViewMatrix()
         glm::vec3(0.0f, 1.0f, 0.0f)                 // orientation, basically rotation of the camera itself
     );
 }       
+
+glm::vec3 FreeCamera::getPosition() const
+{
+    return cameraPos;
+}

@@ -11,6 +11,7 @@ public:
     glm::vec3 cameraPos;
     glm::vec3 cameraFront;
     glm::vec3 cameraRight;
+    glm::vec3 getPosition() const;
 
     float yaw;
     float pitch;

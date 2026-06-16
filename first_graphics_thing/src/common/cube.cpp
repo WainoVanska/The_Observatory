@@ -183,3 +183,43 @@ void drawSkyboxCube(const CubeMesh& cube)
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
+
+void drawClosedRoom(GLuint VAO, GLuint modelLoc, GLuint texture)
+{
+
+    // floor
+    glm::mat4 floor = glm::mat4(1.0f);
+    floor = glm::translate(floor, glm::vec3(0.0f, -1.0f, 0.0f));
+    floor = glm::scale(floor, glm::vec3(12.0f, 0.2f, 12.0f));
+    drawTexturedCube(VAO, modelLoc, floor, texture);
+
+    // ceiling
+    glm::mat4 ceiling = glm::mat4(1.0f);
+    ceiling = glm::translate(ceiling, glm::vec3(0.0f, 3.0f, 0.0f));
+    ceiling = glm::scale(ceiling, glm::vec3(12.0f, 0.2f, 12.0f));
+    drawTexturedCube(VAO, modelLoc, ceiling, texture);
+
+    // back wall
+    glm::mat4 backWall = glm::mat4(1.0f);
+    backWall = glm::translate(backWall, glm::vec3(0.0f, 1.0f, -3.0f));
+    backWall = glm::scale(backWall, glm::vec3(12.0f, 8.0f, 0.2f));
+    drawTexturedCube(VAO, modelLoc, backWall, texture);
+
+    // front wall
+    glm::mat4 frontWall = glm::mat4(1.0f);
+    frontWall = glm::translate(frontWall, glm::vec3(0.0f, 1.0f, 3.0f));
+    frontWall = glm::scale(frontWall, glm::vec3(12.0f, 8.0f, 0.2f));
+    drawTexturedCube(VAO, modelLoc, frontWall, texture);
+
+    // left wall
+    glm::mat4 leftWall = glm::mat4(1.0f);
+    leftWall = glm::translate(leftWall, glm::vec3(-3.0f, 1.0f, 0.0f));
+    leftWall = glm::scale(leftWall, glm::vec3(0.2f, 8.0f, 12.0f));
+    drawTexturedCube(VAO, modelLoc, leftWall, texture);
+
+    // right wall
+    glm::mat4 rightWall = glm::mat4(1.0f);
+    rightWall = glm::translate(rightWall, glm::vec3(3.0f, 1.0f, 0.0f));
+    rightWall = glm::scale(rightWall, glm::vec3(0.2f, 8.0f, 12.0f));
+    drawTexturedCube(VAO, modelLoc, rightWall, texture);
+}
