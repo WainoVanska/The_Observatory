@@ -2,11 +2,14 @@
 
 ## I learned:
 
-- to implement basic ambient, diffuse and specular lighting ( used LearnOpenGL tutorial as a base for this week https://learnopengl.com/Lighting/Basic-Lighting )
+- to implement basic ambient, diffuse and specular lighting ( used LearnOpenGL tutorial as a base for this week https://learnopengl.com/Lighting/Basic-Lighting ). Also in addition I added attenuation which takes the distance between the fragment and the light into consideration.
 
 - one way to create spheres
 
 ![Poster experiment](../learning_log_images/sphere_lighting.png)
+
+- since the sphere has more normals for the light to process, it looks way smoother (flat normals vs. smooth normals)
+
 
 ## I struggled:
 

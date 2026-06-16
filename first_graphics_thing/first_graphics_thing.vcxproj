@@ -141,6 +141,8 @@
     <ClCompile Include="src\common\cube.cpp" />
     <ClCompile Include="src\common\cubemap_texture.cpp" />
     <ClCompile Include="src\common\free_camera.cpp" />
+    <ClCompile Include="src\common\light_controller.cpp" />
+    <ClCompile Include="src\common\shader.cpp" />
     <ClCompile Include="src\common\skybox.cpp" />
     <ClCompile Include="src\common\sphere.cpp" />
     <ClCompile Include="src\common\texture.cpp" />
@@ -152,6 +154,8 @@
     <ClInclude Include="src\common\cube.h" />
     <ClInclude Include="src\common\cubemap_texture.h" />
     <ClInclude Include="src\common\free_camera.h" />
+    <ClInclude Include="src\common\light_controller.h" />
+    <ClInclude Include="src\common\shader.h" />
     <ClInclude Include="src\common\skybox.h" />
     <ClInclude Include="src\common\sphere.h" />
     <ClInclude Include="src\common\texture.h" />

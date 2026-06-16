@@ -6,28 +6,13 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
 
-#include "../common/character.h"
 #include "../common/cube.h"
 #include "../common/free_camera.h"
 #include "../common/texture.h"
-#include "../common/character_skin.h"
-#include "../common/cubemap_texture.h"
-#include "../common/skybox.h"
 #include "../common/sphere.h"
-
-//shader files
-
-std::string readShaderFile(const std::string& filePath)
-{
-    std::ifstream file(filePath);
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
-}
+#include "../common/light_controller.h"
+#include "../common/shader.h"
 
 int main()
 {
@@ -62,36 +47,25 @@ int main()
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     glm::mat4 projection = glm::perspective(  
-        glm::radians(45.0f),                    // fov in y direction
+        glm::radians(70.0f),                    // fov in y direction
         800.0f / 600.0f,                        // fov in x direction
         0.1f,                                   // nearest visible spot
         100.0f                                  // farthest visible spot
     );
 
     FreeCamera camera;              // creates the camera with the free_camera.cpp file functions
+    LightController lightController;    //create this to manually control the light with I/J/K/L
 
     //shaders
-    std::string vertexShaderCode = readShaderFile("src/week09/vertex.glsl");
-    std::string fragmentShaderCode = readShaderFile("src/week09/fragment.glsl");
+    GLuint shaderProgram = createShaderProgram(
+        "src/week09/vertex.glsl",
+        "src/week09/fragment.glsl"
+    );
 
-    const char* vertexShaderSource = vertexShaderCode.c_str();
-    const char* fragmentShaderSource = fragmentShaderCode.c_str();
-
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
-    glCompileShader(vertexShader);
-
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
-    glCompileShader(fragmentShader);
-
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    GLuint lampShaderProgram = createShaderProgram(
+        "src/week09/lamp_vertex.glsl",
+        "src/week09/lamp_fragment.glsl"
+    );
 
     // textures
     GLuint checkerboard = loadTexture("assets/textures/checkerboard.png");
@@ -99,51 +73,46 @@ int main()
     CubeMesh cube = createCubeMesh();    
     SphereMesh sphere = createSphereMesh();
 
-    //perspective view
-    GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");         // return the location of the model in the shader memory
+    GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
     GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
     GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
 
     GLuint objectColorLoc = glGetUniformLocation(shaderProgram, "objectColor");
-
     GLuint viewPosLoc = glGetUniformLocation(shaderProgram, "viewPos");
 
-    GLfloat offset = 0.0f;
-    bool flip = false;
+    GLuint lightPosLoc = glGetUniformLocation(shaderProgram, "lightPos");
+    GLuint lightColorLoc = glGetUniformLocation(shaderProgram, "lightColor");
+
+    GLuint lampModelLoc = glGetUniformLocation(lampShaderProgram, "model");
+    GLuint lampViewLoc = glGetUniformLocation(lampShaderProgram, "view");
+    GLuint lampProjectionLoc = glGetUniformLocation(lampShaderProgram, "projection");
 
     while (!glfwWindowShouldClose(window))
     {
         camera.update(window);
+        lightController.update(window);
 
         glm::mat4 view = camera.getViewMatrix();
 
-        float t = glfwGetTime();
+        glm::vec3 lightPos = lightController.getPosition();
+        glm::vec3 lightColor(1.25f, 1.25f, 1.25f);
+
+        glm::mat4 lightModel = glm::mat4(1.0f);
+        lightModel = glm::translate(lightModel, lightPos);
+        lightModel = glm::scale(lightModel, glm::vec3(0.15f));
 
         glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);     // decide which surface is the closest through the depth buffer
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Draw lit objects
         glUseProgram(shaderProgram);
 
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
         glUniform3fv(viewPosLoc, 1, glm::value_ptr(camera.getPosition()));
-
-        glm::vec3 lightPos;
-        lightPos.x = /*sin(t) * */1.2f;
-        lightPos.y = 1.5f;
-        lightPos.z = /*cos(t) * */1.2f;
-        glm::vec3 lightColor(0.75f, 0.75f, 0.75f);
-
-        glUniform3fv(glGetUniformLocation(shaderProgram, "lightPos"), 1, glm::value_ptr(lightPos));
-        glUniform3fv(glGetUniformLocation(shaderProgram, "lightColor"), 1, glm::value_ptr(lightColor));
-
-        glm::mat4 lightModel = glm::mat4(1.0f);
-        lightModel = glm::translate(lightModel, lightPos);
-        lightModel = glm::scale(lightModel, glm::vec3(0.15f));
-
-        glUniform3f(objectColorLoc, 1.0f, 1.0f, 0.3f);
-        drawTexturedCube(cube.VAO, modelLoc, lightModel, checkerboard);     // draw the light source, looks a bit buggy for now
+        glUniform3fv(lightPosLoc, 1, glm::value_ptr(lightPos));
+        glUniform3fv(lightColorLoc, 1, glm::value_ptr(lightColor));
 
         // test cube
         glm::mat4 testCube = glm::mat4(1.0f);
@@ -163,6 +132,15 @@ int main()
         glUniform3f(objectColorLoc, 0.7f, 0.7f, 0.7f);
         drawClosedRoom(cube.VAO, modelLoc, checkerboard);
 
+
+        // Draw lamp marker
+        glUseProgram(lampShaderProgram);
+
+        glUniformMatrix4fv(lampViewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(lampProjectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+        drawCube(cube.VAO, lampModelLoc, lightModel);
+
         glfwSwapBuffers(window);
         glfwPollEvents();
 
@@ -173,7 +151,9 @@ int main()
 
     deleteCubeMesh(cube);
     deleteSphereMesh(sphere);
+
     glDeleteProgram(shaderProgram);
+    glDeleteProgram(lampShaderProgram);
 
     glfwTerminate();
     return 0;

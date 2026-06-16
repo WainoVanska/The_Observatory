@@ -2,7 +2,7 @@
 
 FreeCamera::FreeCamera()
 {
-    cameraPos = glm::vec3(0.0f, 1.0f, 0.0f);         // the place in 3D space where the camera is located 
+    cameraPos = glm::vec3(0.0f, 1.5f, 3.0f);         // the place in 3D space where the camera is located 
     cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
     cameraRight = glm::vec3(1.0f, 0.0f, 0.0f);
 
@@ -11,6 +11,7 @@ FreeCamera::FreeCamera()
     cameraSpeed = 0.01f;        // sensitivity of the mouse
     sensitivity = 0.05f;
 
+    bool firstMouse;
     lastMousePosX = 0.0f;
     lastMousePosY = 0.0f;
 }
@@ -48,6 +49,13 @@ void FreeCamera::update(GLFWwindow* window)
 
     glfwGetCursorPos(window, &mousePosX, &mousePosY);
 
+    if (firstMouse)
+    {
+        lastMousePosX = mousePosX;
+        lastMousePosY = mousePosY;
+        firstMouse = false;
+    }
+
     float mouseOffsetX = mousePosX - lastMousePosX;
     float mouseOffsetY = mousePosY - lastMousePosY;
 
@@ -56,6 +64,12 @@ void FreeCamera::update(GLFWwindow* window)
 
     yaw += mouseOffsetX * sensitivity;
     pitch -= mouseOffsetY * sensitivity;
+
+    if (pitch > 89.0f)
+        pitch = 89.0f;
+
+    if (pitch < -89.0f)
+        pitch = -89.0f;
 
     //converts the mouse's x and y values to angles --> then make them direction vectors
     cameraFront.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
