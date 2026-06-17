@@ -14,6 +14,7 @@
 #include "../common/light_controller.h"
 #include "../common/shader.h"
 #include "../common/window.h"
+#include "../common/material.h"
 
 int main()
 {
@@ -48,17 +49,19 @@ int main()
         "src/week09/lamp_fragment.glsl"
     );
 
-    // textures
     GLuint checkerboard = loadTexture("assets/textures/checkerboard.png");
 
     CubeMesh cube = createCubeMesh();    
     SphereMesh sphere = createSphereMesh();
 
+    Material dullOrange = createDullOrangeMaterial();
+    Material shinyBlue = createShinyBlueMaterial();
+    Material matteGray = createMatteGrayMaterial();
+
     GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
     GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
     GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
 
-    GLuint objectColorLoc = glGetUniformLocation(shaderProgram, "objectColor");
     GLuint viewPosLoc = glGetUniformLocation(shaderProgram, "viewPos");
 
     GLuint lightPosLoc = glGetUniformLocation(shaderProgram, "lightPos");
@@ -67,6 +70,8 @@ int main()
     GLuint lampModelLoc = glGetUniformLocation(lampShaderProgram, "model");
     GLuint lampViewLoc = glGetUniformLocation(lampShaderProgram, "view");
     GLuint lampProjectionLoc = glGetUniformLocation(lampShaderProgram, "projection");
+
+    GLuint shininessLoc = glGetUniformLocation(shaderProgram, "shininess");
 
     while (!glfwWindowShouldClose(window))
     {
@@ -88,6 +93,8 @@ int main()
         // Draw lit objects
         glUseProgram(shaderProgram);
 
+        glUniform1f(shininessLoc, 64.0f);
+
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -99,18 +106,18 @@ int main()
         glm::mat4 testCube = glm::mat4(1.0f);
         testCube = glm::translate(testCube, glm::vec3(-0.2f, -0.6f, 0.0f));
 
-        glUniform3f(objectColorLoc, 0.9f, 0.4f, 0.2f);
+        setMaterial(shaderProgram, dullOrange);
         drawTexturedCube(cube.VAO, modelLoc, testCube, checkerboard);
 
         // test sphere
         glm::mat4 testSphere = glm::mat4(1.0f);
         testSphere = glm::translate(testSphere, glm::vec3(0.8f, -0.4f, 0.0f));
 
-        glUniform3f(objectColorLoc, 0.2f, 0.5f, 1.0f);
+        setMaterial(shaderProgram, shinyBlue);
         drawSphere(sphere, modelLoc, testSphere);
 
         // room
-        glUniform3f(objectColorLoc, 0.7f, 0.7f, 0.7f);
+        setMaterial(shaderProgram, matteGray);
         drawClosedRoom(cube.VAO, modelLoc, checkerboard);
 
 

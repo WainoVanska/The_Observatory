@@ -10,6 +10,7 @@
 
 - since the sphere has more normals for the light to process, it looks way smoother (flat normals vs. smooth normals)
 
+- the difference between Phong and Blinn-Phong reflection (reflection vector vs. halfway vector)
 
 ## I struggled:
 
@@ -18,6 +19,8 @@
 ![Poster experiment](../learning_log_images/lighting_debug.png)
 
 - with getting the surfaces reflect in a realistic way with moving light source. When you start moving the light source, it's easy to see that in some parts of the walls they reflection is either too bright or dim.
+
+- making the sphere, it was to think of an implementation for this, ring implementation worked eventually with help from AI
 
 ## Thoughts:
 
