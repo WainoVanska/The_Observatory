@@ -22,7 +22,7 @@ int main()
     const int windowWidth = 800;
     const int windowHeight = 600;
 
-    GLFWwindow* window = createWindow(windowWidth, windowHeight, "W9");
+    GLFWwindow* window = createWindow(windowWidth, windowHeight, "W9-W11");
 
     if (!window) {
         return -1;
@@ -66,26 +66,59 @@ int main()
 
     GLuint lightPosLoc = glGetUniformLocation(shaderProgram, "lightPos");
     GLuint lightColorLoc = glGetUniformLocation(shaderProgram, "lightColor");
+    GLuint secondLightPosLoc = glGetUniformLocation(shaderProgram, "secondLightPos");
+    GLuint secondLightColorLoc = glGetUniformLocation(shaderProgram, "secondLightColor");
 
     GLuint lampModelLoc = glGetUniformLocation(lampShaderProgram, "model");
     GLuint lampViewLoc = glGetUniformLocation(lampShaderProgram, "view");
     GLuint lampProjectionLoc = glGetUniformLocation(lampShaderProgram, "projection");
+    GLuint lampColorLoc = glGetUniformLocation(lampShaderProgram, "lampColor");
 
-    GLuint shininessLoc = glGetUniformLocation(shaderProgram, "shininess");
+    GLuint light1EnabledLoc = glGetUniformLocation(shaderProgram, "light1Enabled");
+    GLuint light2EnabledLoc = glGetUniformLocation(shaderProgram, "light2Enabled");
+
+    bool light1Enabled = true;
+    bool light2Enabled = true;
+
+    bool key1WasPressed = false;
+    bool key2WasPressed = false;
 
     while (!glfwWindowShouldClose(window))
     {
         camera.update(window);
         lightController.update(window);
 
+        bool key1IsPressed = glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS;
+        bool key2IsPressed = glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS;
+
+        if (key1IsPressed && !key1WasPressed)
+        {
+            light1Enabled = !light1Enabled;
+        }
+
+        if (key2IsPressed && !key2WasPressed)
+        {
+            light2Enabled = !light2Enabled;
+        }
+
+        key1WasPressed = key1IsPressed;
+        key2WasPressed = key2IsPressed;
+
         glm::mat4 view = camera.getViewMatrix();
 
         glm::vec3 lightPos = lightController.getPosition();
         glm::vec3 lightColor(1.25f, 1.25f, 1.25f);
 
+        glm::vec3 secondLightPos(-2.0f, 2.2f, -2.0f);
+        glm::vec3 secondLightColor(0.3f, 0.5f, 1.0f);
+
         glm::mat4 lightModel = glm::mat4(1.0f);
         lightModel = glm::translate(lightModel, lightPos);
         lightModel = glm::scale(lightModel, glm::vec3(0.15f));
+
+        glm::mat4 secondLightModel = glm::mat4(1.0f);
+        secondLightModel = glm::translate(secondLightModel, secondLightPos);
+        secondLightModel = glm::scale(secondLightModel, glm::vec3(0.15f));
 
         glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -93,14 +126,19 @@ int main()
         // Draw lit objects
         glUseProgram(shaderProgram);
 
-        glUniform1f(shininessLoc, 64.0f);
+        glUniform1i(light1EnabledLoc, light1Enabled);
+        glUniform1i(light2EnabledLoc, light2Enabled);
 
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
         glUniform3fv(viewPosLoc, 1, glm::value_ptr(camera.getPosition()));
+
         glUniform3fv(lightPosLoc, 1, glm::value_ptr(lightPos));
         glUniform3fv(lightColorLoc, 1, glm::value_ptr(lightColor));
+
+        glUniform3fv(secondLightPosLoc, 1, glm::value_ptr(secondLightPos));
+        glUniform3fv(secondLightColorLoc, 1, glm::value_ptr(secondLightColor));
 
         // test cube
         glm::mat4 testCube = glm::mat4(1.0f);
@@ -127,7 +165,19 @@ int main()
         glUniformMatrix4fv(lampViewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(lampProjectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-        drawCube(cube.VAO, lampModelLoc, lightModel);
+        // first movable lamp
+        if (light1Enabled)
+        {
+            glUniform3f(lampColorLoc, 1.0f, 1.0f, 0.3f);
+            drawCube(cube.VAO, lampModelLoc, lightModel);
+        }
+
+        // second fixed lamp
+        if (light2Enabled)
+        {
+            glUniform3f(lampColorLoc, 0.3f, 0.5f, 1.0f);
+            drawCube(cube.VAO, lampModelLoc, secondLightModel);
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
