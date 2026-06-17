@@ -149,6 +149,7 @@
     <ClCompile Include="src\common\texture.cpp" />
     <ClCompile Include="src\common\window.cpp" />
     <ClCompile Include="src\week09\main.cpp" />
+    <ClCompile Include="src\week09\week09_scene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\common\character.h" />
@@ -162,6 +163,7 @@
     <ClInclude Include="src\common\skybox.h" />
     <ClInclude Include="src\common\sphere.h" />
     <ClInclude Include="src\common\texture.h" />
+    <ClInclude Include="src\week09\week09_scene.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
