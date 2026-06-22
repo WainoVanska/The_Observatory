@@ -72,7 +72,7 @@ vec3 calculatePointLight(
     vec3 ambient = ambientStrength * currentLightColor * baseColor;
 
     // specular, Blinn-Phong version
-    float specularStrength = 0.2;
+    float specularStrength = 1.0;
     vec3 halfwayDir = normalize(lightDir + viewDir);
 
     float spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);

@@ -6,6 +6,11 @@
 
 ![Poster experiment](../learning_log_images/debug_visualizer_normals.png)
 
+- added diffuse and specular lighting for textures, so that you can have a specularity map, where some part of the material is shiny while other parts aren't
+
+![Poster experiment](../learning_log_images/texture_lighting_specular.png)
+
+
 ## I struggled:
 
 
