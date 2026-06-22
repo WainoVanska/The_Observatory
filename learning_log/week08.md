@@ -4,11 +4,13 @@
 
 - made a visualizer for the normals with AI to help understand where all the normals point (+X -> Red, +Y -> Green, +Z -> Blue etc..) (from [-1, 1]). Pressing N flips between debug and regular view in the scene.
 
-![Poster experiment](../learning_log_images/debug_visualizer_normals.png)
-
 - added diffuse and specular lighting for textures, so that you can have a specularity map, where some part of the material is shiny while other parts aren't
 
-![Poster experiment](../learning_log_images/texture_lighting_specular.png)
+![Poster experiment](../learning_log_images/week_8_stuff.png)
+
+- added a flashlight light source mounted to the FPS POV that can be turned on/off by pressing F
+
+![Poster experiment](../learning_log_images/flashlight_test_2.png)
 
 
 ## I struggled:
