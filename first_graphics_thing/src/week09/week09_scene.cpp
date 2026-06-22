@@ -25,8 +25,8 @@ void Week09Scene::init()
     );
 
     modelShaderProgram = createShaderProgram(
-        "src/week13/model_vertex.glsl",
-        "src/week13/model_fragment.glsl"
+        "src/week09/model_vertex.glsl",
+        "src/week09/model_fragment.glsl"
     );
 
     containerTexture = loadTexture("assets/textures/container.png");
@@ -412,27 +412,24 @@ void Week09Scene::drawBackpack(
 
     glm::mat4 backpackModel = glm::mat4(1.0f);
 
-    // Put it in front of the camera / inside the room
     backpackModel = glm::translate(
         backpackModel,
-        glm::vec3(0.0f, -1.0f, -2.0f)
+        glm::vec3(-1.0f, -0.5f, 0.0f)
     );
 
-    // Rotate it so we see the front/back instead of the thin side
     backpackModel = glm::rotate(
         backpackModel,
         glm::radians(90.0f),
         glm::vec3(0.0f, 1.0f, 0.0f)
     );
 
-    // Make it much smaller
     backpackModel = glm::scale(
         backpackModel,
-        glm::vec3(0.03f)
+        glm::vec3(0.2f)
     );
 
     glUniformMatrix4fv(
-        glGetUniformLocation(modelShaderProgram, "model"),
+        modelUniforms.model,
         1,
         GL_FALSE,
         glm::value_ptr(backpackModel)
