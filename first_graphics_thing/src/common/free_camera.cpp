@@ -92,3 +92,8 @@ glm::vec3 FreeCamera::getPosition() const
 {
     return cameraPos;
 }
+
+glm::vec3 FreeCamera::getFront() const
+{
+    return cameraFront;
+}

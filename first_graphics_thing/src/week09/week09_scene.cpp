@@ -57,6 +57,12 @@ void Week09Scene::init()
     normalDebugUniforms.view = glGetUniformLocation(normalDebugShaderProgram, "view");
     normalDebugUniforms.projection = glGetUniformLocation(normalDebugShaderProgram, "projection");
 
+    lightingUniforms.flashlightPos = glGetUniformLocation(shaderProgram, "flashlightPos");
+    lightingUniforms.flashlightDir = glGetUniformLocation(shaderProgram, "flashlightDir");
+    lightingUniforms.flashlightEnabled = glGetUniformLocation(shaderProgram, "flashlightEnabled");
+    lightingUniforms.flashlightCutOff = glGetUniformLocation(shaderProgram, "flashlightCutOff");
+    lightingUniforms.flashlightOuterCutOff = glGetUniformLocation(shaderProgram, "flashlightOuterCutOff");
+
 }
 
 void Week09Scene::handleInput(GLFWwindow* window)
@@ -81,6 +87,14 @@ void Week09Scene::handleInput(GLFWwindow* window)
         normalDebugEnabled = !normalDebugEnabled;
     }
 
+    bool keyFIsPressed = glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS;
+
+    if (keyFIsPressed && !keyFWasPressed)
+    {
+        flashlightEnabled = !flashlightEnabled;
+    }
+
+    keyFWasPressed = keyFIsPressed;
     keyNWasPressed = keyNIsPressed;
     key1WasPressed = key1IsPressed;
     key2WasPressed = key2IsPressed;
@@ -90,7 +104,8 @@ void Week09Scene::draw(
     const glm::mat4& view,
     const glm::mat4& projection,
     const glm::vec3& cameraPos,
-    const glm::vec3& movableLightPos
+    const glm::vec3& movableLightPos,
+    const glm::vec3& cameraFront
 )
 {
     glm::vec3 lightPos = movableLightPos;
@@ -173,6 +188,34 @@ void Week09Scene::draw(
         glm::value_ptr(secondLightColor)
     );
 
+    // draw flashlight uniforms
+    glUniform3fv(
+        lightingUniforms.flashlightPos,
+        1,
+        glm::value_ptr(cameraPos)
+    );
+
+    glUniform3fv(
+        lightingUniforms.flashlightDir,
+        1,
+        glm::value_ptr(cameraFront)
+    );
+
+    glUniform1i(
+        lightingUniforms.flashlightEnabled,
+        flashlightEnabled
+    );
+
+    glUniform1f(
+        lightingUniforms.flashlightCutOff,
+        glm::cos(glm::radians(10.0f))
+    );
+
+    glUniform1f(
+        lightingUniforms.flashlightOuterCutOff,
+        glm::cos(glm::radians(28.0f))
+    );
+
     drawLitObjects();
 
     // Draw lamp markers
@@ -201,7 +244,6 @@ void Week09Scene::draw(
     {
         drawLampMarker(secondLightPos, glm::vec3(0.3f, 0.5f, 1.0f));
     }
-
 
 }
 

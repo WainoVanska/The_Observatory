@@ -20,6 +20,7 @@ public:
         const glm::mat4& view,
         const glm::mat4& projection,
         const glm::vec3& cameraPos,
+        const glm::vec3& cameraFront,
         const glm::vec3& movableLightPos
     );
 
@@ -40,6 +41,12 @@ private:
 
         GLuint light1Enabled;
         GLuint light2Enabled;
+
+        GLuint flashlightPos;
+        GLuint flashlightDir;
+        GLuint flashlightEnabled;
+        GLuint flashlightCutOff;
+        GLuint flashlightOuterCutOff;
     };
 
     struct LampShaderUniforms
@@ -88,4 +95,6 @@ private:
     bool key1WasPressed = false;
     bool key2WasPressed = false;
     bool keyNWasPressed = false;
+    bool flashlightEnabled = false;
+    bool keyFWasPressed = false;
 };

@@ -12,6 +12,7 @@ public:
     glm::vec3 cameraFront;
     glm::vec3 cameraRight;
     glm::vec3 getPosition() const;
+    glm::vec3 getFront() const;
     bool firstMouse;
 
     float yaw;
