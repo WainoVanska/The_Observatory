@@ -177,6 +177,23 @@ void drawCubeWithUVs(
     drawCube(cube.VAO, modelLoc, model);
 }
 
+void drawTexturedCubeWithSpecularMap(
+    GLuint VAO,
+    GLuint modelLoc,
+    const glm::mat4& model,
+    GLuint diffuseTexture,
+    GLuint specularTexture
+)
+{
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, diffuseTexture);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, specularTexture);
+
+    drawCube(VAO, modelLoc, model);
+}
+
 void drawSkyboxCube(const CubeMesh& cube)
 {
     glBindVertexArray(cube.VAO);

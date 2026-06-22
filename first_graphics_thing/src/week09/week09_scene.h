@@ -50,13 +50,24 @@ private:
         GLuint color;
     };
 
+    struct NormalDebugShaderUniforms
+    {
+        GLuint model;
+        GLuint view;
+        GLuint projection;
+    };
+
     void drawLitObjects();
+    void drawNormalDebugObjects();
     void drawLampMarker(const glm::vec3& position, const glm::vec3& color);
 
 private:
     GLuint shaderProgram = 0;
     GLuint lampShaderProgram = 0;
-    GLuint checkerboard = 0;
+    GLuint normalDebugShaderProgram = 0;
+
+    GLuint containerTexture = 0;
+    GLuint containerSpecularTexture = 0;
 
     CubeMesh cube{};
     SphereMesh sphere{};
@@ -64,13 +75,17 @@ private:
     Material dullOrange{};
     Material shinyBlue{};
     Material matteGray{};
+    Material texturedMaterial{};
 
     LightingShaderUniforms lightingUniforms{};
     LampShaderUniforms lampUniforms{};
+    NormalDebugShaderUniforms normalDebugUniforms{};
 
     bool light1Enabled = true;
     bool light2Enabled = true;
+    bool normalDebugEnabled = false;
 
     bool key1WasPressed = false;
     bool key2WasPressed = false;
+    bool keyNWasPressed = false;
 };

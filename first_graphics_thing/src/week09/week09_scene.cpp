@@ -6,6 +6,7 @@
 #include "../common/shader.h"
 #include "../common/texture.h"
 
+
 void Week09Scene::init()
 {
     shaderProgram = createShaderProgram(
@@ -18,7 +19,13 @@ void Week09Scene::init()
         "src/week09/lamp_fragment.glsl"
     );
 
-    checkerboard = loadTexture("assets/textures/checkerboard.png");
+    normalDebugShaderProgram = createShaderProgram(
+        "src/week09/vertex.glsl",
+        "src/week09/normal_debug_fragment.glsl"
+    );
+
+    containerTexture = loadTexture("assets/textures/container.png");
+    containerSpecularTexture = loadTexture("assets/textures/container_specular.png");
 
     cube = createCubeMesh();
     sphere = createSphereMesh();
@@ -26,6 +33,7 @@ void Week09Scene::init()
     dullOrange = createDullOrangeMaterial();
     shinyBlue = createShinyBlueMaterial();
     matteGray = createMatteGrayMaterial();
+    texturedMaterial = createTexturedMaterial();
 
     lightingUniforms.model = glGetUniformLocation(shaderProgram, "model");
     lightingUniforms.view = glGetUniformLocation(shaderProgram, "view");
@@ -44,12 +52,18 @@ void Week09Scene::init()
     lampUniforms.view = glGetUniformLocation(lampShaderProgram, "view");
     lampUniforms.projection = glGetUniformLocation(lampShaderProgram, "projection");
     lampUniforms.color = glGetUniformLocation(lampShaderProgram, "lampColor");
+
+    normalDebugUniforms.model = glGetUniformLocation(normalDebugShaderProgram, "model");
+    normalDebugUniforms.view = glGetUniformLocation(normalDebugShaderProgram, "view");
+    normalDebugUniforms.projection = glGetUniformLocation(normalDebugShaderProgram, "projection");
+
 }
 
 void Week09Scene::handleInput(GLFWwindow* window)
 {
     bool key1IsPressed = glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS;
     bool key2IsPressed = glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS;
+    bool keyNIsPressed = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
 
     if (key1IsPressed && !key1WasPressed)
     {
@@ -61,6 +75,13 @@ void Week09Scene::handleInput(GLFWwindow* window)
         light2Enabled = !light2Enabled;
     }
 
+
+    if (keyNIsPressed && !keyNWasPressed)
+    {
+        normalDebugEnabled = !normalDebugEnabled;
+    }
+
+    keyNWasPressed = keyNIsPressed;
     key1WasPressed = key1IsPressed;
     key2WasPressed = key2IsPressed;
 }
@@ -77,6 +98,30 @@ void Week09Scene::draw(
 
     glm::vec3 secondLightPos(-2.0f, 2.2f, -2.0f);
     glm::vec3 secondLightColor(0.3f, 0.5f, 1.0f);
+
+
+    if (normalDebugEnabled)
+    {
+        glUseProgram(normalDebugShaderProgram);
+
+        glUniformMatrix4fv(
+            normalDebugUniforms.view,
+            1,
+            GL_FALSE,
+            glm::value_ptr(view)
+        );
+
+        glUniformMatrix4fv(
+            normalDebugUniforms.projection,
+            1,
+            GL_FALSE,
+            glm::value_ptr(projection)
+        );
+
+        drawNormalDebugObjects();
+
+        return;
+    }
 
     // Draw lit objects
     glUseProgram(shaderProgram);
@@ -156,6 +201,8 @@ void Week09Scene::draw(
     {
         drawLampMarker(secondLightPos, glm::vec3(0.3f, 0.5f, 1.0f));
     }
+
+
 }
 
 void Week09Scene::drawLitObjects()
@@ -164,12 +211,13 @@ void Week09Scene::drawLitObjects()
     glm::mat4 testCube = glm::mat4(1.0f);
     testCube = glm::translate(testCube, glm::vec3(-0.2f, -0.6f, 0.0f));
 
-    setMaterial(shaderProgram, dullOrange);
-    drawTexturedCube(
+    setMaterial(shaderProgram, texturedMaterial);
+    drawTexturedCubeWithSpecularMap(
         cube.VAO,
         lightingUniforms.model,
         testCube,
-        checkerboard
+        containerTexture,
+        containerSpecularTexture
     );
 
     // test sphere
@@ -188,7 +236,38 @@ void Week09Scene::drawLitObjects()
     drawClosedRoom(
         cube.VAO,
         lightingUniforms.model,
-        checkerboard
+        containerTexture
+    );
+}
+
+void Week09Scene::drawNormalDebugObjects()
+{
+    // test cube
+    glm::mat4 testCube = glm::mat4(1.0f);
+    testCube = glm::translate(testCube, glm::vec3(-0.2f, -0.6f, 0.0f));
+
+    drawTexturedCube(
+        cube.VAO,
+        normalDebugUniforms.model,
+        testCube,
+        containerTexture
+    );
+
+    // test sphere
+    glm::mat4 testSphere = glm::mat4(1.0f);
+    testSphere = glm::translate(testSphere, glm::vec3(0.8f, -0.4f, 0.0f));
+
+    drawSphere(
+        sphere,
+        normalDebugUniforms.model,
+        testSphere
+    );
+
+    // room
+    drawClosedRoom(
+        cube.VAO,
+        normalDebugUniforms.model,
+        containerTexture
     );
 }
 
@@ -219,8 +298,10 @@ void Week09Scene::cleanup()
     deleteCubeMesh(cube);
     deleteSphereMesh(sphere);
 
-    glDeleteTextures(1, &checkerboard);
+    glDeleteTextures(1, &containerTexture);
+    glDeleteTextures(1, &containerSpecularTexture);
 
     glDeleteProgram(shaderProgram);
     glDeleteProgram(lampShaderProgram);
+    glDeleteProgram(normalDebugShaderProgram);
 }

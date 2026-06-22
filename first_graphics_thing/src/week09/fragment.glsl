@@ -17,13 +17,39 @@ uniform bool light1Enabled;
 uniform bool light2Enabled;
 
 struct Material {
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
+    sampler2D diffuseMap;
+    sampler2D specularMap;
+
+    vec3 diffuseColor;
+    vec3 specularColor;
+
     float shininess;
+
+    bool useDiffuseMap;
+    bool useSpecularMap;
 };
 
 uniform Material material;
+
+vec3 getBaseColor()
+{
+    if (material.useDiffuseMap)
+    {
+        return texture(material.diffuseMap, ourTexCoord).rgb;
+    }
+
+    return material.diffuseColor;
+}
+
+vec3 getSpecularColor()
+{
+    if (material.useSpecularMap)
+    {
+        return texture(material.specularMap, ourTexCoord).rgb;
+    }
+
+    return material.specularColor;
+}
 
 vec3 calculatePointLight(
     vec3 currentLightPos,
@@ -32,22 +58,25 @@ vec3 calculatePointLight(
     vec3 viewDir
 )
 {
+    vec3 baseColor = getBaseColor();
+    vec3 specularColor = getSpecularColor();
+
     vec3 lightDir = normalize(currentLightPos - FragPos);
 
     // diffuse
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * currentLightColor * material.diffuse;
+    vec3 diffuse = diff * currentLightColor * baseColor;
 
-    // ambient
+    //ambience
     float ambientStrength = 0.12;
-    vec3 ambient = ambientStrength * currentLightColor * material.ambient;
+    vec3 ambient = ambientStrength * currentLightColor * baseColor;
 
     // specular, Blinn-Phong version
     float specularStrength = 0.2;
     vec3 halfwayDir = normalize(lightDir + viewDir);
 
     float spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
-    vec3 specular = specularStrength * spec * currentLightColor * material.specular;
+    vec3 specular = specularStrength * spec * currentLightColor * specularColor;
 
     // attenuation / distance falloff
     float distanceToLight = length(currentLightPos - FragPos);

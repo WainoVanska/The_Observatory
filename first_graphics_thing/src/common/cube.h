@@ -24,6 +24,14 @@ void drawCubeWithUVs(
     const BoxUVs& uvs
 );
 
+void drawTexturedCubeWithSpecularMap(
+    GLuint VAO,
+    GLuint modelLoc,
+    const glm::mat4& model,
+    GLuint diffuseTexture,
+    GLuint specularTexture
+);
+
 void drawSkyboxCube(const CubeMesh& cube);
 
 void drawClosedRoom(GLuint VAO, GLuint modelLoc, GLuint texture);
