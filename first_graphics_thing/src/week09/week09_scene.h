@@ -8,6 +8,7 @@
 #include "../common/cube.h"
 #include "../common/sphere.h"
 #include "../common/material.h"
+#include "../common/model.h"
 
 class Week09Scene
 {
@@ -64,14 +65,33 @@ private:
         GLuint projection;
     };
 
+    struct ModelShaderUniforms
+    {
+        GLuint model;
+        GLuint view;
+        GLuint projection;
+        GLuint viewPos;
+        GLuint lightPos;
+        GLuint lightColor;
+    };
+
     void drawLitObjects();
     void drawNormalDebugObjects();
     void drawLampMarker(const glm::vec3& position, const glm::vec3& color);
+    void drawBackpack(
+        const glm::mat4& view,
+        const glm::mat4& projection,
+        const glm::vec3& cameraPos,
+        const glm::vec3& lightPos
+    );
 
 private:
     GLuint shaderProgram = 0;
     GLuint lampShaderProgram = 0;
     GLuint normalDebugShaderProgram = 0;
+
+    GLuint modelShaderProgram = 0;
+    Model* backpack = nullptr;
 
     GLuint containerTexture = 0;
     GLuint containerSpecularTexture = 0;
@@ -87,6 +107,7 @@ private:
     LightingShaderUniforms lightingUniforms{};
     LampShaderUniforms lampUniforms{};
     NormalDebugShaderUniforms normalDebugUniforms{};
+    ModelShaderUniforms modelUniforms{};
 
     bool light1Enabled = true;
     bool light2Enabled = true;

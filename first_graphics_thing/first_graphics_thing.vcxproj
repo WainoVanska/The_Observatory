@@ -143,6 +143,8 @@
     <ClCompile Include="src\common\free_camera.cpp" />
     <ClCompile Include="src\common\light_controller.cpp" />
     <ClCompile Include="src\common\material.cpp" />
+    <ClCompile Include="src\common\mesh.cpp" />
+    <ClCompile Include="src\common\model.cpp" />
     <ClCompile Include="src\common\shader.cpp" />
     <ClCompile Include="src\common\skybox.cpp" />
     <ClCompile Include="src\common\sphere.cpp" />
@@ -159,6 +161,8 @@
     <ClInclude Include="src\common\free_camera.h" />
     <ClInclude Include="src\common\light_controller.h" />
     <ClInclude Include="src\common\material.h" />
+    <ClInclude Include="src\common\mesh.h" />
+    <ClInclude Include="src\common\model.h" />
     <ClInclude Include="src\common\shader.h" />
     <ClInclude Include="src\common\skybox.h" />
     <ClInclude Include="src\common\sphere.h" />

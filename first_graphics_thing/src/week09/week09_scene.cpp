@@ -24,8 +24,15 @@ void Week09Scene::init()
         "src/week09/normal_debug_fragment.glsl"
     );
 
+    modelShaderProgram = createShaderProgram(
+        "src/week13/model_vertex.glsl",
+        "src/week13/model_fragment.glsl"
+    );
+
     containerTexture = loadTexture("assets/textures/container.png");
     containerSpecularTexture = loadTexture("assets/textures/container_specular.png");
+
+    backpack = new Model("assets/models/backpack/backpack.obj");
 
     cube = createCubeMesh();
     sphere = createSphereMesh();
@@ -63,6 +70,19 @@ void Week09Scene::init()
     lightingUniforms.flashlightCutOff = glGetUniformLocation(shaderProgram, "flashlightCutOff");
     lightingUniforms.flashlightOuterCutOff = glGetUniformLocation(shaderProgram, "flashlightOuterCutOff");
 
+    modelUniforms.model = glGetUniformLocation(modelShaderProgram, "model");
+    modelUniforms.view = glGetUniformLocation(modelShaderProgram, "view");
+    modelUniforms.projection = glGetUniformLocation(modelShaderProgram, "projection");
+    modelUniforms.viewPos = glGetUniformLocation(modelShaderProgram, "viewPos");
+    modelUniforms.lightPos = glGetUniformLocation(modelShaderProgram, "lightPos");
+    modelUniforms.lightColor = glGetUniformLocation(modelShaderProgram, "lightColor");
+
+    glUseProgram(modelShaderProgram);
+
+    glUniform1f(
+        glGetUniformLocation(modelShaderProgram, "material.shininess"),
+        32.0f
+    );
 }
 
 void Week09Scene::handleInput(GLFWwindow* window)
@@ -218,6 +238,13 @@ void Week09Scene::draw(
 
     drawLitObjects();
 
+    drawBackpack(
+        view,
+        projection,
+        cameraPos,
+        lightPos
+    );
+
     // Draw lamp markers
     glUseProgram(lampShaderProgram);
 
@@ -335,6 +362,85 @@ void Week09Scene::drawLampMarker(
     );
 }
 
+void Week09Scene::drawBackpack(
+    const glm::mat4& view,
+    const glm::mat4& projection,
+    const glm::vec3& cameraPos,
+    const glm::vec3& lightPos
+)
+{
+    if (!backpack)
+    {
+        return;
+    }
+
+    glUseProgram(modelShaderProgram);
+
+    glUniformMatrix4fv(
+        modelUniforms.view,
+        1,
+        GL_FALSE,
+        glm::value_ptr(view)
+    );
+
+    glUniformMatrix4fv(
+        modelUniforms.projection,
+        1,
+        GL_FALSE,
+        glm::value_ptr(projection)
+    );
+
+    glUniform3fv(
+        modelUniforms.viewPos,
+        1,
+        glm::value_ptr(cameraPos)
+    );
+
+    glUniform3fv(
+        modelUniforms.lightPos,
+        1,
+        glm::value_ptr(lightPos)
+    );
+
+    glm::vec3 modelLightColor(1.0f, 1.0f, 1.0f);
+
+    glUniform3fv(
+        modelUniforms.lightColor,
+        1,
+        glm::value_ptr(modelLightColor)
+    );
+
+    glm::mat4 backpackModel = glm::mat4(1.0f);
+
+    // Put it in front of the camera / inside the room
+    backpackModel = glm::translate(
+        backpackModel,
+        glm::vec3(0.0f, -1.0f, -2.0f)
+    );
+
+    // Rotate it so we see the front/back instead of the thin side
+    backpackModel = glm::rotate(
+        backpackModel,
+        glm::radians(90.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+
+    // Make it much smaller
+    backpackModel = glm::scale(
+        backpackModel,
+        glm::vec3(0.03f)
+    );
+
+    glUniformMatrix4fv(
+        glGetUniformLocation(modelShaderProgram, "model"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(backpackModel)
+    );
+
+    backpack->draw(modelShaderProgram);
+}
+
 void Week09Scene::cleanup()
 {
     deleteCubeMesh(cube);
@@ -346,4 +452,8 @@ void Week09Scene::cleanup()
     glDeleteProgram(shaderProgram);
     glDeleteProgram(lampShaderProgram);
     glDeleteProgram(normalDebugShaderProgram);
+    glDeleteProgram(modelShaderProgram);
+
+    delete backpack;
+    backpack = nullptr;
 }

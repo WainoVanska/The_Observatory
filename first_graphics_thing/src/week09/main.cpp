@@ -8,6 +8,10 @@
 #include "../common/light_controller.h"
 #include "../common/window.h"
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #include "week09_scene.h"
 
 int main()
