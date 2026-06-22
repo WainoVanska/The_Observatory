@@ -12,8 +12,14 @@
 
 ![Poster experiment](../learning_log_images/flashlight_test_2.png)
 
+- added Assimp library integration for mesh/model loading and loaded a detailed backpack model
+
+![Poster experiment](../learning_log_images/backpack_different_lights.png)
 
 ## I struggled:
 
+- Implementing the Assimp mesh loading, I didn't understand at first that you have to create completely new shaders for the purpose also. Also even though I followed the tutorial for the model loading (model.cpp and model.h), I didn't understand the Assimp library functions and what we did most of the time
 
 ## Thoughts:
+
+- Again this week I kept on following the LearnOpenGL tutorials and used AI when I got stuck. This workflow turned out to be quite good to get a brief overview about a lot of stuff and saved time from doing a lot of repetitious stuff.

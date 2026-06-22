@@ -71,8 +71,20 @@ private:
         GLuint view;
         GLuint projection;
         GLuint viewPos;
+
         GLuint lightPos;
         GLuint lightColor;
+        GLuint secondLightPos;
+        GLuint secondLightColor;
+
+        GLuint light1Enabled;
+        GLuint light2Enabled;
+
+        GLuint flashlightPos;
+        GLuint flashlightDir;
+        GLuint flashlightEnabled;
+        GLuint flashlightCutOff;
+        GLuint flashlightOuterCutOff;
     };
 
     void drawLitObjects();
@@ -82,7 +94,10 @@ private:
         const glm::mat4& view,
         const glm::mat4& projection,
         const glm::vec3& cameraPos,
-        const glm::vec3& lightPos
+        const glm::vec3& cameraFront,
+        const glm::vec3& lightPos,
+        const glm::vec3& secondLightPos,
+        const glm::vec3& secondLightColor
     );
 
 private:

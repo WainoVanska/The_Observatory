@@ -77,6 +77,18 @@ void Week09Scene::init()
     modelUniforms.lightPos = glGetUniformLocation(modelShaderProgram, "lightPos");
     modelUniforms.lightColor = glGetUniformLocation(modelShaderProgram, "lightColor");
 
+    modelUniforms.secondLightPos = glGetUniformLocation(modelShaderProgram, "secondLightPos");
+    modelUniforms.secondLightColor = glGetUniformLocation(modelShaderProgram, "secondLightColor");
+
+    modelUniforms.light1Enabled = glGetUniformLocation(modelShaderProgram, "light1Enabled");
+    modelUniforms.light2Enabled = glGetUniformLocation(modelShaderProgram, "light2Enabled");
+
+    modelUniforms.flashlightPos = glGetUniformLocation(modelShaderProgram, "flashlightPos");
+    modelUniforms.flashlightDir = glGetUniformLocation(modelShaderProgram, "flashlightDir");
+    modelUniforms.flashlightEnabled = glGetUniformLocation(modelShaderProgram, "flashlightEnabled");
+    modelUniforms.flashlightCutOff = glGetUniformLocation(modelShaderProgram, "flashlightCutOff");
+    modelUniforms.flashlightOuterCutOff = glGetUniformLocation(modelShaderProgram, "flashlightOuterCutOff");
+
     glUseProgram(modelShaderProgram);
 
     glUniform1f(
@@ -242,7 +254,10 @@ void Week09Scene::draw(
         view,
         projection,
         cameraPos,
-        lightPos
+        cameraFront,
+        lightPos,
+        secondLightPos,
+        secondLightColor
     );
 
     // Draw lamp markers
@@ -366,7 +381,10 @@ void Week09Scene::drawBackpack(
     const glm::mat4& view,
     const glm::mat4& projection,
     const glm::vec3& cameraPos,
-    const glm::vec3& lightPos
+    const glm::vec3& cameraFront,
+    const glm::vec3& lightPos,
+    const glm::vec3& secondLightPos,
+    const glm::vec3& secondLightColor
 )
 {
     if (!backpack)
@@ -408,6 +426,55 @@ void Week09Scene::drawBackpack(
         modelUniforms.lightColor,
         1,
         glm::value_ptr(modelLightColor)
+    );
+
+    glUniform3fv(
+        modelUniforms.secondLightPos,
+        1,
+        glm::value_ptr(secondLightPos)
+    );
+
+    glUniform3fv(
+        modelUniforms.secondLightColor,
+        1,
+        glm::value_ptr(secondLightColor)
+    );
+
+    glUniform1i(
+        modelUniforms.light1Enabled,
+        light1Enabled
+    );
+
+    glUniform1i(
+        modelUniforms.light2Enabled,
+        light2Enabled
+    );
+
+    glUniform3fv(
+        modelUniforms.flashlightPos,
+        1,
+        glm::value_ptr(cameraPos)
+    );
+
+    glUniform3fv(
+        modelUniforms.flashlightDir,
+        1,
+        glm::value_ptr(cameraFront)
+    );
+
+    glUniform1i(
+        modelUniforms.flashlightEnabled,
+        flashlightEnabled
+    );
+
+    glUniform1f(
+        modelUniforms.flashlightCutOff,
+        glm::cos(glm::radians(10.0f))
+    );
+
+    glUniform1f(
+        modelUniforms.flashlightOuterCutOff,
+        glm::cos(glm::radians(28.0f))
     );
 
     glm::mat4 backpackModel = glm::mat4(1.0f);

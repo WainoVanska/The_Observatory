@@ -8,7 +8,19 @@ in vec2 TexCoords;
 
 uniform vec3 lightPos;
 uniform vec3 lightColor;
+uniform vec3 secondLightPos;
+uniform vec3 secondLightColor;
 uniform vec3 viewPos;
+
+uniform vec3 flashlightPos;
+uniform vec3 flashlightDir;
+
+uniform bool flashlightEnabled;
+uniform bool light1Enabled;
+uniform bool light2Enabled;
+
+uniform float flashlightCutOff;
+uniform float flashlightOuterCutOff;
 
 struct Material
 {
@@ -19,24 +31,121 @@ struct Material
 
 uniform Material material;
 
-void main()
+vec3 getBaseColor()
 {
-    vec3 baseColor = texture(material.texture_diffuse1, TexCoords).rgb;
-    vec3 specularMap = texture(material.texture_specular1, TexCoords).rgb;
+    return texture(material.texture_diffuse1, TexCoords).rgb;
+}
 
-    vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(lightPos - FragPos);
-    vec3 viewDir = normalize(viewPos - FragPos);
+vec3 getSpecularColor()
+{
+    return texture(material.texture_specular1, TexCoords).rgb;
+}
 
-    float ambientStrength = 0.12;
-    vec3 ambient = ambientStrength * lightColor * baseColor;
+vec3 calculatePointLight(
+    vec3 currentLightPos,
+    vec3 currentLightColor,
+    vec3 norm,
+    vec3 viewDir
+)
+{
+    vec3 baseColor = getBaseColor();
+    vec3 specularColor = getSpecularColor();
+
+    vec3 lightDir = normalize(currentLightPos - FragPos);
 
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * lightColor * baseColor;
+    vec3 diffuse = diff * currentLightColor * baseColor;
+
+    float ambientStrength = 0.12;
+    vec3 ambient = ambientStrength * currentLightColor * baseColor;
 
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
-    vec3 specular = spec * lightColor * specularMap;
+    vec3 specular = spec * currentLightColor * specularColor;
 
-    FragColor = vec4(ambient + diffuse + specular, 1.0);
+    float distanceToLight = length(currentLightPos - FragPos);
+
+    float constant = 1.0;
+    float linear = 0.35;
+    float quadratic = 0.44;
+
+    float attenuation = 1.0 / (
+        constant +
+        linear * distanceToLight +
+        quadratic * distanceToLight * distanceToLight
+    );
+
+    diffuse *= attenuation;
+    specular *= attenuation;
+
+    return ambient + diffuse + specular;
+}
+
+vec3 calculateFlashlight(
+    vec3 norm,
+    vec3 viewDir
+)
+{
+    vec3 baseColor = getBaseColor();
+    vec3 specularColor = getSpecularColor();
+
+    vec3 lightDir = normalize(flashlightPos - FragPos);
+
+    float theta = dot(lightDir, normalize(-flashlightDir));
+    float epsilon = flashlightCutOff - flashlightOuterCutOff;
+    float rawIntensity = clamp((theta - flashlightOuterCutOff) / epsilon, 0.0, 1.0);
+    float intensity = smoothstep(0.0, 1.0, rawIntensity);
+
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 flashlightColor = vec3(2.5, 2.3, 2.0);
+    vec3 diffuse = diff * flashlightColor * baseColor;
+
+    float ambientStrength = 0.001;
+    vec3 ambient = ambientStrength * baseColor;
+
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
+    vec3 specular = 0.7 * spec * flashlightColor * specularColor;
+
+    float distanceToLight = length(flashlightPos - FragPos);
+
+    float constant = 1.0;
+    float linear = 0.25;
+    float quadratic = 0.20;
+
+    float attenuation = 1.0 / (
+        constant +
+        linear * distanceToLight +
+        quadratic * distanceToLight * distanceToLight
+    );
+
+    diffuse *= attenuation * intensity;
+    specular *= attenuation * intensity;
+
+    return ambient + diffuse + specular;
+}
+
+void main()
+{
+    vec3 norm = normalize(Normal);
+    vec3 viewDir = normalize(viewPos - FragPos);
+
+    vec3 result = vec3(0.0);
+
+    if (light1Enabled)
+    {
+        result += calculatePointLight(lightPos, lightColor, norm, viewDir);
+    }
+
+    if (light2Enabled)
+    {
+        result += calculatePointLight(secondLightPos, secondLightColor, norm, viewDir);
+    }
+
+    if (flashlightEnabled)
+    {
+        result += calculateFlashlight(norm, viewDir);
+    }
+
+    FragColor = vec4(result, 1.0);
 }
