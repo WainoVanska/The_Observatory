@@ -12,9 +12,9 @@
 
 ![Poster experiment](../learning_log_images/flashlight_test_2.png)
 
-- added Assimp library integration for mesh/model loading and loaded a detailed backpack model
+- added Assimp library integration for mesh/model loading and loaded a detailed backpack model ( different lights + normals )
 
-![Poster experiment](../learning_log_images/backpack_different_lights.png)
+![Poster experiment](../learning_log_images/backpack_versions.png)
 
 ## I struggled:
 
