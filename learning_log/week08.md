@@ -20,11 +20,15 @@
 
 <img src="../learning_log_images/depth_testing_debug.png" alt="depth test debugger" width="500">
 
+- added stencil testing debugger feature ( toggle with key P)
+
 ## I struggled:
 
 - Implementing the Assimp mesh loading, I didn't understand at first that you have to create completely new shaders for the purpose also. Also even though I followed the tutorial for the model loading (model.cpp and model.h), I didn't understand the Assimp library functions and what we did most of the time.
 
 - Keeping the code clear. At this point I'm starting to have a lot of code and probably I should be refactoring the code so that certain things like the uniforms creations wouldn't be so repetitive. Also same with the debuggers.
+
+- Stencil testing debugger with any kind of mouse or keyboard movement with WASD. For some reason the the outline first starts disappearing partially and then the more you move it completely disappears. I tried to keep depth testing enabled ( instead of disabling it ), but that didn't work. Also tried a few different approaches, but finally gave up. The initial start screen without moving works correctly though when you press P.
 
 ## Thoughts:
 

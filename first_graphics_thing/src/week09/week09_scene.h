@@ -112,6 +112,13 @@ private:
         GLuint flashlightOuterCutOff;
     };
 
+    struct ModelOutlineShaderUniforms
+    {
+        GLuint model;
+        GLuint view;
+        GLuint projection;
+    };
+
     void drawLitObjects();
     void drawNormalDebugObjects();
     glm::mat4 createBackpackModelMatrix() const;
@@ -137,6 +144,13 @@ private:
         const glm::mat4& projection
     );
 
+    glm::mat4 createBackpackOutlineModelMatrix() const;
+
+    void drawBackpackOutline(
+        const glm::mat4& view,
+        const glm::mat4& projection
+    );
+
 private:
     GLuint shaderProgram = 0;
     GLuint lampShaderProgram = 0;
@@ -147,6 +161,8 @@ private:
 
     GLuint depthDebugShaderProgram = 0;
     GLuint modelDepthDebugShaderProgram = 0;
+
+    GLuint modelOutlineShaderProgram = 0;
 
     Model* backpack = nullptr;
 
@@ -168,18 +184,20 @@ private:
     ModelShaderUniforms modelUniforms{};
     DepthDebugShaderUniforms depthDebugUniforms{};
     ModelDepthDebugShaderUniforms modelDepthDebugUniforms{};
+    ModelOutlineShaderUniforms modelOutlineUniforms{};
 
 
     bool light1Enabled = true;
     bool light2Enabled = true;
     bool normalDebugEnabled = false;
-
     bool depthDebugEnabled = false;
-    bool keyVWasPressed = false;
 
+    bool keyVWasPressed = false;
     bool key1WasPressed = false;
     bool key2WasPressed = false;
     bool keyNWasPressed = false;
     bool flashlightEnabled = false;
     bool keyFWasPressed = false;
+    bool outlineEnabled = false;
+    bool keyPWasPressed = false;
 };

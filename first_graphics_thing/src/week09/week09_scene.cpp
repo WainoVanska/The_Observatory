@@ -44,6 +44,11 @@ void Week09Scene::init()
         "src/week09/depth_debug_fragment.glsl"
     );
 
+    modelOutlineShaderProgram = createShaderProgram(
+        "src/week09/model_vertex.glsl",
+        "src/week09/single_color_fragment.glsl"
+    );
+
     containerTexture = loadTexture("assets/textures/container.png");
     containerSpecularTexture = loadTexture("assets/textures/container_specular.png");
 
@@ -120,6 +125,12 @@ void Week09Scene::init()
     modelUniforms.flashlightCutOff = glGetUniformLocation(modelShaderProgram, "flashlightCutOff");
     modelUniforms.flashlightOuterCutOff = glGetUniformLocation(modelShaderProgram, "flashlightOuterCutOff");
 
+    modelOutlineUniforms.model = glGetUniformLocation(modelOutlineShaderProgram, "model");
+
+    modelOutlineUniforms.view = glGetUniformLocation(modelOutlineShaderProgram, "view");
+
+    modelOutlineUniforms.projection = glGetUniformLocation(modelOutlineShaderProgram, "projection");
+
     glUseProgram(modelShaderProgram);
 
     glUniform1f(
@@ -134,6 +145,7 @@ void Week09Scene::handleInput(GLFWwindow* window)
     bool key2IsPressed = glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS;
     bool keyNIsPressed = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
     bool keyVIsPressed = glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS;
+    bool keyPIsPressed = glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS;
 
     if (key1IsPressed && !key1WasPressed)
     {
@@ -173,11 +185,17 @@ void Week09Scene::handleInput(GLFWwindow* window)
         }
     }
 
+    if (keyPIsPressed && !keyPWasPressed)
+    {
+        outlineEnabled = !outlineEnabled;
+    }
+
     keyVWasPressed = keyVIsPressed;
     keyFWasPressed = keyFIsPressed;
     keyNWasPressed = keyNIsPressed;
     key1WasPressed = key1IsPressed;
     key2WasPressed = key2IsPressed;
+    keyPWasPressed = keyPIsPressed;
 }
 
 void Week09Scene::draw(
@@ -332,17 +350,59 @@ void Week09Scene::draw(
         glm::cos(glm::radians(28.0f))
     );
 
+    // Do not write the room/cube/sphere into stencil
+    glStencilMask(0x00);
+
     drawLitObjects();
 
-    drawBackpack(
-        view,
-        projection,
-        cameraPos,
-        cameraFront,
-        lightPos,
-        secondLightPos,
-        secondLightColor
-    );
+    if (outlineEnabled)
+    {
+        // 1. Draw backpack normally and write value 1 into stencil.
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilMask(0xFF);
+
+        drawBackpack(
+            view,
+            projection,
+            cameraPos,
+            cameraFront,
+            lightPos,
+            secondLightPos,
+            secondLightColor
+        );
+
+        // 2. Draw scaled-up backpack only where stencil is NOT 1.
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);
+
+        drawBackpackOutline(
+            view,
+            projection
+        );
+
+        // 3. Restore normal stencil state.
+        glStencilMask(0xFF);
+        glStencilFunc(GL_ALWAYS, 0, 0xFF);
+    }
+    else
+    {
+        // No outline: draw backpack normally, no stencil writing.
+        glStencilMask(0x00);
+
+        drawBackpack(
+            view,
+            projection,
+            cameraPos,
+            cameraFront,
+            lightPos,
+            secondLightPos,
+            secondLightColor
+        );
+
+        glStencilMask(0xFF);
+    }
+
+    glStencilMask(0x00);
 
     // Draw lamp markers
     glUseProgram(lampShaderProgram);
@@ -371,6 +431,7 @@ void Week09Scene::draw(
         drawLampMarker(secondLightPos, glm::vec3(0.3f, 0.5f, 1.0f));
     }
 
+    glStencilMask(0xFF);
 }
 
 void Week09Scene::drawLitObjects()
@@ -592,6 +653,20 @@ void Week09Scene::drawBackpack(
         glm::cos(glm::radians(28.0f))
     );
 
+    glm::mat4 backpackModel = createBackpackModelMatrix();
+
+    glUniformMatrix4fv(
+        modelUniforms.model,
+        1,
+        GL_FALSE,
+        glm::value_ptr(backpackModel)
+    );
+
+    backpack->draw(modelShaderProgram);
+}
+
+glm::mat4 Week09Scene::createBackpackOutlineModelMatrix() const
+{
     glm::mat4 backpackModel = glm::mat4(1.0f);
 
     backpackModel = glm::translate(
@@ -607,17 +682,10 @@ void Week09Scene::drawBackpack(
 
     backpackModel = glm::scale(
         backpackModel,
-        glm::vec3(0.2f)
+        glm::vec3(0.215f)
     );
 
-    glUniformMatrix4fv(
-        modelUniforms.model,
-        1,
-        GL_FALSE,
-        glm::value_ptr(backpackModel)
-    );
-
-    backpack->draw(modelShaderProgram);
+    return backpackModel;
 }
 
 void Week09Scene::drawBackpackNormalDebug(
@@ -656,6 +724,44 @@ void Week09Scene::drawBackpackNormalDebug(
     );
 
     backpack->draw(modelNormalDebugShaderProgram);
+}
+
+void Week09Scene::drawBackpackOutline(
+    const glm::mat4& view,
+    const glm::mat4& projection
+)
+{
+    if (!backpack)
+    {
+        return;
+    }
+
+    glUseProgram(modelOutlineShaderProgram);
+
+    glUniformMatrix4fv(
+        modelOutlineUniforms.view,
+        1,
+        GL_FALSE,
+        glm::value_ptr(view)
+    );
+
+    glUniformMatrix4fv(
+        modelOutlineUniforms.projection,
+        1,
+        GL_FALSE,
+        glm::value_ptr(projection)
+    );
+
+    glm::mat4 backpackModel = createBackpackOutlineModelMatrix();
+
+    glUniformMatrix4fv(
+        modelOutlineUniforms.model,
+        1,
+        GL_FALSE,
+        glm::value_ptr(backpackModel)
+    );
+
+    backpack->draw(modelOutlineShaderProgram);
 }
 
 void Week09Scene::drawBackpackDepthDebug(
@@ -716,7 +822,7 @@ glm::mat4 Week09Scene::createBackpackModelMatrix() const
 
     backpackModel = glm::scale(
         backpackModel,
-        glm::vec3(0.2f)
+        glm::vec3(0.205f)
     );
 
     return backpackModel;
@@ -737,6 +843,7 @@ void Week09Scene::cleanup()
     glDeleteProgram(modelShaderProgram);
     glDeleteProgram(depthDebugShaderProgram);
     glDeleteProgram(modelDepthDebugShaderProgram);
+    glDeleteProgram(modelOutlineShaderProgram);
 
     delete backpack;
     backpack = nullptr;
