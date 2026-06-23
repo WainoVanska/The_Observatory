@@ -72,6 +72,24 @@ private:
         GLuint projection;
     };
 
+    struct DepthDebugShaderUniforms
+    {
+        GLuint model;
+        GLuint view;
+        GLuint projection;
+        GLuint nearPlane;
+        GLuint farPlane;
+    };
+
+    struct ModelDepthDebugShaderUniforms
+    {
+        GLuint model;
+        GLuint view;
+        GLuint projection;
+        GLuint nearPlane;
+        GLuint farPlane;
+    };
+
     struct ModelShaderUniforms
     {
         GLuint model;
@@ -112,6 +130,13 @@ private:
         const glm::mat4& projection
     );
 
+    void drawDepthDebugObjects();
+
+    void drawBackpackDepthDebug(
+        const glm::mat4& view,
+        const glm::mat4& projection
+    );
+
 private:
     GLuint shaderProgram = 0;
     GLuint lampShaderProgram = 0;
@@ -119,6 +144,9 @@ private:
 
     GLuint modelShaderProgram = 0;
     GLuint modelNormalDebugShaderProgram = 0;
+
+    GLuint depthDebugShaderProgram = 0;
+    GLuint modelDepthDebugShaderProgram = 0;
 
     Model* backpack = nullptr;
 
@@ -138,10 +166,16 @@ private:
     NormalDebugShaderUniforms normalDebugUniforms{};
     ModelNormalDebugShaderUniforms modelNormalDebugUniforms{};
     ModelShaderUniforms modelUniforms{};
+    DepthDebugShaderUniforms depthDebugUniforms{};
+    ModelDepthDebugShaderUniforms modelDepthDebugUniforms{};
+
 
     bool light1Enabled = true;
     bool light2Enabled = true;
     bool normalDebugEnabled = false;
+
+    bool depthDebugEnabled = false;
+    bool keyVWasPressed = false;
 
     bool key1WasPressed = false;
     bool key2WasPressed = false;

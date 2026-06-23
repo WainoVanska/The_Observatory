@@ -16,9 +16,16 @@
 
 ![Poster experiment](../learning_log_images/backpack_versions.png)
 
+- added B&W depth testing debugger
+
+![Poster experiment](../learning_log_images/depth_testing_debug.png)
+
+
 ## I struggled:
 
-- Implementing the Assimp mesh loading, I didn't understand at first that you have to create completely new shaders for the purpose also. Also even though I followed the tutorial for the model loading (model.cpp and model.h), I didn't understand the Assimp library functions and what we did most of the time
+- Implementing the Assimp mesh loading, I didn't understand at first that you have to create completely new shaders for the purpose also. Also even though I followed the tutorial for the model loading (model.cpp and model.h), I didn't understand the Assimp library functions and what we did most of the time.
+
+- Keeping the code clear. At this point I'm starting to have a lot of code and probably I should be refactoring the code so that certain things like the uniforms creations wouldn't be so repetitive. Also same with the debuggers.
 
 ## Thoughts:
 

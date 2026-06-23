@@ -34,6 +34,16 @@ void Week09Scene::init()
         "src/week09/normal_debug_fragment.glsl"
     );
 
+    depthDebugShaderProgram = createShaderProgram(
+        "src/week09/vertex.glsl",
+        "src/week09/depth_debug_fragment.glsl"
+    );
+
+    modelDepthDebugShaderProgram = createShaderProgram(
+        "src/week09/model_vertex.glsl",
+        "src/week09/depth_debug_fragment.glsl"
+    );
+
     containerTexture = loadTexture("assets/textures/container.png");
     containerSpecularTexture = loadTexture("assets/textures/container_specular.png");
 
@@ -73,6 +83,18 @@ void Week09Scene::init()
     modelNormalDebugUniforms.view = glGetUniformLocation(modelNormalDebugShaderProgram, "view");
     modelNormalDebugUniforms.projection = glGetUniformLocation(modelNormalDebugShaderProgram, "projection");
 
+    depthDebugUniforms.model = glGetUniformLocation(depthDebugShaderProgram, "model");
+    depthDebugUniforms.view = glGetUniformLocation(depthDebugShaderProgram, "view");
+    depthDebugUniforms.projection = glGetUniformLocation(depthDebugShaderProgram, "projection");
+    depthDebugUniforms.nearPlane = glGetUniformLocation(depthDebugShaderProgram, "nearPlane");
+    depthDebugUniforms.farPlane = glGetUniformLocation(depthDebugShaderProgram, "farPlane");
+
+    modelDepthDebugUniforms.model = glGetUniformLocation(modelDepthDebugShaderProgram, "model");
+    modelDepthDebugUniforms.view = glGetUniformLocation(modelDepthDebugShaderProgram, "view");
+    modelDepthDebugUniforms.projection = glGetUniformLocation(modelDepthDebugShaderProgram, "projection");
+    modelDepthDebugUniforms.nearPlane = glGetUniformLocation(modelDepthDebugShaderProgram, "nearPlane");
+    modelDepthDebugUniforms.farPlane = glGetUniformLocation(modelDepthDebugShaderProgram, "farPlane");
+
     lightingUniforms.flashlightPos = glGetUniformLocation(shaderProgram, "flashlightPos");
     lightingUniforms.flashlightDir = glGetUniformLocation(shaderProgram, "flashlightDir");
     lightingUniforms.flashlightEnabled = glGetUniformLocation(shaderProgram, "flashlightEnabled");
@@ -111,6 +133,7 @@ void Week09Scene::handleInput(GLFWwindow* window)
     bool key1IsPressed = glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS;
     bool key2IsPressed = glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS;
     bool keyNIsPressed = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
+    bool keyVIsPressed = glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS;
 
     if (key1IsPressed && !key1WasPressed)
     {
@@ -126,6 +149,11 @@ void Week09Scene::handleInput(GLFWwindow* window)
     if (keyNIsPressed && !keyNWasPressed)
     {
         normalDebugEnabled = !normalDebugEnabled;
+
+        if (normalDebugEnabled)
+        {
+            depthDebugEnabled = false;
+        }
     }
 
     bool keyFIsPressed = glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS;
@@ -135,6 +163,17 @@ void Week09Scene::handleInput(GLFWwindow* window)
         flashlightEnabled = !flashlightEnabled;
     }
 
+    if (keyVIsPressed && !keyVWasPressed)
+    {
+        depthDebugEnabled = !depthDebugEnabled;
+
+        if (depthDebugEnabled)
+        {
+            normalDebugEnabled = false;
+        }
+    }
+
+    keyVWasPressed = keyVIsPressed;
     keyFWasPressed = keyFIsPressed;
     keyNWasPressed = keyNIsPressed;
     key1WasPressed = key1IsPressed;
@@ -177,6 +216,37 @@ void Week09Scene::draw(
         drawNormalDebugObjects();
 
         drawBackpackNormalDebug(
+            view,
+            projection
+        );
+
+        return;
+    }
+
+    if (depthDebugEnabled)
+    {
+        glUseProgram(depthDebugShaderProgram);
+
+        glUniformMatrix4fv(
+            depthDebugUniforms.view,
+            1,
+            GL_FALSE,
+            glm::value_ptr(view)
+        );
+
+        glUniformMatrix4fv(
+            depthDebugUniforms.projection,
+            1,
+            GL_FALSE,
+            glm::value_ptr(projection)
+        );
+
+        glUniform1f(depthDebugUniforms.nearPlane, 0.1f);
+        glUniform1f(depthDebugUniforms.farPlane, 100.0f);
+
+        drawDepthDebugObjects();
+
+        drawBackpackDepthDebug(
             view,
             projection
         );
@@ -369,6 +439,37 @@ void Week09Scene::drawNormalDebugObjects()
     );
 }
 
+void Week09Scene::drawDepthDebugObjects()
+{
+    // test cube
+    glm::mat4 testCube = glm::mat4(1.0f);
+    testCube = glm::translate(testCube, glm::vec3(-0.2f, -0.6f, 0.0f));
+
+    drawTexturedCube(
+        cube.VAO,
+        depthDebugUniforms.model,
+        testCube,
+        containerTexture
+    );
+
+    // test sphere
+    glm::mat4 testSphere = glm::mat4(1.0f);
+    testSphere = glm::translate(testSphere, glm::vec3(0.8f, -0.4f, 0.0f));
+
+    drawSphere(
+        sphere,
+        depthDebugUniforms.model,
+        testSphere
+    );
+
+    // room
+    drawClosedRoom(
+        cube.VAO,
+        depthDebugUniforms.model,
+        containerTexture
+    );
+}
+
 void Week09Scene::drawLampMarker(
     const glm::vec3& position,
     const glm::vec3& color
@@ -557,6 +658,47 @@ void Week09Scene::drawBackpackNormalDebug(
     backpack->draw(modelNormalDebugShaderProgram);
 }
 
+void Week09Scene::drawBackpackDepthDebug(
+    const glm::mat4& view,
+    const glm::mat4& projection
+)
+{
+    if (!backpack)
+    {
+        return;
+    }
+
+    glUseProgram(modelDepthDebugShaderProgram);
+
+    glUniformMatrix4fv(
+        modelDepthDebugUniforms.view,
+        1,
+        GL_FALSE,
+        glm::value_ptr(view)
+    );
+
+    glUniformMatrix4fv(
+        modelDepthDebugUniforms.projection,
+        1,
+        GL_FALSE,
+        glm::value_ptr(projection)
+    );
+
+    glUniform1f(modelDepthDebugUniforms.nearPlane, 0.1f);
+    glUniform1f(modelDepthDebugUniforms.farPlane, 100.0f);
+
+    glm::mat4 backpackModel = createBackpackModelMatrix();
+
+    glUniformMatrix4fv(
+        modelDepthDebugUniforms.model,
+        1,
+        GL_FALSE,
+        glm::value_ptr(backpackModel)
+    );
+
+    backpack->draw(modelDepthDebugShaderProgram);
+}
+
 glm::mat4 Week09Scene::createBackpackModelMatrix() const
 {
     glm::mat4 backpackModel = glm::mat4(1.0f);
@@ -593,6 +735,8 @@ void Week09Scene::cleanup()
     glDeleteProgram(normalDebugShaderProgram);
     glDeleteProgram(modelNormalDebugShaderProgram);
     glDeleteProgram(modelShaderProgram);
+    glDeleteProgram(depthDebugShaderProgram);
+    glDeleteProgram(modelDepthDebugShaderProgram);
 
     delete backpack;
     backpack = nullptr;
