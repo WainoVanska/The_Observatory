@@ -29,6 +29,11 @@ void Week09Scene::init()
         "src/week09/model_fragment.glsl"
     );
 
+    modelNormalDebugShaderProgram = createShaderProgram(
+        "src/week09/model_vertex.glsl",
+        "src/week09/normal_debug_fragment.glsl"
+    );
+
     containerTexture = loadTexture("assets/textures/container.png");
     containerSpecularTexture = loadTexture("assets/textures/container_specular.png");
 
@@ -63,6 +68,10 @@ void Week09Scene::init()
     normalDebugUniforms.model = glGetUniformLocation(normalDebugShaderProgram, "model");
     normalDebugUniforms.view = glGetUniformLocation(normalDebugShaderProgram, "view");
     normalDebugUniforms.projection = glGetUniformLocation(normalDebugShaderProgram, "projection");
+
+    modelNormalDebugUniforms.model = glGetUniformLocation(modelNormalDebugShaderProgram, "model");
+    modelNormalDebugUniforms.view = glGetUniformLocation(modelNormalDebugShaderProgram, "view");
+    modelNormalDebugUniforms.projection = glGetUniformLocation(modelNormalDebugShaderProgram, "projection");
 
     lightingUniforms.flashlightPos = glGetUniformLocation(shaderProgram, "flashlightPos");
     lightingUniforms.flashlightDir = glGetUniformLocation(shaderProgram, "flashlightDir");
@@ -166,6 +175,11 @@ void Week09Scene::draw(
         );
 
         drawNormalDebugObjects();
+
+        drawBackpackNormalDebug(
+            view,
+            projection
+        );
 
         return;
     }
@@ -505,6 +519,67 @@ void Week09Scene::drawBackpack(
     backpack->draw(modelShaderProgram);
 }
 
+void Week09Scene::drawBackpackNormalDebug(
+    const glm::mat4& view,
+    const glm::mat4& projection
+)
+{
+    if (!backpack)
+    {
+        return;
+    }
+
+    glUseProgram(modelNormalDebugShaderProgram);
+
+    glUniformMatrix4fv(
+        modelNormalDebugUniforms.view,
+        1,
+        GL_FALSE,
+        glm::value_ptr(view)
+    );
+
+    glUniformMatrix4fv(
+        modelNormalDebugUniforms.projection,
+        1,
+        GL_FALSE,
+        glm::value_ptr(projection)
+    );
+
+    glm::mat4 backpackModel = createBackpackModelMatrix();
+
+    glUniformMatrix4fv(
+        modelNormalDebugUniforms.model,
+        1,
+        GL_FALSE,
+        glm::value_ptr(backpackModel)
+    );
+
+    backpack->draw(modelNormalDebugShaderProgram);
+}
+
+glm::mat4 Week09Scene::createBackpackModelMatrix() const
+{
+    glm::mat4 backpackModel = glm::mat4(1.0f);
+
+    backpackModel = glm::translate(
+        backpackModel,
+        glm::vec3(-1.0f, -0.5f, 0.0f)
+    );
+
+    backpackModel = glm::rotate(
+        backpackModel,
+        glm::radians(90.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+
+    backpackModel = glm::scale(
+        backpackModel,
+        glm::vec3(0.2f)
+    );
+
+    return backpackModel;
+}
+
 void Week09Scene::cleanup()
 {
     deleteCubeMesh(cube);
@@ -516,6 +591,7 @@ void Week09Scene::cleanup()
     glDeleteProgram(shaderProgram);
     glDeleteProgram(lampShaderProgram);
     glDeleteProgram(normalDebugShaderProgram);
+    glDeleteProgram(modelNormalDebugShaderProgram);
     glDeleteProgram(modelShaderProgram);
 
     delete backpack;

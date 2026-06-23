@@ -65,6 +65,13 @@ private:
         GLuint projection;
     };
 
+    struct ModelNormalDebugShaderUniforms
+    {
+        GLuint model;
+        GLuint view;
+        GLuint projection;
+    };
+
     struct ModelShaderUniforms
     {
         GLuint model;
@@ -89,6 +96,7 @@ private:
 
     void drawLitObjects();
     void drawNormalDebugObjects();
+    glm::mat4 createBackpackModelMatrix() const;
     void drawLampMarker(const glm::vec3& position, const glm::vec3& color);
     void drawBackpack(
         const glm::mat4& view,
@@ -99,6 +107,10 @@ private:
         const glm::vec3& secondLightPos,
         const glm::vec3& secondLightColor
     );
+    void drawBackpackNormalDebug(
+        const glm::mat4& view,
+        const glm::mat4& projection
+    );
 
 private:
     GLuint shaderProgram = 0;
@@ -106,6 +118,8 @@ private:
     GLuint normalDebugShaderProgram = 0;
 
     GLuint modelShaderProgram = 0;
+    GLuint modelNormalDebugShaderProgram = 0;
+
     Model* backpack = nullptr;
 
     GLuint containerTexture = 0;
@@ -122,6 +136,7 @@ private:
     LightingShaderUniforms lightingUniforms{};
     LampShaderUniforms lampUniforms{};
     NormalDebugShaderUniforms normalDebugUniforms{};
+    ModelNormalDebugShaderUniforms modelNormalDebugUniforms{};
     ModelShaderUniforms modelUniforms{};
 
     bool light1Enabled = true;
