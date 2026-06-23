@@ -18,8 +18,7 @@
 
 - added B&W depth testing debugger
 
-![Poster experiment](../learning_log_images/depth_testing_debug.png)
-
+<img src="../learning_log_images/depth_testing_debug.png" alt="depth test debugger" width="500">
 
 ## I struggled:
 
