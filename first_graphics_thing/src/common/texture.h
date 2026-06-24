@@ -4,3 +4,5 @@
 #include <string>
 
 GLuint loadTexture(const std::string& path);
+
+GLuint loadTransparentTexture(const std::string& path);

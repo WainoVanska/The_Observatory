@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
+#include <vector>
 
 #include "../common/cube.h"
 #include "../common/sphere.h"
@@ -119,6 +120,13 @@ private:
         GLuint projection;
     };
 
+    struct GlassShaderUniforms
+    {
+        GLuint model;
+        GLuint view;
+        GLuint projection;
+    };
+
     void drawLitObjects();
     void drawNormalDebugObjects();
     glm::mat4 createBackpackModelMatrix() const;
@@ -151,6 +159,14 @@ private:
         const glm::mat4& projection
     );
 
+    void createGlassPaneMesh();
+
+    void drawGlassPanes(
+        const glm::mat4& view,
+        const glm::mat4& projection,
+        const glm::vec3& cameraPos
+    );
+
 private:
     GLuint shaderProgram = 0;
     GLuint lampShaderProgram = 0;
@@ -164,10 +180,16 @@ private:
 
     GLuint modelOutlineShaderProgram = 0;
 
+    GLuint glassShaderProgram = 0;
+
     Model* backpack = nullptr;
 
     GLuint containerTexture = 0;
     GLuint containerSpecularTexture = 0;
+    GLuint glassTexture = 0;
+
+    GLuint glassVAO = 0;
+    GLuint glassVBO = 0;
 
     CubeMesh cube{};
     SphereMesh sphere{};
@@ -185,7 +207,9 @@ private:
     DepthDebugShaderUniforms depthDebugUniforms{};
     ModelDepthDebugShaderUniforms modelDepthDebugUniforms{};
     ModelOutlineShaderUniforms modelOutlineUniforms{};
+    GlassShaderUniforms glassUniforms{};
 
+    std::vector<glm::vec3> glassPanePositions{};
 
     bool light1Enabled = true;
     bool light2Enabled = true;
@@ -200,4 +224,6 @@ private:
     bool keyFWasPressed = false;
     bool outlineEnabled = false;
     bool keyPWasPressed = false;
+    bool glassEnabled = false;
+    bool keyGWasPressed = false;
 };

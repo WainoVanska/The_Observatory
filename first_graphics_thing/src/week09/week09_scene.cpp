@@ -6,6 +6,8 @@
 #include "../common/shader.h"
 #include "../common/texture.h"
 
+#include <map>
+#include <vector>
 
 void Week09Scene::init()
 {
@@ -49,13 +51,29 @@ void Week09Scene::init()
         "src/week09/single_color_fragment.glsl"
     );
 
+    glassShaderProgram = createShaderProgram(
+        "src/week09/glass_vertex.glsl",
+        "src/week09/glass_fragment.glsl"
+    );
+
     containerTexture = loadTexture("assets/textures/container.png");
     containerSpecularTexture = loadTexture("assets/textures/container_specular.png");
+
+    glassTexture = loadTransparentTexture("assets/textures/window.png");
 
     backpack = new Model("assets/models/backpack/backpack.obj");
 
     cube = createCubeMesh();
     sphere = createSphereMesh();
+
+    createGlassPaneMesh();
+
+    glassPanePositions.push_back(glm::vec3(-1.8f, 0.0f, -1.8f));
+    glassPanePositions.push_back(glm::vec3(0.0f, 0.0f, -1.8f));
+    glassPanePositions.push_back(glm::vec3(1.8f, 0.0f, -1.8f));
+
+    glassPanePositions.push_back(glm::vec3(-1.2f, 0.0f, 0.8f));
+    glassPanePositions.push_back(glm::vec3(1.2f, 0.0f, 0.8f));
 
     dullOrange = createDullOrangeMaterial();
     shinyBlue = createShinyBlueMaterial();
@@ -126,10 +144,15 @@ void Week09Scene::init()
     modelUniforms.flashlightOuterCutOff = glGetUniformLocation(modelShaderProgram, "flashlightOuterCutOff");
 
     modelOutlineUniforms.model = glGetUniformLocation(modelOutlineShaderProgram, "model");
-
     modelOutlineUniforms.view = glGetUniformLocation(modelOutlineShaderProgram, "view");
-
     modelOutlineUniforms.projection = glGetUniformLocation(modelOutlineShaderProgram, "projection");
+
+    glassUniforms.model = glGetUniformLocation(glassShaderProgram, "model");
+    glassUniforms.view = glGetUniformLocation(glassShaderProgram, "view");
+    glassUniforms.projection = glGetUniformLocation(glassShaderProgram, "projection");
+
+    glUseProgram(glassShaderProgram);
+    glUniform1i(glGetUniformLocation(glassShaderProgram, "glassTexture"), 0);
 
     glUseProgram(modelShaderProgram);
 
@@ -146,6 +169,7 @@ void Week09Scene::handleInput(GLFWwindow* window)
     bool keyNIsPressed = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
     bool keyVIsPressed = glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS;
     bool keyPIsPressed = glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS;
+    bool keyGIsPressed = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
 
     if (key1IsPressed && !key1WasPressed)
     {
@@ -190,12 +214,18 @@ void Week09Scene::handleInput(GLFWwindow* window)
         outlineEnabled = !outlineEnabled;
     }
 
+    if (keyGIsPressed && !keyGWasPressed)
+    {
+        glassEnabled = !glassEnabled;
+    }
+
     keyVWasPressed = keyVIsPressed;
     keyFWasPressed = keyFIsPressed;
     keyNWasPressed = keyNIsPressed;
     key1WasPressed = key1IsPressed;
     key2WasPressed = key2IsPressed;
     keyPWasPressed = keyPIsPressed;
+    keyGWasPressed = keyGIsPressed;
 }
 
 void Week09Scene::draw(
@@ -432,6 +462,15 @@ void Week09Scene::draw(
     }
 
     glStencilMask(0xFF);
+
+    if (glassEnabled)
+    {
+        drawGlassPanes(
+            view,
+            projection,
+            cameraPos
+        );
+    }
 }
 
 void Week09Scene::drawLitObjects()
@@ -828,6 +867,125 @@ glm::mat4 Week09Scene::createBackpackModelMatrix() const
     return backpackModel;
 }
 
+void Week09Scene::createGlassPaneMesh()
+{
+    float vertices[] = {
+        // positions          // UVs
+        -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,
+         0.5f, -0.5f, 0.0f,   1.0f, 0.0f,
+
+        -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,
+         0.5f, -0.5f, 0.0f,   1.0f, 0.0f,
+         0.5f,  0.5f, 0.0f,   1.0f, 1.0f
+    };
+
+    glGenVertexArrays(1, &glassVAO);
+    glGenBuffers(1, &glassVBO);
+
+    glBindVertexArray(glassVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, glassVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // position
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(
+        0,
+        3,
+        GL_FLOAT,
+        GL_FALSE,
+        5 * sizeof(float),
+        (void*)0
+    );
+
+    // texture coordinates
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(
+        1,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        5 * sizeof(float),
+        (void*)(3 * sizeof(float))
+    );
+
+    glBindVertexArray(0);
+}
+
+void Week09Scene::drawGlassPanes(
+    const glm::mat4& view,
+    const glm::mat4& projection,
+    const glm::vec3& cameraPos
+)
+{
+    std::map<float, glm::vec3> sorted;
+
+    for (const glm::vec3& position : glassPanePositions)
+    {
+        float distance = glm::length(cameraPos - position);
+
+        // Tiny offset avoids overwriting if two distances are exactly equal.
+        while (sorted.find(distance) != sorted.end())
+        {
+            distance += 0.0001f;
+        }
+
+        sorted[distance] = position;
+    }
+
+    glUseProgram(glassShaderProgram);
+
+    glUniformMatrix4fv(
+        glassUniforms.view,
+        1,
+        GL_FALSE,
+        glm::value_ptr(view)
+    );
+
+    glUniformMatrix4fv(
+        glassUniforms.projection,
+        1,
+        GL_FALSE,
+        glm::value_ptr(projection)
+    );
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, glassTexture);
+
+    glBindVertexArray(glassVAO);
+
+    // Transparent objects should not write depth, otherwise front panes can hide back panes.
+    glDepthMask(GL_FALSE);
+
+    // Do not let transparent panes affect stencil/outline.
+    glStencilMask(0x00);
+
+    for (auto it = sorted.rbegin(); it != sorted.rend(); ++it)
+    {
+        glm::mat4 model = glm::mat4(1.0f);
+
+        model = glm::translate(model, it->second);
+
+        // Put the pane vertically: local quad is XY plane already, facing ±Z.
+        model = glm::scale(model, glm::vec3(1.0f, 1.4f, 1.0f));
+
+        glUniformMatrix4fv(
+            glassUniforms.model,
+            1,
+            GL_FALSE,
+            glm::value_ptr(model)
+        );
+
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    }
+
+    glBindVertexArray(0);
+
+    glDepthMask(GL_TRUE);
+    glStencilMask(0xFF);
+}
+
 void Week09Scene::cleanup()
 {
     deleteCubeMesh(cube);
@@ -844,6 +1002,11 @@ void Week09Scene::cleanup()
     glDeleteProgram(depthDebugShaderProgram);
     glDeleteProgram(modelDepthDebugShaderProgram);
     glDeleteProgram(modelOutlineShaderProgram);
+    glDeleteProgram(glassShaderProgram);
+
+    glDeleteTextures(1, &glassTexture);
+    glDeleteVertexArrays(1, &glassVAO);
+    glDeleteBuffers(1, &glassVBO);
 
     delete backpack;
     backpack = nullptr;

@@ -22,6 +22,8 @@
 
 - added stencil testing debugger feature ( toggle with key P)
 
+- added semi-transparent windows, you can look through multiple to still see through. Key for this was to render opaque objects first, then render transparent objects from furthest to closest ( in the context of our view ). Without this trick looking through multiple windows would produce a pixel from the wrong depth (farther one vs. closer one)
+
 ## I struggled:
 
 - Implementing the Assimp mesh loading, I didn't understand at first that you have to create completely new shaders for the purpose also. Also even though I followed the tutorial for the model loading (model.cpp and model.h), I didn't understand the Assimp library functions and what we did most of the time.

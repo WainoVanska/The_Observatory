@@ -12,3 +12,4 @@
 - normal debug shader (toggle with N)
 - depth debug shader (toggle with V)
 - first-person flashlight / spotlight ( toggle with F)
+- transparent windows ( toggle with G )
