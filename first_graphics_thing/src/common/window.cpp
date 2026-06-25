@@ -40,6 +40,10 @@ GLFWwindow* createWindow(
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
     glEnable(GL_BLEND);
+    glEnable(GL_CULL_FACE);
+
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthFunc(GL_LESS);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
