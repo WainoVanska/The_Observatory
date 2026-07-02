@@ -42,7 +42,7 @@ CubeMesh createCubeMesh()
         8, 10,9,   10,8, 11,      // back
         12,14,13,  14,12,15,      // left
         16,18,17,  18,16,19,      // top
-        20,22,21,  22,20,23       // bottom
+        20,21,22,  22,23,20       // bottom
     };
 
     CubeMesh cube{};

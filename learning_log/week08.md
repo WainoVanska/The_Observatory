@@ -24,6 +24,8 @@
 
 - added semi-transparent windows, you can look through multiple to still see through. Key for this was to render opaque objects first, then render transparent objects from furthest to closest ( in the context of our view ). Without this trick looking through multiple windows would produce a pixel from the wrong depth (farther one vs. closer one)
 
+- about face culling. With face culling we don't have to render all surfaces of a cube for example since at most we only can see 3 at a time, so we only render the vertices (triangle) that facing the our vision in the scene. We do this checking of the triangles by checking the winding order of the triangles in the screen space after the camera projection.
+
 ## I struggled:
 
 - Implementing the Assimp mesh loading, I didn't understand at first that you have to create completely new shaders for the purpose also. Also even though I followed the tutorial for the model loading (model.cpp and model.h), I didn't understand the Assimp library functions and what we did most of the time.
