@@ -41,7 +41,7 @@ int main()
     glfwPollEvents();
 
     Week09Scene scene;
-    scene.init();
+    scene.init(windowWidth, windowHeight);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -54,8 +54,8 @@ int main()
         glm::vec3 movableLightPos = lightController.getPosition();
         glm::vec3 cameraFront = camera.getFront();
 
-        glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
+        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         scene.draw(view, projection, cameraPos, movableLightPos, cameraFront);
 

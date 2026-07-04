@@ -14,7 +14,7 @@
 class Week09Scene
 {
 public:
-    void init();
+    void init(int width, int height);
 
     void handleInput(GLFWwindow* window);
 
@@ -167,6 +167,10 @@ private:
         const glm::vec3& cameraPos
     );
 
+    void createFramebuffer(int width, int height);
+    void createScreenQuad();
+    void drawScreenQuad();
+
 private:
     GLuint shaderProgram = 0;
     GLuint lampShaderProgram = 0;
@@ -190,6 +194,16 @@ private:
 
     GLuint glassVAO = 0;
     GLuint glassVBO = 0;
+
+    GLuint framebuffer = 0;
+    GLuint framebufferTexture = 0;
+    GLuint framebufferRBO = 0;
+
+    GLuint screenQuadVAO = 0;
+    GLuint screenQuadVBO = 0;
+
+    GLuint screenShaderProgram = 0;
+    GLuint screenTextureUniform = 0;
 
     CubeMesh cube{};
     SphereMesh sphere{};
@@ -226,4 +240,7 @@ private:
     bool keyPWasPressed = false;
     bool glassEnabled = false;
     bool keyGWasPressed = false;
+
+    bool blurEnabled = false;
+    bool keyBWasPressed = false;
 };

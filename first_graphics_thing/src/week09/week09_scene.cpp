@@ -9,7 +9,9 @@
 #include <map>
 #include <vector>
 
-void Week09Scene::init()
+#include <iostream>
+
+void Week09Scene::init(int width, int height)
 {
     shaderProgram = createShaderProgram(
         "src/week09/vertex.glsl",
@@ -56,6 +58,11 @@ void Week09Scene::init()
         "src/week09/glass_fragment.glsl"
     );
 
+    screenShaderProgram = createShaderProgram(
+        "src/week09/screen_vertex.glsl",
+        "src/week09/screen_fragment.glsl"
+    );
+
     containerTexture = loadTexture("assets/textures/container.png");
     containerSpecularTexture = loadTexture("assets/textures/container_specular.png");
 
@@ -67,6 +74,9 @@ void Week09Scene::init()
     sphere = createSphereMesh();
 
     createGlassPaneMesh();
+
+    createFramebuffer(width, height);
+    createScreenQuad();
 
     glassPanePositions.push_back(glm::vec3(-1.8f, 0.0f, -1.8f));
     glassPanePositions.push_back(glm::vec3(0.0f, 0.0f, -1.8f));
@@ -156,6 +166,10 @@ void Week09Scene::init()
 
     glUseProgram(modelShaderProgram);
 
+    glUseProgram(screenShaderProgram);
+    screenTextureUniform = glGetUniformLocation(screenShaderProgram, "screenTexture");
+    glUniform1i(screenTextureUniform, 0);
+
     glUniform1f(
         glGetUniformLocation(modelShaderProgram, "material.shininess"),
         32.0f
@@ -170,6 +184,10 @@ void Week09Scene::handleInput(GLFWwindow* window)
     bool keyVIsPressed = glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS;
     bool keyPIsPressed = glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS;
     bool keyGIsPressed = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
+    bool keyFIsPressed = glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS;
+    bool keyBIsPressed = glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS;
+
+
 
     if (key1IsPressed && !key1WasPressed)
     {
@@ -191,8 +209,6 @@ void Week09Scene::handleInput(GLFWwindow* window)
             depthDebugEnabled = false;
         }
     }
-
-    bool keyFIsPressed = glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS;
 
     if (keyFIsPressed && !keyFWasPressed)
     {
@@ -219,6 +235,12 @@ void Week09Scene::handleInput(GLFWwindow* window)
         glassEnabled = !glassEnabled;
     }
 
+    if (keyBIsPressed && !keyBWasPressed)
+    {
+        blurEnabled = !blurEnabled;
+    }
+
+    keyBWasPressed = keyBIsPressed;
     keyVWasPressed = keyVIsPressed;
     keyFWasPressed = keyFIsPressed;
     keyNWasPressed = keyNIsPressed;
@@ -236,6 +258,15 @@ void Week09Scene::draw(
     const glm::vec3& cameraFront
 )
 {
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_STENCIL_TEST);
+    glEnable(GL_CULL_FACE);
+
+    glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
     glm::vec3 lightPos = movableLightPos;
     glm::vec3 lightColor(1.25f, 1.25f, 1.25f);
 
@@ -267,11 +298,8 @@ void Week09Scene::draw(
             view,
             projection
         );
-
-        return;
     }
-
-    if (depthDebugEnabled)
+    else if (depthDebugEnabled)
     {
         glUseProgram(depthDebugShaderProgram);
 
@@ -298,8 +326,6 @@ void Week09Scene::draw(
             view,
             projection
         );
-
-        return;
     }
 
     // Draw lit objects
@@ -471,6 +497,35 @@ void Week09Scene::draw(
             cameraPos
         );
     }
+
+    // Second pass: draw framebuffer texture to the real screen
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_STENCIL_TEST);
+    glDisable(GL_CULL_FACE);
+
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glUseProgram(screenShaderProgram);
+
+    glUniform1i(
+        glGetUniformLocation(screenShaderProgram, "blurEnabled"),
+        blurEnabled
+    );
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, framebufferTexture);
+
+    glBindVertexArray(screenQuadVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+
+    // Restore state for next frame
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_STENCIL_TEST);
+    glEnable(GL_CULL_FACE);
 }
 
 void Week09Scene::drawLitObjects()
@@ -986,6 +1041,128 @@ void Week09Scene::drawGlassPanes(
     glStencilMask(0xFF);
 }
 
+void Week09Scene::createFramebuffer(int width, int height)
+{
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+    glGenTextures(1, &framebufferTexture);
+    glBindTexture(GL_TEXTURE_2D, framebufferTexture);
+
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGB,
+        width,
+        height,
+        0,
+        GL_RGB,
+        GL_UNSIGNED_BYTE,
+        nullptr
+    );
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER,
+        GL_COLOR_ATTACHMENT0,
+        GL_TEXTURE_2D,
+        framebufferTexture,
+        0
+    );
+
+    glGenRenderbuffers(1, &framebufferRBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, framebufferRBO);
+
+    glRenderbufferStorage(
+        GL_RENDERBUFFER,
+        GL_DEPTH24_STENCIL8,
+        width,
+        height
+    );
+
+    glFramebufferRenderbuffer(
+        GL_FRAMEBUFFER,
+        GL_DEPTH_STENCIL_ATTACHMENT,
+        GL_RENDERBUFFER,
+        framebufferRBO
+    );
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Week09Scene::createScreenQuad()
+{
+    float quadVertices[] = {
+        // positions   // texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    };
+
+    glGenVertexArrays(1, &screenQuadVAO);
+    glGenBuffers(1, &screenQuadVBO);
+
+    glBindVertexArray(screenQuadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, screenQuadVBO);
+
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        sizeof(quadVertices),
+        quadVertices,
+        GL_STATIC_DRAW
+    );
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(
+        0,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        4 * sizeof(float),
+        (void*)0
+    );
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(
+        1,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        4 * sizeof(float),
+        (void*)(2 * sizeof(float))
+    );
+
+    glBindVertexArray(0);
+}
+
+void Week09Scene::drawScreenQuad()
+{
+    glUseProgram(screenShaderProgram);
+
+    glUniform1i(
+        glGetUniformLocation(screenShaderProgram, "blurEnabled"),
+        blurEnabled
+    );
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, framebufferTexture);
+
+    glBindVertexArray(screenQuadVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+}
+
 void Week09Scene::cleanup()
 {
     deleteCubeMesh(cube);
@@ -1007,6 +1184,15 @@ void Week09Scene::cleanup()
     glDeleteTextures(1, &glassTexture);
     glDeleteVertexArrays(1, &glassVAO);
     glDeleteBuffers(1, &glassVBO);
+
+    glDeleteFramebuffers(1, &framebuffer);
+    glDeleteTextures(1, &framebufferTexture);
+    glDeleteRenderbuffers(1, &framebufferRBO);
+
+    glDeleteVertexArrays(1, &screenQuadVAO);
+    glDeleteBuffers(1, &screenQuadVBO);
+
+    glDeleteProgram(screenShaderProgram);
 
     delete backpack;
     backpack = nullptr;
