@@ -4,6 +4,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <string>
+
 #include "../common/free_camera.h"
 #include "../common/light_controller.h"
 #include "../common/window.h"
@@ -43,6 +45,9 @@ int main()
     Week09Scene scene;
     scene.init(windowWidth, windowHeight);
 
+    double previousTime = glfwGetTime();
+    int frameCount = 0;
+
     while (!glfwWindowShouldClose(window))
     {
         camera.update(window);
@@ -54,10 +59,25 @@ int main()
         glm::vec3 movableLightPos = lightController.getPosition();
         glm::vec3 cameraFront = camera.getFront();
 
-        //glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
-        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         scene.draw(view, projection, cameraPos, movableLightPos, cameraFront);
+
+        // fps tracker
+
+        frameCount++;
+
+        double currentTime = glfwGetTime();
+        double elapsedTime = currentTime - previousTime;
+
+        if (elapsedTime >= 1.0)
+        {
+            double fps = frameCount / elapsedTime;
+
+            std::string title = "W9-W11 | FPS: " + std::to_string((int)fps);
+            glfwSetWindowTitle(window, title.c_str());
+
+            frameCount = 0;
+            previousTime = currentTime;
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
