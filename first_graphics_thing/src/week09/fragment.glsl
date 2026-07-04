@@ -24,6 +24,10 @@ uniform float flashlightOuterCutOff;
 uniform bool light1Enabled;
 uniform bool light2Enabled;
 
+uniform bool directionalLightEnabled;
+uniform vec3 directionalLightDirection;
+uniform vec3 directionalLightColor;
+
 struct Material {
     sampler2D diffuseMap;
     sampler2D specularMap;
@@ -154,6 +158,33 @@ vec3 calculateFlashlight(
     return ambient + diffuse + specular;
 }
 
+vec3 calculateDirectionalLight(
+    vec3 lightDirection,
+    vec3 currentLightColor,
+    vec3 norm,
+    vec3 viewDir
+)
+{
+    vec3 baseColor = getBaseColor();
+    vec3 specularColor = getSpecularColor();
+
+    // Direction from fragment toward the light
+    vec3 lightDir = normalize(-lightDirection);
+
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = diff * currentLightColor * baseColor;
+
+    float ambientStrength = 0.18;
+    vec3 ambient = ambientStrength * currentLightColor * baseColor;
+
+    float specularStrength = 0.4;
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
+    vec3 specular = specularStrength * spec * currentLightColor * specularColor;
+
+    return ambient + diffuse + specular;
+}
+
 void main()
 {
     vec3 norm = normalize(Normal);
@@ -176,6 +207,16 @@ void main()
     if (flashlightEnabled)
     {
         result += calculateFlashlight(norm, viewDir);
+    }
+
+    if (directionalLightEnabled)
+    {
+        result += calculateDirectionalLight(
+            directionalLightDirection,
+            directionalLightColor,
+            norm,
+            viewDir
+        );
     }
 
     FragColor = vec4(result, 1.0);

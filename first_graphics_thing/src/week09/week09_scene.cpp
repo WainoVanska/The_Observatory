@@ -11,7 +11,7 @@
 
 #include <iostream>
 
-void Week09Scene::init(int width, int height)
+void Week09Scene::init(int width, int height, FreeCamera* camera)
 {
     shaderProgram = createShaderProgram(
         "src/week09/vertex.glsl",
@@ -90,6 +90,20 @@ void Week09Scene::init(int width, int height)
     matteGray = createMatteGrayMaterial();
     texturedMaterial = createTexturedMaterial();
 
+    skybox = new SkyBox(camera);
+
+    if (!skybox->Init(
+        "assets/textures/skybox1",
+        "px.png",
+        "nx.png",
+        "py.png",
+        "ny.png",
+        "pz.png",
+        "nz.png"
+    )) {
+        std::cout << "Skybox failed to load\n";
+    }
+
     lightingUniforms.model = glGetUniformLocation(shaderProgram, "model");
     lightingUniforms.view = glGetUniformLocation(shaderProgram, "view");
     lightingUniforms.projection = glGetUniformLocation(shaderProgram, "projection");
@@ -102,6 +116,10 @@ void Week09Scene::init(int width, int height)
 
     lightingUniforms.light1Enabled = glGetUniformLocation(shaderProgram, "light1Enabled");
     lightingUniforms.light2Enabled = glGetUniformLocation(shaderProgram, "light2Enabled");
+
+    lightingUniforms.directionalLightEnabled = glGetUniformLocation(shaderProgram, "directionalLightEnabled");
+    lightingUniforms.directionalLightDirection = glGetUniformLocation(shaderProgram, "directionalLightDirection");
+    lightingUniforms.directionalLightColor = glGetUniformLocation(shaderProgram, "directionalLightColor");
 
     lampUniforms.model = glGetUniformLocation(lampShaderProgram, "model");
     lampUniforms.view = glGetUniformLocation(lampShaderProgram, "view");
@@ -147,6 +165,10 @@ void Week09Scene::init(int width, int height)
     modelUniforms.light1Enabled = glGetUniformLocation(modelShaderProgram, "light1Enabled");
     modelUniforms.light2Enabled = glGetUniformLocation(modelShaderProgram, "light2Enabled");
 
+    modelUniforms.directionalLightEnabled = glGetUniformLocation(modelShaderProgram, "directionalLightEnabled");
+    modelUniforms.directionalLightDirection = glGetUniformLocation(modelShaderProgram, "directionalLightDirection");
+    modelUniforms.directionalLightColor = glGetUniformLocation(modelShaderProgram, "directionalLightColor");
+
     modelUniforms.flashlightPos = glGetUniformLocation(modelShaderProgram, "flashlightPos");
     modelUniforms.flashlightDir = glGetUniformLocation(modelShaderProgram, "flashlightDir");
     modelUniforms.flashlightEnabled = glGetUniformLocation(modelShaderProgram, "flashlightEnabled");
@@ -185,8 +207,7 @@ void Week09Scene::handleInput(GLFWwindow* window)
     bool keyGIsPressed = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
     bool keyFIsPressed = glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS;
     bool keyBIsPressed = glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS;
-
-
+    bool keyMIsPressed = glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS;
 
     if (key1IsPressed && !key1WasPressed)
     {
@@ -239,6 +260,11 @@ void Week09Scene::handleInput(GLFWwindow* window)
         blurEnabled = !blurEnabled;
     }
 
+    if (keyMIsPressed && !keyMWasPressed)
+    {
+        outdoorModeEnabled = !outdoorModeEnabled;
+    }
+
     keyBWasPressed = keyBIsPressed;
     keyVWasPressed = keyVIsPressed;
     keyFWasPressed = keyFIsPressed;
@@ -247,6 +273,7 @@ void Week09Scene::handleInput(GLFWwindow* window)
     key2WasPressed = key2IsPressed;
     keyPWasPressed = keyPIsPressed;
     keyGWasPressed = keyGIsPressed;
+    keyMWasPressed = keyMIsPressed;
 }
 
 void Week09Scene::draw(
@@ -330,8 +357,35 @@ void Week09Scene::draw(
     // Draw lit objects
     glUseProgram(shaderProgram);
 
-    glUniform1i(lightingUniforms.light1Enabled, light1Enabled);
-    glUniform1i(lightingUniforms.light2Enabled, light2Enabled);
+    glUniform1i(
+        lightingUniforms.light1Enabled,
+        !outdoorModeEnabled && light1Enabled
+    );
+
+    glUniform1i(
+        lightingUniforms.light2Enabled,
+        !outdoorModeEnabled && light2Enabled
+    );
+
+    glm::vec3 sunDirection(-0.3f, -1.0f, -0.2f);
+    glm::vec3 sunColor(1.0f, 0.95f, 0.80f);
+
+    glUniform1i(
+        lightingUniforms.directionalLightEnabled,
+        outdoorModeEnabled
+    );
+
+    glUniform3fv(
+        lightingUniforms.directionalLightDirection,
+        1,
+        glm::value_ptr(sunDirection)
+    );
+
+    glUniform3fv(
+        lightingUniforms.directionalLightColor,
+        1,
+        glm::value_ptr(sunColor)
+    );
 
     glUniformMatrix4fv(
         lightingUniforms.view,
@@ -476,14 +530,17 @@ void Week09Scene::draw(
         glm::value_ptr(projection)
     );
 
-    if (light1Enabled)
+    if (!outdoorModeEnabled)
     {
-        drawLampMarker(lightPos, glm::vec3(1.0f, 1.0f, 0.3f));
-    }
+        if (light1Enabled)
+        {
+            drawLampMarker(lightPos, glm::vec3(1.0f, 1.0f, 0.3f));
+        }
 
-    if (light2Enabled)
-    {
-        drawLampMarker(secondLightPos, glm::vec3(0.3f, 0.5f, 1.0f));
+        if (light2Enabled)
+        {
+            drawLampMarker(secondLightPos, glm::vec3(0.3f, 0.5f, 1.0f));
+        }
     }
 
     glStencilMask(0xFF);
@@ -495,6 +552,11 @@ void Week09Scene::draw(
             projection,
             cameraPos
         );
+    }
+
+    if (outdoorModeEnabled && skybox)
+    {
+        skybox->Render(projection);
     }
 
     // Second pass: draw framebuffer texture to the real screen
@@ -553,13 +615,16 @@ void Week09Scene::drawLitObjects()
         testSphere
     );
 
-    // room
-    setMaterial(shaderProgram, matteGray);
-    drawClosedRoom(
-        cube.VAO,
-        lightingUniforms.model,
-        containerTexture
-    );
+    if (!outdoorModeEnabled)
+    {
+        // room only in indoor mode
+        setMaterial(shaderProgram, matteGray);
+        drawClosedRoom(
+            cube.VAO,
+            lightingUniforms.model,
+            containerTexture
+        );
+    }
 }
 
 void Week09Scene::drawNormalDebugObjects()
@@ -710,13 +775,31 @@ void Week09Scene::drawBackpack(
     );
 
     glUniform1i(
-        modelUniforms.light1Enabled,
-        light1Enabled
+        lightingUniforms.light1Enabled, !outdoorModeEnabled && light1Enabled
     );
 
     glUniform1i(
-        modelUniforms.light2Enabled,
-        light2Enabled
+        lightingUniforms.light2Enabled, !outdoorModeEnabled && light2Enabled
+    );
+
+    glm::vec3 sunDirection(-0.3f, -1.0f, -0.2f);
+    glm::vec3 sunColor(1.0f, 0.95f, 0.80f);
+
+    glUniform1i(
+        modelUniforms.directionalLightEnabled,
+        outdoorModeEnabled
+    );
+
+    glUniform3fv(
+        modelUniforms.directionalLightDirection,
+        1,
+        glm::value_ptr(sunDirection)
+    );
+
+    glUniform3fv(
+        modelUniforms.directionalLightColor,
+        1,
+        glm::value_ptr(sunColor)
     );
 
     glUniform3fv(
@@ -1195,4 +1278,7 @@ void Week09Scene::cleanup()
 
     delete backpack;
     backpack = nullptr;
+
+    delete skybox;
+    skybox = nullptr;
 }

@@ -43,7 +43,7 @@ int main()
     glfwPollEvents();
 
     Week09Scene scene;
-    scene.init(windowWidth, windowHeight);
+    scene.init(windowWidth, windowHeight, &camera);
 
     double previousTime = glfwGetTime();
     int frameCount = 0;

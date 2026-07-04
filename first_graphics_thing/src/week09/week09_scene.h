@@ -11,10 +11,13 @@
 #include "../common/material.h"
 #include "../common/model.h"
 
+#include "../common/skybox.h"
+#include "../common/free_camera.h"
+
 class Week09Scene
 {
 public:
-    void init(int width, int height);
+    void init(int width, int height, FreeCamera* camera);
 
     void handleInput(GLFWwindow* window);
 
@@ -22,8 +25,8 @@ public:
         const glm::mat4& view,
         const glm::mat4& projection,
         const glm::vec3& cameraPos,
-        const glm::vec3& cameraFront,
-        const glm::vec3& movableLightPos
+        const glm::vec3& movableLightPos,
+        const glm::vec3& cameraFront
     );
 
     void cleanup();
@@ -49,6 +52,10 @@ private:
         GLuint flashlightEnabled;
         GLuint flashlightCutOff;
         GLuint flashlightOuterCutOff;
+
+        GLuint directionalLightEnabled;
+        GLuint directionalLightDirection;
+        GLuint directionalLightColor;
     };
 
     struct LampShaderUniforms
@@ -105,6 +112,10 @@ private:
 
         GLuint light1Enabled;
         GLuint light2Enabled;
+
+        GLuint directionalLightEnabled;
+        GLuint directionalLightDirection;
+        GLuint directionalLightColor;
 
         GLuint flashlightPos;
         GLuint flashlightDir;
@@ -188,6 +199,8 @@ private:
 
     Model* backpack = nullptr;
 
+    SkyBox* skybox = nullptr;
+
     GLuint containerTexture = 0;
     GLuint containerSpecularTexture = 0;
     GLuint glassTexture = 0;
@@ -240,7 +253,8 @@ private:
     bool keyPWasPressed = false;
     bool glassEnabled = false;
     bool keyGWasPressed = false;
-
     bool blurEnabled = false;
     bool keyBWasPressed = false;
+    bool outdoorModeEnabled = false;
+    bool keyMWasPressed = false;
 };
