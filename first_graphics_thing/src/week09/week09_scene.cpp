@@ -165,15 +165,14 @@ void Week09Scene::init(int width, int height)
     glUniform1i(glGetUniformLocation(glassShaderProgram, "glassTexture"), 0);
 
     glUseProgram(modelShaderProgram);
-
-    glUseProgram(screenShaderProgram);
-    screenTextureUniform = glGetUniformLocation(screenShaderProgram, "screenTexture");
-    glUniform1i(screenTextureUniform, 0);
-
     glUniform1f(
         glGetUniformLocation(modelShaderProgram, "material.shininess"),
         32.0f
     );
+
+    glUseProgram(screenShaderProgram);
+    screenTextureUniform = glGetUniformLocation(screenShaderProgram, "screenTexture");
+    glUniform1i(screenTextureUniform, 0);
 }
 
 void Week09Scene::handleInput(GLFWwindow* window)
