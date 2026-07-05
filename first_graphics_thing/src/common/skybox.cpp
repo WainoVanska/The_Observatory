@@ -135,3 +135,11 @@ void SkyBox::Render(const glm::mat4& projection)
     glCullFace(oldCullFaceMode);
     glDepthFunc(oldDepthFuncMode);
 }
+
+void SkyBox::BindTexture(GLenum textureUnit)
+{
+    if (cubemapTexture)
+    {
+        cubemapTexture->Bind(textureUnit);
+    }
+}

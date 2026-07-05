@@ -15,3 +15,4 @@
 - transparent windows ( toggle with G )
 - blurring effect ( toggle with B )
 - skybox mode with directional light ( toggle with M )
+- backpack to a glass texture ( toggle with H )

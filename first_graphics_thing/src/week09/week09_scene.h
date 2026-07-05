@@ -122,6 +122,9 @@ private:
         GLuint flashlightEnabled;
         GLuint flashlightCutOff;
         GLuint flashlightOuterCutOff;
+
+        GLuint skybox;
+        GLuint glassBackpackEnabled;
     };
 
     struct ModelOutlineShaderUniforms
@@ -242,7 +245,6 @@ private:
     bool light2Enabled = true;
     bool normalDebugEnabled = false;
     bool depthDebugEnabled = false;
-
     bool keyVWasPressed = false;
     bool key1WasPressed = false;
     bool key2WasPressed = false;
@@ -257,4 +259,6 @@ private:
     bool keyBWasPressed = false;
     bool outdoorModeEnabled = false;
     bool keyMWasPressed = false;
+    bool glassBackpackEnabled = false;
+    bool keyHWasPressed = false;
 };

@@ -169,6 +169,9 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     modelUniforms.directionalLightDirection = glGetUniformLocation(modelShaderProgram, "directionalLightDirection");
     modelUniforms.directionalLightColor = glGetUniformLocation(modelShaderProgram, "directionalLightColor");
 
+    modelUniforms.skybox = glGetUniformLocation(modelShaderProgram, "skybox");
+    modelUniforms.glassBackpackEnabled = glGetUniformLocation(modelShaderProgram, "glassBackpackEnabled");
+
     modelUniforms.flashlightPos = glGetUniformLocation(modelShaderProgram, "flashlightPos");
     modelUniforms.flashlightDir = glGetUniformLocation(modelShaderProgram, "flashlightDir");
     modelUniforms.flashlightEnabled = glGetUniformLocation(modelShaderProgram, "flashlightEnabled");
@@ -192,6 +195,8 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
         32.0f
     );
 
+    glUniform1i(modelUniforms.skybox, 2);
+
     glUseProgram(screenShaderProgram);
     screenTextureUniform = glGetUniformLocation(screenShaderProgram, "screenTexture");
     glUniform1i(screenTextureUniform, 0);
@@ -208,6 +213,7 @@ void Week09Scene::handleInput(GLFWwindow* window)
     bool keyFIsPressed = glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS;
     bool keyBIsPressed = glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS;
     bool keyMIsPressed = glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS;
+    bool keyHIsPressed = glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS;
 
     if (key1IsPressed && !key1WasPressed)
     {
@@ -265,6 +271,11 @@ void Week09Scene::handleInput(GLFWwindow* window)
         outdoorModeEnabled = !outdoorModeEnabled;
     }
 
+    if (keyHIsPressed && !keyHWasPressed)
+    {
+        glassBackpackEnabled = !glassBackpackEnabled;
+    }
+
     keyBWasPressed = keyBIsPressed;
     keyVWasPressed = keyVIsPressed;
     keyFWasPressed = keyFIsPressed;
@@ -274,6 +285,7 @@ void Week09Scene::handleInput(GLFWwindow* window)
     keyPWasPressed = keyPIsPressed;
     keyGWasPressed = keyGIsPressed;
     keyMWasPressed = keyMIsPressed;
+    keyHWasPressed = keyHIsPressed;
 }
 
 void Week09Scene::draw(
@@ -728,6 +740,16 @@ void Week09Scene::drawBackpack(
 
     glUseProgram(modelShaderProgram);
 
+    glUniform1i(
+        modelUniforms.glassBackpackEnabled,
+        glassBackpackEnabled
+    );
+
+    if (skybox)
+    {
+        skybox->BindTexture(GL_TEXTURE2);
+    }
+
     glUniformMatrix4fv(
         modelUniforms.view,
         1,
@@ -775,11 +797,13 @@ void Week09Scene::drawBackpack(
     );
 
     glUniform1i(
-        lightingUniforms.light1Enabled, !outdoorModeEnabled && light1Enabled
+        modelUniforms.light1Enabled,
+        !outdoorModeEnabled && light1Enabled
     );
 
     glUniform1i(
-        lightingUniforms.light2Enabled, !outdoorModeEnabled && light2Enabled
+        modelUniforms.light2Enabled,
+        !outdoorModeEnabled && light2Enabled
     );
 
     glm::vec3 sunDirection(-0.3f, -1.0f, -0.2f);

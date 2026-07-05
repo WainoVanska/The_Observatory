@@ -25,6 +25,7 @@ public:
     );
 
     void Render(const glm::mat4& projection);
+    void BindTexture(GLenum textureUnit);
 
 private:
     FreeCamera* camera;

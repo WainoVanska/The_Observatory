@@ -26,6 +26,9 @@ uniform vec3 directionalLightColor;
 uniform float flashlightCutOff;
 uniform float flashlightOuterCutOff;
 
+uniform samplerCube skybox;
+uniform bool glassBackpackEnabled;
+
 
 struct Material
 {
@@ -162,6 +165,18 @@ void main()
 {
     vec3 norm = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);
+
+    if (glassBackpackEnabled)
+    {
+        float ratio = 1.00 / 1.52;
+        vec3 I = normalize(FragPos - viewPos);
+        vec3 R = refract(I, norm, ratio);
+
+        vec3 refractedColor = texture(skybox, R).rgb;
+
+        FragColor = vec4(refractedColor, 1.0);
+        return;
+    }
 
     vec3 result = vec3(0.0);
 
