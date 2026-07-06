@@ -215,6 +215,15 @@ private:
     GLuint framebufferTexture = 0;
     GLuint framebufferRBO = 0;
 
+    static constexpr int MSAA_SAMPLES = 4;
+
+    int framebufferWidth = 0;
+    int framebufferHeight = 0;
+
+    GLuint multisampleFramebuffer = 0;
+    GLuint multisampleColorTexture = 0;
+    GLuint multisampleRBO = 0;
+
     GLuint screenQuadVAO = 0;
     GLuint screenQuadVBO = 0;
 

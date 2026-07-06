@@ -296,7 +296,7 @@ void Week09Scene::draw(
     const glm::vec3& cameraFront
 )
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, multisampleFramebuffer);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
@@ -571,7 +571,20 @@ void Week09Scene::draw(
         skybox->Render(projection);
     }
 
-    // Second pass: draw framebuffer texture to the real screen
+    // Resolve multisampled framebuffer into the normal framebuffer texture.
+    // The screen shader samples framebufferTexture as a normal sampler2D,
+    // so we cannot directly sample the multisampled texture.
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, multisampleFramebuffer);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
+
+    glBlitFramebuffer(
+        0, 0, framebufferWidth, framebufferHeight,
+        0, 0, framebufferWidth, framebufferHeight,
+        GL_COLOR_BUFFER_BIT,
+        GL_NEAREST
+    );
+
+    // Second pass: draw resolved framebuffer texture to the real screen
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glDisable(GL_DEPTH_TEST);
@@ -1149,6 +1162,61 @@ void Week09Scene::drawGlassPanes(
 
 void Week09Scene::createFramebuffer(int width, int height)
 {
+    framebufferWidth = width;
+    framebufferHeight = height;
+
+    // Multisampled framebuffer
+
+    glGenFramebuffers(1, &multisampleFramebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, multisampleFramebuffer);
+
+    glGenTextures(1, &multisampleColorTexture);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, multisampleColorTexture);
+
+    glTexImage2DMultisample(
+        GL_TEXTURE_2D_MULTISAMPLE,
+        MSAA_SAMPLES,
+        GL_RGB,
+        width,
+        height,
+        GL_TRUE
+    );
+
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER,
+        GL_COLOR_ATTACHMENT0,
+        GL_TEXTURE_2D_MULTISAMPLE,
+        multisampleColorTexture,
+        0
+    );
+
+    glGenRenderbuffers(1, &multisampleRBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, multisampleRBO);
+
+    glRenderbufferStorageMultisample(
+        GL_RENDERBUFFER,
+        MSAA_SAMPLES,
+        GL_DEPTH24_STENCIL8,
+        width,
+        height
+    );
+
+    glFramebufferRenderbuffer(
+        GL_FRAMEBUFFER,
+        GL_DEPTH_STENCIL_ATTACHMENT,
+        GL_RENDERBUFFER,
+        multisampleRBO
+    );
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cout << "ERROR::FRAMEBUFFER:: Multisample framebuffer is not complete!" << std::endl;
+    }
+
+    // Normal resolved framebuffer
+
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
@@ -1178,26 +1246,9 @@ void Week09Scene::createFramebuffer(int width, int height)
         0
     );
 
-    glGenRenderbuffers(1, &framebufferRBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, framebufferRBO);
-
-    glRenderbufferStorage(
-        GL_RENDERBUFFER,
-        GL_DEPTH24_STENCIL8,
-        width,
-        height
-    );
-
-    glFramebufferRenderbuffer(
-        GL_FRAMEBUFFER,
-        GL_DEPTH_STENCIL_ATTACHMENT,
-        GL_RENDERBUFFER,
-        framebufferRBO
-    );
-
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+        std::cout << "ERROR::FRAMEBUFFER:: Resolved framebuffer is not complete!" << std::endl;
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1293,7 +1344,10 @@ void Week09Scene::cleanup()
 
     glDeleteFramebuffers(1, &framebuffer);
     glDeleteTextures(1, &framebufferTexture);
-    glDeleteRenderbuffers(1, &framebufferRBO);
+
+    glDeleteFramebuffers(1, &multisampleFramebuffer);
+    glDeleteTextures(1, &multisampleColorTexture);
+    glDeleteRenderbuffers(1, &multisampleRBO);
 
     glDeleteVertexArrays(1, &screenQuadVAO);
     glDeleteBuffers(1, &screenQuadVBO);

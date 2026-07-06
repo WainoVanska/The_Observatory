@@ -18,6 +18,8 @@ GLFWwindow* createWindow(
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_STENCIL_BITS, 8);
 
+    glfwWindowHint(GLFW_SAMPLES, 4);
+
     GLFWwindow* window = glfwCreateWindow(width, height, title, nullptr, nullptr);
 
     if (!window) {
@@ -41,6 +43,7 @@ GLFWwindow* createWindow(
     glEnable(GL_STENCIL_TEST);
     glEnable(GL_BLEND);
     glEnable(GL_CULL_FACE);
+    glEnable(GL_MULTISAMPLE);
 
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
