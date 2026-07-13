@@ -1355,8 +1355,8 @@ void Week09Scene::createAsteroidInstances()
     );
 
     std::uniform_real_distribution<float> scaleDistribution(
-        0.05f,
-        0.25f
+        1.0f,
+        3.0f
     );
 
     std::uniform_real_distribution<float> rotationDistribution(
@@ -1449,17 +1449,165 @@ void Week09Scene::drawMiniPlanetSystem(
         return;
     }
 
+    const glm::vec3 mainLightColor(1.25f, 1.25f, 1.25f);
+
+    /*
+        Parent transformation for the entire miniature system.
+
+        The asteroid matrices are generated using a large radius such as 50.
+        This parent matrix moves and miniaturizes both the planet and rocks.
+    */
     glm::mat4 systemModel(1.0f);
 
     systemModel = glm::translate(
         systemModel,
-        glm::vec3(1.3f, -0.1f, -1.2f)
+        glm::vec3(1.3f, 0.0f, -1.2f)
     );
 
     systemModel = glm::scale(
         systemModel,
         glm::vec3(0.018f)
     );
+
+    // Draw the planet normally
+
+    glUseProgram(modelShaderProgram);
+
+    glm::mat4 planetLocal(1.0f);
+
+    planetLocal = glm::scale(
+        planetLocal,
+        glm::vec3(8.0f)
+    );
+
+    glm::mat4 planetModel =
+        systemModel * planetLocal;
+
+    glUniformMatrix4fv(
+        modelUniforms.model,
+        1,
+        GL_FALSE,
+        glm::value_ptr(planetModel)
+    );
+
+    glUniformMatrix4fv(
+        modelUniforms.view,
+        1,
+        GL_FALSE,
+        glm::value_ptr(view)
+    );
+
+    glUniformMatrix4fv(
+        modelUniforms.projection,
+        1,
+        GL_FALSE,
+        glm::value_ptr(projection)
+    );
+
+    glUniform3fv(
+        modelUniforms.viewPos,
+        1,
+        glm::value_ptr(cameraPos)
+    );
+
+    glUniform3fv(
+        modelUniforms.lightPos,
+        1,
+        glm::value_ptr(lightPos)
+    );
+
+    glUniform3fv(
+        modelUniforms.lightColor,
+        1,
+        glm::value_ptr(mainLightColor)
+    );
+
+    glUniform3fv(
+        modelUniforms.secondLightPos,
+        1,
+        glm::value_ptr(secondLightPos)
+    );
+
+    glUniform3fv(
+        modelUniforms.secondLightColor,
+        1,
+        glm::value_ptr(secondLightColor)
+    );
+
+    glUniform1i(
+        modelUniforms.light1Enabled,
+        !outdoorModeEnabled && light1Enabled
+    );
+
+    glUniform1i(
+        modelUniforms.light2Enabled,
+        !outdoorModeEnabled && light2Enabled
+    );
+
+    glm::vec3 sunDirection(-0.3f, -1.0f, -0.2f);
+    glm::vec3 sunColor(1.0f, 0.95f, 0.80f);
+
+    glUniform1i(
+        modelUniforms.directionalLightEnabled,
+        outdoorModeEnabled
+    );
+
+    glUniform3fv(
+        modelUniforms.directionalLightDirection,
+        1,
+        glm::value_ptr(sunDirection)
+    );
+
+    glUniform3fv(
+        modelUniforms.directionalLightColor,
+        1,
+        glm::value_ptr(sunColor)
+    );
+
+    glUniform3fv(
+        modelUniforms.flashlightPos,
+        1,
+        glm::value_ptr(cameraPos)
+    );
+
+    glUniform3fv(
+        modelUniforms.flashlightDir,
+        1,
+        glm::value_ptr(cameraFront)
+    );
+
+    glUniform1i(
+        modelUniforms.flashlightEnabled,
+        flashlightEnabled
+    );
+
+    glUniform1f(
+        modelUniforms.flashlightCutOff,
+        glm::cos(glm::radians(10.0f))
+    );
+
+    glUniform1f(
+        modelUniforms.flashlightOuterCutOff,
+        glm::cos(glm::radians(28.0f))
+    );
+
+    // Ensure the planet is not rendered using backpack refraction.
+    glUniform1i(
+        modelUniforms.glassBackpackEnabled,
+        false
+    );
+
+    glUniform1f(
+        glGetUniformLocation(
+            modelShaderProgram,
+            "material.shininess"
+        ),
+        16.0f
+    );
+
+    planet->draw(modelShaderProgram);
+
+    // Draw the instanced asteroid ring
 
     glUseProgram(instancedModelShaderProgram);
 
@@ -1493,10 +1641,156 @@ void Week09Scene::drawMiniPlanetSystem(
         glm::value_ptr(projection)
     );
 
+    glUniform3fv(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "viewPos"
+        ),
+        1,
+        glm::value_ptr(cameraPos)
+    );
+
+    glUniform3fv(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "lightPos"
+        ),
+        1,
+        glm::value_ptr(lightPos)
+    );
+
+    glUniform3fv(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "lightColor"
+        ),
+        1,
+        glm::value_ptr(mainLightColor)
+    );
+
+    glUniform3fv(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "secondLightPos"
+        ),
+        1,
+        glm::value_ptr(secondLightPos)
+    );
+
+    glUniform3fv(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "secondLightColor"
+        ),
+        1,
+        glm::value_ptr(secondLightColor)
+    );
+
+    glUniform1i(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "light1Enabled"
+        ),
+        !outdoorModeEnabled && light1Enabled
+    );
+
+    glUniform1i(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "light2Enabled"
+        ),
+        !outdoorModeEnabled && light2Enabled
+    );
+
+    glUniform1i(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "directionalLightEnabled"
+        ),
+        outdoorModeEnabled
+    );
+
+    glUniform3fv(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "directionalLightDirection"
+        ),
+        1,
+        glm::value_ptr(sunDirection)
+    );
+
+    glUniform3fv(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "directionalLightColor"
+        ),
+        1,
+        glm::value_ptr(sunColor)
+    );
+
+    glUniform3fv(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "flashlightPos"
+        ),
+        1,
+        glm::value_ptr(cameraPos)
+    );
+
+    glUniform3fv(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "flashlightDir"
+        ),
+        1,
+        glm::value_ptr(cameraFront)
+    );
+
+    glUniform1i(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "flashlightEnabled"
+        ),
+        flashlightEnabled
+    );
+
+    glUniform1f(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "flashlightCutOff"
+        ),
+        glm::cos(glm::radians(10.0f))
+    );
+
+    glUniform1f(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "flashlightOuterCutOff"
+        ),
+        glm::cos(glm::radians(28.0f))
+    );
+
+    glUniform1i(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "glassBackpackEnabled"
+        ),
+        false
+    );
+
+    glUniform1f(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "material.shininess"
+        ),
+        8.0f
+    );
+
     rock->drawInstanced(
         instancedModelShaderProgram,
         ASTEROID_COUNT
     );
+
 }
 
 void Week09Scene::cleanup()
