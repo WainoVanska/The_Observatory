@@ -17,6 +17,8 @@ public:
     Model(const std::string& path);
 
     void draw(GLuint shaderProgram) const;
+    void configureInstancing(GLuint instanceVBO);
+    void drawInstanced(GLuint shaderProgram, GLsizei instanceCount) const;
 
 private:
     std::vector<Mesh> meshes;

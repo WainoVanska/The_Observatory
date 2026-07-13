@@ -36,6 +36,9 @@ public:
 
     void draw(GLuint shaderProgram) const;
 
+    void configureInstanceMatrix(GLuint instanceVBO);
+    void drawInstanced(GLuint shaderProgram, GLsizei instanceCount) const;
+
 private:
     GLuint VAO = 0;
     GLuint VBO = 0;

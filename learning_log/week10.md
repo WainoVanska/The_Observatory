@@ -10,8 +10,8 @@
 
 - a few tricks on how to deal with aliasing. I added 4X MSAA (multisampling) for the framebuffer making edges in certain angles appear smoother since now a pixel is split into 4 to get a more accurate color. Since I already had the custom framebuffer from the blurring effect, I had to implement the changes to the framebuffer specifically instead of the window framebuffer, this would've started analysing pixels on top of blurring which would've not made any sense.
 
-<img src="../learning_log_images/glass_backpack.png" alt="-" width="500">
-
 ## I struggled:
+
+- I was mainly reading through material this week, so I didn't encounter concrete issues.
 
 ## Thoughts:

@@ -17,6 +17,25 @@ void Model::draw(GLuint shaderProgram) const
     }
 }
 
+void Model::configureInstancing(GLuint instanceVBO)
+{
+    for (Mesh& mesh : meshes)
+    {
+        mesh.configureInstanceMatrix(instanceVBO);
+    }
+}
+
+void Model::drawInstanced(
+    GLuint shaderProgram,
+    GLsizei instanceCount
+) const
+{
+    for (const Mesh& mesh : meshes)
+    {
+        mesh.drawInstanced(shaderProgram, instanceCount);
+    }
+}
+
 void Model::loadModel(const std::string& path)
 {
     Assimp::Importer importer;

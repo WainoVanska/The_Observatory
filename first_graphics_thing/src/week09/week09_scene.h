@@ -185,24 +185,36 @@ private:
     void createScreenQuad();
     void drawScreenQuad();
 
+    void createAsteroidInstances();
+
+    void drawMiniPlanetSystem(
+        const glm::mat4& view,
+        const glm::mat4& projection,
+        const glm::vec3& cameraPos,
+        const glm::vec3& cameraFront,
+        const glm::vec3& lightPos,
+        const glm::vec3& secondLightPos,
+        const glm::vec3& secondLightColor
+    );
+
 private:
     GLuint shaderProgram = 0;
     GLuint lampShaderProgram = 0;
     GLuint normalDebugShaderProgram = 0;
-
     GLuint modelShaderProgram = 0;
     GLuint modelNormalDebugShaderProgram = 0;
-
     GLuint depthDebugShaderProgram = 0;
     GLuint modelDepthDebugShaderProgram = 0;
-
     GLuint modelOutlineShaderProgram = 0;
-
     GLuint glassShaderProgram = 0;
+    GLuint instancedModelShaderProgram = 0;
+
+    GLuint asteroidInstanceVBO = 0;
 
     Model* backpack = nullptr;
-
     SkyBox* skybox = nullptr;
+    Model* planet = nullptr;
+    Model* rock = nullptr;
 
     GLuint containerTexture = 0;
     GLuint containerSpecularTexture = 0;
@@ -216,6 +228,7 @@ private:
     GLuint framebufferRBO = 0;
 
     static constexpr int MSAA_SAMPLES = 4;
+    static constexpr unsigned int ASTEROID_COUNT = 3000;
 
     int framebufferWidth = 0;
     int framebufferHeight = 0;
@@ -249,6 +262,7 @@ private:
     GlassShaderUniforms glassUniforms{};
 
     std::vector<glm::vec3> glassPanePositions{};
+    std::vector<glm::mat4> asteroidMatrices;
 
     bool light1Enabled = true;
     bool light2Enabled = true;

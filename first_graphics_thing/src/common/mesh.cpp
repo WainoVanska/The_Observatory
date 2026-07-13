@@ -75,6 +75,36 @@ void Mesh::setupMesh()
     glBindVertexArray(0);
 }
 
+void Mesh::configureInstanceMatrix(GLuint instanceVBO)
+{
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+
+    constexpr GLsizei stride = sizeof(glm::mat4);
+    constexpr std::size_t columnSize = sizeof(glm::vec4);
+
+    for (GLuint column = 0; column < 4; column++)
+    {
+        GLuint location = 3 + column;
+
+        glEnableVertexAttribArray(location);
+
+        glVertexAttribPointer(
+            location,
+            4,
+            GL_FLOAT,
+            GL_FALSE,
+            stride,
+            reinterpret_cast<void*>(column * columnSize)
+        );
+
+        // INSTANCING UPDATE: Advance this attribute once per instance, not once per vertex
+        glVertexAttribDivisor(location, 1);
+    }
+
+    glBindVertexArray(0);
+}
+
 void Mesh::draw(GLuint shaderProgram) const
 {
     unsigned int diffuseNr = 1;
@@ -115,5 +145,53 @@ void Mesh::draw(GLuint shaderProgram) const
     );
     glBindVertexArray(0);
 
+    glActiveTexture(GL_TEXTURE0);
+}
+
+void Mesh::drawInstanced(
+    GLuint shaderProgram,
+    GLsizei instanceCount
+) const
+{
+    unsigned int diffuseNr = 1;
+    unsigned int specularNr = 1;
+
+    for (unsigned int i = 0; i < textures.size(); i++)
+    {
+        glActiveTexture(GL_TEXTURE0 + i);
+
+        std::string number;
+        std::string name = textures[i].type;
+
+        if (name == "texture_diffuse")
+        {
+            number = std::to_string(diffuseNr++);
+        }
+        else if (name == "texture_specular")
+        {
+            number = std::to_string(specularNr++);
+        }
+
+        std::string uniformName = "material." + name + number;
+
+        glUniform1i(
+            glGetUniformLocation(shaderProgram, uniformName.c_str()),
+            i
+        );
+
+        glBindTexture(GL_TEXTURE_2D, textures[i].id);
+    }
+
+    glBindVertexArray(VAO);
+
+    glDrawElementsInstanced(
+        GL_TRIANGLES,
+        static_cast<GLsizei>(indices.size()),
+        GL_UNSIGNED_INT,
+        nullptr,
+        instanceCount
+    );
+
+    glBindVertexArray(0);
     glActiveTexture(GL_TEXTURE0);
 }

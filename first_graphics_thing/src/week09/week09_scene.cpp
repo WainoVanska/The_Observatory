@@ -1,15 +1,16 @@
 #include "week09_scene.h"
 
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include "../common/shader.h"
 #include "../common/texture.h"
 
 #include <map>
 #include <vector>
-
 #include <iostream>
+#include <random>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 
 void Week09Scene::init(int width, int height, FreeCamera* camera)
 {
@@ -63,18 +64,25 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
         "src/week09/screen_fragment.glsl"
     );
 
+    instancedModelShaderProgram = createShaderProgram(
+        "src/week09/instanced_model_vertex.glsl",
+        "src/week09/model_fragment.glsl"
+    );
+
     containerTexture = loadTexture("assets/textures/container.png");
     containerSpecularTexture = loadTexture("assets/textures/container_specular.png");
 
     glassTexture = loadTransparentTexture("assets/textures/window.png");
 
     backpack = new Model("assets/models/backpack/backpack.obj");
+    planet = new Model("assets/models/planet/planet.obj");
+    rock = new Model("assets/models/rock/rock.obj");
 
     cube = createCubeMesh();
     sphere = createSphereMesh();
 
+    createAsteroidInstances();
     createGlassPaneMesh();
-
     createFramebuffer(width, height);
     createScreenQuad();
 
@@ -475,6 +483,16 @@ void Week09Scene::draw(
     glStencilMask(0x00);
 
     drawLitObjects();
+
+    drawMiniPlanetSystem(
+        view,
+        projection,
+        cameraPos,
+        cameraFront,
+        lightPos,
+        secondLightPos,
+        secondLightColor
+    );
 
     if (outlineEnabled)
     {
@@ -1320,6 +1338,167 @@ void Week09Scene::drawScreenQuad()
     glBindVertexArray(0);
 }
 
+void Week09Scene::createAsteroidInstances()
+{
+    if (!rock)
+    {
+        return;
+    }
+
+    asteroidMatrices.resize(ASTEROID_COUNT);
+
+    std::mt19937 randomEngine(1337);
+
+    std::uniform_real_distribution<float> displacement(
+        -4.0f,
+        4.0f
+    );
+
+    std::uniform_real_distribution<float> scaleDistribution(
+        0.05f,
+        0.25f
+    );
+
+    std::uniform_real_distribution<float> rotationDistribution(
+        0.0f,
+        glm::two_pi<float>()
+    );
+
+    constexpr float radius = 50.0f;
+
+    for (unsigned int i = 0; i < ASTEROID_COUNT; i++)
+    {
+        float percentage =
+            static_cast<float>(i) /
+            static_cast<float>(ASTEROID_COUNT);
+
+        float angle =
+            percentage *
+            glm::two_pi<float>();
+
+        float x =
+            std::sin(angle) * radius +
+            displacement(randomEngine);
+
+        float y =
+            displacement(randomEngine) * 0.4f;
+
+        float z =
+            std::cos(angle) * radius +
+            displacement(randomEngine);
+
+        glm::mat4 model(1.0f);
+
+        model = glm::translate(
+            model,
+            glm::vec3(x, y, z)
+        );
+
+        float scale =
+            scaleDistribution(randomEngine);
+
+        model = glm::scale(
+            model,
+            glm::vec3(scale)
+        );
+
+        model = glm::rotate(
+            model,
+            rotationDistribution(randomEngine),
+            glm::normalize(
+                glm::vec3(0.4f, 0.6f, 0.8f)
+            )
+        );
+
+        asteroidMatrices[i] = model;
+    }
+
+    glGenBuffers(1, &asteroidInstanceVBO);
+
+    glBindBuffer(
+        GL_ARRAY_BUFFER,
+        asteroidInstanceVBO
+    );
+
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        asteroidMatrices.size() * sizeof(glm::mat4),
+        asteroidMatrices.data(),
+        GL_STATIC_DRAW
+    );
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    rock->configureInstancing(
+        asteroidInstanceVBO
+    );
+}
+
+void Week09Scene::drawMiniPlanetSystem(
+    const glm::mat4& view,
+    const glm::mat4& projection,
+    const glm::vec3& cameraPos,
+    const glm::vec3& cameraFront,
+    const glm::vec3& lightPos,
+    const glm::vec3& secondLightPos,
+    const glm::vec3& secondLightColor
+)
+{
+    if (!planet || !rock)
+    {
+        return;
+    }
+
+    glm::mat4 systemModel(1.0f);
+
+    systemModel = glm::translate(
+        systemModel,
+        glm::vec3(1.3f, -0.1f, -1.2f)
+    );
+
+    systemModel = glm::scale(
+        systemModel,
+        glm::vec3(0.018f)
+    );
+
+    glUseProgram(instancedModelShaderProgram);
+
+    glUniformMatrix4fv(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "systemModel"
+        ),
+        1,
+        GL_FALSE,
+        glm::value_ptr(systemModel)
+    );
+
+    glUniformMatrix4fv(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "view"
+        ),
+        1,
+        GL_FALSE,
+        glm::value_ptr(view)
+    );
+
+    glUniformMatrix4fv(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "projection"
+        ),
+        1,
+        GL_FALSE,
+        glm::value_ptr(projection)
+    );
+
+    rock->drawInstanced(
+        instancedModelShaderProgram,
+        ASTEROID_COUNT
+    );
+}
+
 void Week09Scene::cleanup()
 {
     deleteCubeMesh(cube);
@@ -1352,6 +1531,9 @@ void Week09Scene::cleanup()
     glDeleteVertexArrays(1, &screenQuadVAO);
     glDeleteBuffers(1, &screenQuadVBO);
 
+    glDeleteBuffers(1, &asteroidInstanceVBO);
+    glDeleteProgram(instancedModelShaderProgram);
+
     glDeleteProgram(screenShaderProgram);
 
     delete backpack;
@@ -1359,4 +1541,10 @@ void Week09Scene::cleanup()
 
     delete skybox;
     skybox = nullptr;
+
+    delete planet;
+    planet = nullptr;
+
+    delete rock;
+    rock = nullptr;
 }
