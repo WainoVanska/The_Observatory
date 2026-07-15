@@ -66,7 +66,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
 
     instancedModelShaderProgram = createShaderProgram(
         "src/week09/instanced_model_vertex.glsl",
-        "src/week09/model_fragment.glsl"
+        "src/week09/instanced_rock_fragment.glsl"
     );
 
     containerTexture = loadTexture("assets/textures/container.png");
@@ -1350,13 +1350,13 @@ void Week09Scene::createAsteroidInstances()
     std::mt19937 randomEngine(1337);
 
     std::uniform_real_distribution<float> displacement(
-        -4.0f,
-        4.0f
+        -8.0f,
+        8.0f
     );
 
     std::uniform_real_distribution<float> scaleDistribution(
-        1.0f,
-        3.0f
+        0.10f,
+        0.28f
     );
 
     std::uniform_real_distribution<float> rotationDistribution(
@@ -1381,7 +1381,7 @@ void Week09Scene::createAsteroidInstances()
             displacement(randomEngine);
 
         float y =
-            displacement(randomEngine) * 0.4f;
+            displacement(randomEngine) * 0.25f;
 
         float z =
             std::cos(angle) * radius +
@@ -1451,25 +1451,42 @@ void Week09Scene::drawMiniPlanetSystem(
 
     const glm::vec3 mainLightColor(1.25f, 1.25f, 1.25f);
 
-    /*
-        Parent transformation for the entire miniature system.
+    const float orbitAngle =
+        static_cast<float>(glfwGetTime()) *
+        glm::radians(3.0f);
 
-        The asteroid matrices are generated using a large radius such as 50.
-        This parent matrix moves and miniaturizes both the planet and rocks.
-    */
-    glm::mat4 systemModel(1.0f);
+    glm::mat4 baseSystemModel(1.0f);
 
-    systemModel = glm::translate(
-        systemModel,
-        glm::vec3(1.3f, 0.0f, -1.2f)
+    baseSystemModel = glm::translate(
+        baseSystemModel,
+        glm::vec3(1.3f, 0.0f, -1.5f)
     );
 
-    systemModel = glm::scale(
-        systemModel,
+    baseSystemModel = glm::rotate(
+        baseSystemModel,
+        glm::radians(0.0f),
+        glm::vec3(1.0f, 0.0f, 0.0f)
+    );
+
+    // Planet parent transform
+    glm::mat4 planetSystemModel =
+        glm::scale(
+            baseSystemModel,
+            glm::vec3(0.018f)
+        );
+
+    // Asteroid parent transform
+    glm::mat4 asteroidSystemModel =
+        glm::rotate(
+            baseSystemModel,
+            orbitAngle,
+            glm::vec3(0.0f, 1.0f, 0.0f)
+        );
+
+    asteroidSystemModel = glm::scale(
+        asteroidSystemModel,
         glm::vec3(0.018f)
     );
-
-    // Draw the planet normally
 
     glUseProgram(modelShaderProgram);
 
@@ -1481,7 +1498,7 @@ void Week09Scene::drawMiniPlanetSystem(
     );
 
     glm::mat4 planetModel =
-        systemModel * planetLocal;
+        planetSystemModel * planetLocal;
 
     glUniformMatrix4fv(
         modelUniforms.model,
@@ -1618,7 +1635,7 @@ void Week09Scene::drawMiniPlanetSystem(
         ),
         1,
         GL_FALSE,
-        glm::value_ptr(systemModel)
+        glm::value_ptr(asteroidSystemModel)
     );
 
     glUniformMatrix4fv(
@@ -1770,18 +1787,40 @@ void Week09Scene::drawMiniPlanetSystem(
         glm::cos(glm::radians(28.0f))
     );
 
-    glUniform1i(
+    const glm::vec3 rockColor(
+        0.55f,
+        0.45f,
+        0.34f
+    );
+
+    const glm::vec3 rockSpecularColor(
+        0.08f,
+        0.08f,
+        0.08f
+    );
+
+    glUniform3fv(
         glGetUniformLocation(
             instancedModelShaderProgram,
-            "glassBackpackEnabled"
+            "objectColor"
         ),
-        false
+        1,
+        glm::value_ptr(rockColor)
+    );
+
+    glUniform3fv(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "objectSpecularColor"
+        ),
+        1,
+        glm::value_ptr(rockSpecularColor)
     );
 
     glUniform1f(
         glGetUniformLocation(
             instancedModelShaderProgram,
-            "material.shininess"
+            "shininess"
         ),
         8.0f
     );

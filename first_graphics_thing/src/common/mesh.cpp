@@ -110,31 +110,59 @@ void Mesh::draw(GLuint shaderProgram) const
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
 
+    bool hasDiffuseMap = false;
+    bool hasSpecularMap = false;
+
     for (unsigned int i = 0; i < textures.size(); i++)
     {
         glActiveTexture(GL_TEXTURE0 + i);
 
         std::string number;
-        std::string name = textures[i].type;
+        const std::string& name = textures[i].type;
 
         if (name == "texture_diffuse")
         {
             number = std::to_string(diffuseNr++);
+            hasDiffuseMap = true;
         }
         else if (name == "texture_specular")
         {
             number = std::to_string(specularNr++);
+            hasSpecularMap = true;
         }
 
-        std::string uniformName = "material." + name + number;
+        std::string uniformName =
+            "material." + name + number;
 
         glUniform1i(
-            glGetUniformLocation(shaderProgram, uniformName.c_str()),
-            i
+            glGetUniformLocation(
+                shaderProgram,
+                uniformName.c_str()
+            ),
+            static_cast<GLint>(i)
         );
 
-        glBindTexture(GL_TEXTURE_2D, textures[i].id);
+        glBindTexture(
+            GL_TEXTURE_2D,
+            textures[i].id
+        );
     }
+
+    glUniform1i(
+        glGetUniformLocation(
+            shaderProgram,
+            "material.hasDiffuseMap"
+        ),
+        hasDiffuseMap
+    );
+
+    glUniform1i(
+        glGetUniformLocation(
+            shaderProgram,
+            "material.hasSpecularMap"
+        ),
+        hasSpecularMap
+    );
 
     glBindVertexArray(VAO);
     glDrawElements(
@@ -156,31 +184,59 @@ void Mesh::drawInstanced(
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
 
+    bool hasDiffuseMap = false;
+    bool hasSpecularMap = false;
+
     for (unsigned int i = 0; i < textures.size(); i++)
     {
         glActiveTexture(GL_TEXTURE0 + i);
 
         std::string number;
-        std::string name = textures[i].type;
+        const std::string& name = textures[i].type;
 
         if (name == "texture_diffuse")
         {
             number = std::to_string(diffuseNr++);
+            hasDiffuseMap = true;
         }
         else if (name == "texture_specular")
         {
             number = std::to_string(specularNr++);
+            hasSpecularMap = true;
         }
 
-        std::string uniformName = "material." + name + number;
+        const std::string uniformName =
+            "material." + name + number;
 
         glUniform1i(
-            glGetUniformLocation(shaderProgram, uniformName.c_str()),
-            i
+            glGetUniformLocation(
+                shaderProgram,
+                uniformName.c_str()
+            ),
+            static_cast<GLint>(i)
         );
 
-        glBindTexture(GL_TEXTURE_2D, textures[i].id);
+        glBindTexture(
+            GL_TEXTURE_2D,
+            textures[i].id
+        );
     }
+
+    glUniform1i(
+        glGetUniformLocation(
+            shaderProgram,
+            "material.hasDiffuseMap"
+        ),
+        hasDiffuseMap
+    );
+
+    glUniform1i(
+        glGetUniformLocation(
+            shaderProgram,
+            "material.hasSpecularMap"
+        ),
+        hasSpecularMap
+    );
 
     glBindVertexArray(VAO);
 

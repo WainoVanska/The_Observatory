@@ -228,7 +228,7 @@ private:
     GLuint framebufferRBO = 0;
 
     static constexpr int MSAA_SAMPLES = 4;
-    static constexpr unsigned int ASTEROID_COUNT = 3000;
+    static constexpr unsigned int ASTEROID_COUNT = 10000;
 
     int framebufferWidth = 0;
     int framebufferHeight = 0;

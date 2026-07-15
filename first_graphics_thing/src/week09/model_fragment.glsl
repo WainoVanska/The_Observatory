@@ -41,12 +41,18 @@ uniform Material material;
 
 vec3 getBaseColor()
 {
-    return texture(material.texture_diffuse1, TexCoords).rgb;
+    return texture(
+        material.texture_diffuse1,
+        TexCoords
+    ).rgb;
 }
 
 vec3 getSpecularColor()
 {
-    return texture(material.texture_specular1, TexCoords).rgb;
+    return texture(
+        material.texture_specular1,
+        TexCoords
+    ).rgb;
 }
 
 vec3 calculatePointLight(
@@ -178,19 +184,36 @@ void main()
         return;
     }
 
-    vec3 result = vec3(0.0);
+vec3 baseColor = getBaseColor();
+
+float ambientStrength;
+
+ambientStrength = 0.08;
+
+ambientStrength = 0.45;
+
+vec3 result = ambientStrength * baseColor;
 
     if (light1Enabled)
     {
-        result += calculatePointLight(lightPos, lightColor, norm, viewDir);
+        result += calculatePointLight(
+            lightPos,
+            lightColor,
+            norm,
+            viewDir
+        );
     }
 
     if (light2Enabled)
     {
-        result += calculatePointLight(secondLightPos, secondLightColor, norm, viewDir);
+        result += calculatePointLight(
+            secondLightPos,
+            secondLightColor,
+            norm,
+            viewDir
+        );
     }
 
-    
     if (directionalLightEnabled)
     {
         result += calculateDirectionalLight(
@@ -203,7 +226,10 @@ void main()
 
     if (flashlightEnabled)
     {
-        result += calculateFlashlight(norm, viewDir);
+        result += calculateFlashlight(
+            norm,
+            viewDir
+        );
     }
 
     FragColor = vec4(result, 1.0);
