@@ -70,6 +70,8 @@ vec3 calculatePointLight(
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = diff * currentLightColor * baseColor;
 
+    vec3 ambient = 0.02 * currentLightColor * baseColor;
+
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
     vec3 specular = spec * currentLightColor * specularColor;
@@ -86,10 +88,11 @@ vec3 calculatePointLight(
         quadratic * distanceToLight * distanceToLight
     );
 
-    diffuse *= attenuation;
-    specular *= attenuation;
-
-    return diffuse + specular;
+    return attenuation * (
+        ambient +
+        diffuse +
+        specular
+    );
 }
 
 vec3 calculateFlashlight(
@@ -130,7 +133,12 @@ vec3 calculateFlashlight(
     diffuse *= attenuation * intensity;
     specular *= attenuation * intensity;
 
-    return + diffuse + specular;
+    vec3 ambient = 0.001 * baseColor;
+
+    return ambient +
+        attenuation *
+        intensity *
+        (diffuse + specular);
 }
 
 vec3 calculateDirectionalLight(
@@ -143,8 +151,7 @@ vec3 calculateDirectionalLight(
     vec3 baseColor = getBaseColor();
     vec3 specularColor = getSpecularColor();
 
-    // lightDirection describes where the sunlight travels toward.
-    // We negate it to get direction from fragment toward the light source.
+    // lightDirection describes where the sunlight travels toward
     vec3 lightDir = normalize(-lightDirection);
 
     float diff = max(dot(norm, lightDir), 0.0);
@@ -155,7 +162,9 @@ vec3 calculateDirectionalLight(
     float spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
     vec3 specular = specularStrength * spec * currentLightColor * specularColor;
 
-    return diffuse + specular;
+    vec3 ambient = 0.18 * currentLightColor * baseColor;
+
+    return ambient + diffuse + specular;
 }
 
 void main()
@@ -177,7 +186,7 @@ void main()
         return;
     }
 
-    vec3 result = vec3(0.0);
+    vec3 result = vec3(0.0);    
 
     if (light1Enabled)
     {

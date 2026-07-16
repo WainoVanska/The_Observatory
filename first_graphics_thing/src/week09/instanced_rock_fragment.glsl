@@ -66,6 +66,11 @@ vec3 calculatePointLight(
         currentLightColor *
         objectColor;
 
+    vec3 ambient =
+        0.02 *
+        currentLightColor *
+        objectColor;
+
     vec3 halfwayDir = safeNormalize(
         lightDir + viewDir,
         lightDir
@@ -95,6 +100,7 @@ vec3 calculatePointLight(
     );
 
     return attenuation * (
+        ambient +
         diffuse +
         specular
     );
@@ -118,6 +124,11 @@ vec3 calculateDirectionalLight(
         directionalLightColor *
         objectColor;
 
+    vec3 ambient =
+        0.18 *
+        directionalLightColor *
+        objectColor;
+
     vec3 halfwayDir = safeNormalize(
         lightDir + viewDir,
         lightDir
@@ -134,7 +145,7 @@ vec3 calculateDirectionalLight(
         directionalLightColor *
         objectSpecularColor;
 
-    return diffuse + specular;
+    return ambient + diffuse + specular;
 }
 
 vec3 calculateFlashlight(
@@ -202,7 +213,12 @@ vec3 calculateFlashlight(
         0.20 * distanceToLight * distanceToLight
     );
 
-    return intensity *
+    vec3 ambient =
+    0.001 *
+    objectColor;
+
+    return ambient +
+        intensity *
         attenuation *
         (diffuse + specular);
 }
@@ -219,7 +235,6 @@ void main()
         vec3(0.0, 0.0, 1.0)
     );
 
-    // The rocks remain visible even when every optional light is off.
     vec3 result = vec3(0.0);
 
     if (light1Enabled)

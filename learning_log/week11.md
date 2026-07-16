@@ -6,7 +6,7 @@
 
 <img src="../learning_log_images/instancing_asteroids.png" alt="-" width="500">
 
-- how to gamma correct models, textures and object in the scene through the correct order of operations in the fragment shaders. 
+- how to gamma correct models, textures and objects in the scene through the correct order of operations in the fragment shaders. 
 
 *image also contains tweaks with the ambiences compared to the upper screenshot, so the comparison isn't as clear*
 
