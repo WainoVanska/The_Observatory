@@ -4,10 +4,19 @@
 
 void setMaterial(GLuint shaderProgram, const Material& material)
 {
+    const glm::vec3 linearDiffuseColor =
+        glm::pow(
+            material.diffuseColor,
+            glm::vec3(2.2f)
+        );
+
     glUniform3fv(
-        glGetUniformLocation(shaderProgram, "material.diffuseColor"),
+        glGetUniformLocation(
+            shaderProgram,
+            "material.diffuseColor"
+        ),
         1,
-        &material.diffuseColor[0]
+        glm::value_ptr(linearDiffuseColor)
     );
 
     glUniform3fv(

@@ -634,6 +634,22 @@ void Week09Scene::draw(
         true
     );
 
+    glUniform1i(
+        glGetUniformLocation(
+            screenShaderProgram,
+            "hdrEnabled"
+        ),
+        true
+    );
+
+    glUniform1f(
+        glGetUniformLocation(
+            screenShaderProgram,
+            "exposure"
+        ),
+        1.2f
+    );
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(
         GL_TEXTURE_2D,
@@ -1212,7 +1228,7 @@ void Week09Scene::createFramebuffer(int width, int height)
     glTexImage2DMultisample(
         GL_TEXTURE_2D_MULTISAMPLE,
         MSAA_SAMPLES,
-        GL_RGB,
+        GL_RGB16F,
         width,
         height,
         GL_TRUE
@@ -1262,7 +1278,7 @@ void Week09Scene::createFramebuffer(int width, int height)
     glTexImage2D(
         GL_TEXTURE_2D,
         0,
-        GL_RGB,
+        GL_RGB16F,
         width,
         height,
         0,
@@ -1346,6 +1362,30 @@ void Week09Scene::drawScreenQuad()
     glUniform1i(
         glGetUniformLocation(screenShaderProgram, "blurEnabled"),
         blurEnabled
+    );
+
+    glUniform1i(
+        glGetUniformLocation(
+            screenShaderProgram,
+            "gammaCorrectionEnabled"
+        ),
+        true
+    );
+
+    glUniform1i(
+        glGetUniformLocation(
+            screenShaderProgram,
+            "hdrEnabled"
+        ),
+        true
+    );
+
+    glUniform1f(
+        glGetUniformLocation(
+            screenShaderProgram,
+            "exposure"
+        ),
+        1.2f
     );
 
     glActiveTexture(GL_TEXTURE0);

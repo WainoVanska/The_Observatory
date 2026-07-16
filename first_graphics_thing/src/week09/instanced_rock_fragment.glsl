@@ -84,10 +84,14 @@ vec3 calculatePointLight(
     float distanceToLight =
         length(currentLightPos - FragPos);
 
+    float constant = 1.0;
+    float linear = 0.14;
+    float quadratic = 0.07;
+
     float attenuation = 1.0 / (
-        1.0 +
-        0.35 * distanceToLight +
-        0.44 * distanceToLight * distanceToLight
+        constant +
+        linear * distanceToLight +
+        quadratic * distanceToLight * distanceToLight
     );
 
     return attenuation * (

@@ -7,6 +7,8 @@ in vec2 TexCoords;
 uniform sampler2D screenTexture;
 uniform bool blurEnabled;
 uniform bool gammaCorrectionEnabled;
+uniform bool hdrEnabled;
+uniform float exposure;
 
 void main()
 {
@@ -50,6 +52,13 @@ void main()
                 TexCoords + offsets[i]
             ).rgb * kernel[i];
         }
+    }
+
+    if (hdrEnabled)
+    {
+        color = vec3(1.0) - exp(
+            -color * exposure
+        );
     }
 
     if (gammaCorrectionEnabled)

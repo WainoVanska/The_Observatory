@@ -73,26 +73,33 @@ bool CubemapTexture::Load()
             return false;
         }
 
-        GLenum format = GL_RGB;
+        GLenum dataFormat = GL_RGB;
+        GLenum internalFormat = GL_SRGB;
 
-        if (channels == 1) {
-            format = GL_RED;
+        if (channels == 1)
+        {
+            dataFormat = GL_RED;
+            internalFormat = GL_RED;
         }
-        else if (channels == 3) {
-            format = GL_RGB;
+        else if (channels == 3)
+        {
+            dataFormat = GL_RGB;
+            internalFormat = GL_SRGB;
         }
-        else if (channels == 4) {
-            format = GL_RGBA;
+        else if (channels == 4)
+        {
+            dataFormat = GL_RGBA;
+            internalFormat = GL_SRGB_ALPHA;
         }
 
         glTexImage2D(
             types[i],
             0,
-            format,
+            internalFormat,
             width,
             height,
             0,
-            format,
+            dataFormat,
             GL_UNSIGNED_BYTE,
             data
         );
