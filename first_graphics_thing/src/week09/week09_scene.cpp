@@ -69,6 +69,12 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
         "src/week09/instanced_rock_fragment.glsl"
     );
 
+    directionalDepthShaderProgram =
+        createShaderProgram(
+            "src/week09/directional_depth_vertex.glsl",
+            "src/week09/directional_depth_fragment.glsl"
+        );
+
     // sRGB
     containerTexture = loadTexture("assets/textures/container.png", true);
 
@@ -89,6 +95,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     createGlassPaneMesh();
     createFramebuffer(width, height);
     createScreenQuad();
+    createDirectionalShadowMap();
 
     glassPanePositions.push_back(glm::vec3(-1.8f, 0.0f, -1.8f));
     glassPanePositions.push_back(glm::vec3(0.0f, 0.0f, -1.8f));
@@ -96,6 +103,13 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
 
     glassPanePositions.push_back(glm::vec3(-1.2f, 0.0f, 0.8f));
     glassPanePositions.push_back(glm::vec3(1.2f, 0.0f, 0.8f));
+
+    outdoorGroundMaterial.diffuseColor = glm::vec3(0.18f, 0.42f, 0.16f);
+    outdoorGroundMaterial.specularColor = glm::vec3(0.05f);
+
+    outdoorGroundMaterial.shininess = 8.0f;
+    outdoorGroundMaterial.useDiffuseMap = false;
+    outdoorGroundMaterial.useSpecularMap = false;
 
     dullOrange = createDullOrangeMaterial();
     shinyBlue = createShinyBlueMaterial();
@@ -308,6 +322,30 @@ void Week09Scene::draw(
     const glm::vec3& cameraFront
 )
 {
+    const glm::vec3 sunDirection(
+        -0.3f,
+        -1.0f,
+        -0.2f
+    );
+
+    glm::vec3 sunColor(1.0f, 0.95f, 0.80f);
+
+    glm::mat4 lightSpaceMatrix(1.0f);
+
+    if (outdoorModeEnabled)
+    {
+        lightSpaceMatrix =
+            createDirectionalLightSpaceMatrix(
+                sunDirection
+            );
+
+        renderDirectionalShadowMap(
+            lightSpaceMatrix
+        );
+    }
+
+    glViewport(0, 0, framebufferWidth, framebufferHeight);
+
     glBindFramebuffer(GL_FRAMEBUFFER, multisampleFramebuffer);
 
     glEnable(GL_DEPTH_TEST);
@@ -390,9 +428,6 @@ void Week09Scene::draw(
         lightingUniforms.light2Enabled,
         !outdoorModeEnabled && light2Enabled
     );
-
-    glm::vec3 sunDirection(-0.3f, -1.0f, -0.2f);
-    glm::vec3 sunColor(1.0f, 0.95f, 0.80f);
 
     glUniform1i(
         lightingUniforms.directionalLightEnabled,
@@ -692,16 +727,49 @@ void Week09Scene::drawLitObjects()
         testSphere
     );
 
-    if (!outdoorModeEnabled)
+    if (outdoorModeEnabled)
     {
-        // room only in indoor mode
-        setMaterial(shaderProgram, matteGray);
+        setMaterial(
+            shaderProgram,
+            outdoorGroundMaterial
+        );
+
+        drawCube(
+            cube.VAO,
+            lightingUniforms.model,
+            createOutdoorGroundModelMatrix()
+        );
+    }
+    else
+    {
+        setMaterial(
+            shaderProgram,
+            matteGray
+        );
+
         drawClosedRoom(
             cube.VAO,
             lightingUniforms.model,
             containerTexture
         );
     }
+}
+
+glm::mat4 Week09Scene::createOutdoorGroundModelMatrix() const
+{
+    glm::mat4 model(1.0f);
+
+    model = glm::translate(
+        model,
+        glm::vec3(0.0f, -0.95f, 0.0f)
+    );
+
+    model = glm::scale(
+        model,
+        glm::vec3(20.0f, 0.1f, 20.0f)
+    );
+
+    return model;
 }
 
 void Week09Scene::drawNormalDebugObjects()
@@ -1888,6 +1956,280 @@ void Week09Scene::drawMiniPlanetSystem(
         ASTEROID_COUNT
     );
 
+}
+
+void Week09Scene::createDirectionalShadowMap()
+{
+    glGenFramebuffers(
+        1,
+        &directionalDepthFBO
+    );
+
+    glGenTextures(
+        1,
+        &directionalDepthMap
+    );
+
+    glBindTexture(
+        GL_TEXTURE_2D,
+        directionalDepthMap
+    );
+
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_DEPTH_COMPONENT24,
+        SHADOW_WIDTH,
+        SHADOW_HEIGHT,
+        0,
+        GL_DEPTH_COMPONENT,
+        GL_FLOAT,
+        nullptr
+    );
+
+    glTexParameteri(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_MIN_FILTER,
+        GL_NEAREST
+    );
+
+    glTexParameteri(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_MAG_FILTER,
+        GL_NEAREST
+    );
+
+    glTexParameteri(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_WRAP_S,
+        GL_CLAMP_TO_BORDER
+    );
+
+    glTexParameteri(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_WRAP_T,
+        GL_CLAMP_TO_BORDER
+    );
+
+    const float borderColor[] = {
+        1.0f,
+        1.0f,
+        1.0f,
+        1.0f
+    };
+
+    glTexParameterfv(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_BORDER_COLOR,
+        borderColor
+    );
+
+    glBindFramebuffer(
+        GL_FRAMEBUFFER,
+        directionalDepthFBO
+    );
+
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER,
+        GL_DEPTH_ATTACHMENT,
+        GL_TEXTURE_2D,
+        directionalDepthMap,
+        0
+    );
+
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+
+    if (
+        glCheckFramebufferStatus(GL_FRAMEBUFFER) !=
+        GL_FRAMEBUFFER_COMPLETE
+        )
+    {
+        std::cerr
+            << "Directional shadow framebuffer incomplete\n";
+    }
+
+    glBindFramebuffer(
+        GL_FRAMEBUFFER,
+        0
+    );
+}
+
+glm::mat4 Week09Scene::createDirectionalLightSpaceMatrix(
+    const glm::vec3& sunDirection
+) const
+{
+    const glm::vec3 sceneCenter(
+        0.0f,
+        0.0f,
+        0.0f
+    );
+
+    const glm::vec3 lightPosition =
+        sceneCenter -
+        glm::normalize(sunDirection) *
+        10.0f;
+
+    const glm::mat4 lightProjection =
+        glm::ortho(
+            -7.0f,
+            7.0f,
+            -7.0f,
+            7.0f,
+            0.1f,
+            25.0f
+        );
+
+    const glm::mat4 lightView =
+        glm::lookAt(
+            lightPosition,
+            sceneCenter,
+            glm::vec3(0.0f, 1.0f, 0.0f)
+        );
+
+    return lightProjection * lightView;
+}
+
+void Week09Scene::drawDirectionalShadowCasters(
+    GLuint depthShaderProgram
+)
+{
+    const GLint modelLocation =
+        glGetUniformLocation(
+            depthShaderProgram,
+            "model"
+        );
+
+    // Outdoor ground
+    drawCube(
+        cube.VAO,
+        modelLocation,
+        createOutdoorGroundModelMatrix()
+    );
+
+    // Test cube
+    glm::mat4 cubeModel(1.0f);
+
+    cubeModel = glm::translate(
+        cubeModel,
+        glm::vec3(-0.2f, -0.6f, 0.0f)
+    );
+
+    drawCube(
+        cube.VAO,
+        modelLocation,
+        cubeModel
+    );
+
+    // Sphere
+    glm::mat4 sphereModel(1.0f);
+
+    sphereModel = glm::translate(
+        sphereModel,
+        glm::vec3(0.8f, -0.4f, 0.0f)
+    );
+
+    drawSphere(
+        sphere,
+        modelLocation,
+        sphereModel
+    );
+
+    // Backpack
+    if (backpack)
+    {
+        const glm::mat4 backpackModel =
+            createBackpackModelMatrix();
+
+        glUniformMatrix4fv(
+            modelLocation,
+            1,
+            GL_FALSE,
+            glm::value_ptr(backpackModel)
+        );
+
+        backpack->draw(
+            depthShaderProgram
+        );
+    }
+
+    // Planet
+    if (planet)
+    {
+        glm::mat4 planetModel(1.0f);
+
+        planetModel = glm::translate(
+            planetModel,
+            glm::vec3(1.3f, 0.0f, -1.5f)
+        );
+
+        planetModel = glm::scale(
+            planetModel,
+            glm::vec3(0.018f)
+        );
+
+        planetModel = glm::scale(
+            planetModel,
+            glm::vec3(8.0f)
+        );
+
+        glUniformMatrix4fv(
+            modelLocation,
+            1,
+            GL_FALSE,
+            glm::value_ptr(planetModel)
+        );
+
+        planet->draw(
+            depthShaderProgram
+        );
+    }
+}
+
+void Week09Scene::renderDirectionalShadowMap(
+    const glm::mat4& lightSpaceMatrix
+)
+{
+    glViewport(
+        0,
+        0,
+        SHADOW_WIDTH,
+        SHADOW_HEIGHT
+    );
+
+    glBindFramebuffer(
+        GL_FRAMEBUFFER,
+        directionalDepthFBO
+    );
+
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(
+        directionalDepthShaderProgram
+    );
+
+    glUniformMatrix4fv(
+        glGetUniformLocation(
+            directionalDepthShaderProgram,
+            "lightSpaceMatrix"
+        ),
+        1,
+        GL_FALSE,
+        glm::value_ptr(lightSpaceMatrix)
+    );
+
+    glCullFace(GL_FRONT);
+
+    drawDirectionalShadowCasters(
+        directionalDepthShaderProgram
+    );
+
+    glCullFace(GL_BACK);
+
+    glBindFramebuffer(
+        GL_FRAMEBUFFER,
+        0
+    );
 }
 
 void Week09Scene::cleanup()

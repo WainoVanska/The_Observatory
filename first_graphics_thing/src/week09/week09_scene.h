@@ -144,6 +144,7 @@ private:
     void drawLitObjects();
     void drawNormalDebugObjects();
     glm::mat4 createBackpackModelMatrix() const;
+    glm::mat4 createOutdoorGroundModelMatrix() const;
     void drawLampMarker(const glm::vec3& position, const glm::vec3& color);
     void drawBackpack(
         const glm::mat4& view,
@@ -197,7 +198,20 @@ private:
         const glm::vec3& secondLightColor
     );
 
-private:
+    void createDirectionalShadowMap();
+
+    glm::mat4 createDirectionalLightSpaceMatrix(
+        const glm::vec3& sunDirection
+    ) const;
+
+    void renderDirectionalShadowMap(
+        const glm::mat4& lightSpaceMatrix
+    );
+
+    void drawDirectionalShadowCasters(
+        GLuint depthShaderProgram
+    );
+
     GLuint shaderProgram = 0;
     GLuint lampShaderProgram = 0;
     GLuint normalDebugShaderProgram = 0;
@@ -230,6 +244,13 @@ private:
     static constexpr int MSAA_SAMPLES = 4;
     static constexpr unsigned int ASTEROID_COUNT = 10000;
 
+    static constexpr unsigned int SHADOW_WIDTH = 2048;
+    static constexpr unsigned int SHADOW_HEIGHT = 2048;
+
+    GLuint directionalDepthFBO = 0;
+    GLuint directionalDepthMap = 0;
+    GLuint directionalDepthShaderProgram = 0;
+
     int framebufferWidth = 0;
     int framebufferHeight = 0;
 
@@ -250,6 +271,7 @@ private:
     Material shinyBlue{};
     Material matteGray{};
     Material texturedMaterial{};
+    Material outdoorGroundMaterial{};
 
     LightingShaderUniforms lightingUniforms{};
     LampShaderUniforms lampUniforms{};
