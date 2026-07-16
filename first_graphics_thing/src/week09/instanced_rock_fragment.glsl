@@ -216,8 +216,7 @@ void main()
     );
 
     // The rocks remain visible even when every optional light is off.
-    vec3 result =
-        0.30 * objectColor;
+    vec3 result = vec3(0.0);
 
     if (light1Enabled)
     {

@@ -69,10 +69,14 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
         "src/week09/instanced_rock_fragment.glsl"
     );
 
-    containerTexture = loadTexture("assets/textures/container.png");
-    containerSpecularTexture = loadTexture("assets/textures/container_specular.png");
+    // sRGB
+    containerTexture = loadTexture("assets/textures/container.png", true);
 
-    glassTexture = loadTransparentTexture("assets/textures/window.png");
+    // not sRGB
+    containerSpecularTexture = loadTexture("assets/textures/container_specular.png", false);
+
+    // Visible RGB is sRGB, alpha is unaffected by sRGB
+    glassTexture = loadTransparentTexture("assets/textures/window.png", true);
 
     backpack = new Model("assets/models/backpack/backpack.obj");
     planet = new Model("assets/models/planet/planet.obj");
@@ -615,12 +619,26 @@ void Week09Scene::draw(
     glUseProgram(screenShaderProgram);
 
     glUniform1i(
-        glGetUniformLocation(screenShaderProgram, "blurEnabled"),
+        glGetUniformLocation(
+            screenShaderProgram,
+            "blurEnabled"
+        ),
         blurEnabled
     );
 
+    glUniform1i(
+        glGetUniformLocation(
+            screenShaderProgram,
+            "gammaCorrectionEnabled"
+        ),
+        true
+    );
+
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, framebufferTexture);
+    glBindTexture(
+        GL_TEXTURE_2D,
+        framebufferTexture
+    );
 
     glBindVertexArray(screenQuadVAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);

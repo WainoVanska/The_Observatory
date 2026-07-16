@@ -2,7 +2,7 @@
 
 ## I learned:
 
-- how to instancing works with models, created a group of asteroid circling a planet to test this out.
+- how instancing works with models, created a group of asteroids circling a planet to test this out.
 
 <img src="../learning_log_images/instancing_asteroids.png" alt="-" width="500">
 

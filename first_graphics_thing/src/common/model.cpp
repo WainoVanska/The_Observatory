@@ -194,9 +194,20 @@ std::vector<MeshTexture> Model::loadMaterialTextures(
         {
             MeshTexture texture{};
 
-            std::string fullPath = directory + "/" + pathString;
+            std::string fullPath =
+                directory + "/" + pathString;
 
-            texture.id = loadTexture(fullPath.c_str());
+
+            // Diffuse maps contain surface colors that are in sRGB space, while spec. maps remain in linear space
+
+            const bool useSRGB =
+                type == aiTextureType_DIFFUSE;
+
+            texture.id = loadTexture(
+                fullPath,
+                useSRGB
+            );
+
             texture.type = typeName;
             texture.path = pathString;
 

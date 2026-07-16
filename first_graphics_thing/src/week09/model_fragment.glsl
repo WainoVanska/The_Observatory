@@ -70,9 +70,6 @@ vec3 calculatePointLight(
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = diff * currentLightColor * baseColor;
 
-    float ambientStrength = 0.12;
-    vec3 ambient = ambientStrength * currentLightColor * baseColor;
-
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
     vec3 specular = spec * currentLightColor * specularColor;
@@ -92,7 +89,7 @@ vec3 calculatePointLight(
     diffuse *= attenuation;
     specular *= attenuation;
 
-    return ambient + diffuse + specular;
+    return diffuse + specular;
 }
 
 vec3 calculateFlashlight(
@@ -114,9 +111,6 @@ vec3 calculateFlashlight(
     vec3 flashlightColor = vec3(2.5, 2.3, 2.0);
     vec3 diffuse = diff * flashlightColor * baseColor;
 
-    float ambientStrength = 0.001;
-    vec3 ambient = ambientStrength * baseColor;
-
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
     vec3 specular = 0.7 * spec * flashlightColor * specularColor;
@@ -136,7 +130,7 @@ vec3 calculateFlashlight(
     diffuse *= attenuation * intensity;
     specular *= attenuation * intensity;
 
-    return ambient + diffuse + specular;
+    return + diffuse + specular;
 }
 
 vec3 calculateDirectionalLight(
@@ -156,15 +150,12 @@ vec3 calculateDirectionalLight(
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = diff * currentLightColor * baseColor;
 
-    float ambientStrength = 0.18;
-    vec3 ambient = ambientStrength * currentLightColor * baseColor;
-
     float specularStrength = 0.4;
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
     vec3 specular = specularStrength * spec * currentLightColor * specularColor;
 
-    return ambient + diffuse + specular;
+    return diffuse + specular;
 }
 
 void main()
@@ -178,21 +169,15 @@ void main()
         vec3 I = normalize(FragPos - viewPos);
         vec3 R = refract(I, norm, ratio);
 
-        vec3 refractedColor = texture(skybox, R).rgb;
+        FragColor = vec4(
+            texture(skybox, R).rgb,
+            1.0
+        );
 
-        FragColor = vec4(refractedColor, 1.0);
         return;
     }
 
-vec3 baseColor = getBaseColor();
-
-float ambientStrength;
-
-ambientStrength = 0.08;
-
-ambientStrength = 0.45;
-
-vec3 result = ambientStrength * baseColor;
+    vec3 result = vec3(0.0);
 
     if (light1Enabled)
     {

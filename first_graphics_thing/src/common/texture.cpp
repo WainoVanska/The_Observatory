@@ -5,7 +5,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../dependencies/stb_image/stb_image.h"
 
-GLuint loadTexture(const std::string& path)
+GLuint loadTexture(
+    const std::string& path,
+    bool useSRGB
+)
 {
     GLuint texture;
     glGenTextures(1, &texture);
@@ -43,10 +46,15 @@ GLuint loadTexture(const std::string& path)
 
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);      // "do not assume that rows are padded to 4 bytes since I have 250x250 texture"
 
+        const GLenum internalFormat =
+            useSRGB
+            ? GL_SRGB
+            : GL_RGB;
+
         glTexImage2D(
             GL_TEXTURE_2D,
             0,
-            GL_RGB,     
+            internalFormat,
             width,
             height,
             0,
@@ -67,7 +75,10 @@ GLuint loadTexture(const std::string& path)
     return texture;
 }
 
-GLuint loadTransparentTexture(const std::string& path)
+GLuint loadTransparentTexture(
+    const std::string& path,
+    bool useSRGB
+)
 {
     GLuint texture;
     glGenTextures(1, &texture);
@@ -105,10 +116,15 @@ GLuint loadTransparentTexture(const std::string& path)
 
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
+        const GLenum internalFormat =
+            useSRGB
+            ? GL_SRGB_ALPHA
+            : GL_RGBA;
+
         glTexImage2D(
             GL_TEXTURE_2D,
             0,
-            GL_RGBA,
+            internalFormat,
             width,
             height,
             0,
