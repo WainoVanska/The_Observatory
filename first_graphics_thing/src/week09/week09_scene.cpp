@@ -147,6 +147,12 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     lightingUniforms.directionalLightDirection = glGetUniformLocation(shaderProgram, "directionalLightDirection");
     lightingUniforms.directionalLightColor = glGetUniformLocation(shaderProgram, "directionalLightColor");
 
+    lightingUniforms.lightSpaceMatrix = glGetUniformLocation(shaderProgram, "lightSpaceMatrix");
+    lightingUniforms.directionalShadowMap = glGetUniformLocation(shaderProgram, "directionalShadowMap");
+
+    glUseProgram(shaderProgram);
+    glUniform1i(lightingUniforms.directionalShadowMap, 3);
+
     lampUniforms.model = glGetUniformLocation(lampShaderProgram, "model");
     lampUniforms.view = glGetUniformLocation(lampShaderProgram, "view");
     lampUniforms.projection = glGetUniformLocation(lampShaderProgram, "projection");
@@ -418,6 +424,19 @@ void Week09Scene::draw(
 
     // Draw lit objects
     glUseProgram(shaderProgram);
+
+    glUniformMatrix4fv(
+        lightingUniforms.lightSpaceMatrix,
+        1,
+        GL_FALSE,
+        glm::value_ptr(lightSpaceMatrix)
+    );
+
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(
+        GL_TEXTURE_2D,
+        directionalDepthMap
+    );
 
     glUniform1i(
         lightingUniforms.light1Enabled,

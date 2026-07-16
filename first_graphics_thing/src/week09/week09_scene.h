@@ -56,6 +56,9 @@ private:
         GLuint directionalLightEnabled;
         GLuint directionalLightDirection;
         GLuint directionalLightColor;
+
+        GLuint lightSpaceMatrix;
+        GLuint directionalShadowMap;
     };
 
     struct LampShaderUniforms
