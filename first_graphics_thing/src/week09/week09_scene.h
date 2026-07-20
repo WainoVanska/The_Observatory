@@ -191,6 +191,8 @@ private:
 
     void createAsteroidInstances();
 
+    glm::mat4 createAsteroidSystemModel() const;
+
     void drawMiniPlanetSystem(
         const glm::mat4& view,
         const glm::mat4& projection,
@@ -212,7 +214,8 @@ private:
     );
 
     void drawDirectionalShadowCasters(
-        GLuint depthShaderProgram
+        GLuint depthShaderProgram,
+        const glm::mat4& lightSpaceMatrix
     );
 
     GLuint shaderProgram = 0;
@@ -253,6 +256,7 @@ private:
     GLuint directionalDepthFBO = 0;
     GLuint directionalDepthMap = 0;
     GLuint directionalDepthShaderProgram = 0;
+    GLuint instancedDirectionalDepthShaderProgram = 0;
 
     int framebufferWidth = 0;
     int framebufferHeight = 0;

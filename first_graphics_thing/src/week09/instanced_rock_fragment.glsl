@@ -5,6 +5,7 @@ out vec4 FragColor;
 in vec3 FragPos;
 in vec3 Normal;
 in vec2 TexCoords;
+in vec4 FragPosLightSpace;
 
 uniform vec3 viewPos;
 
@@ -30,6 +31,7 @@ uniform float flashlightOuterCutOff;
 uniform vec3 objectColor;
 uniform vec3 objectSpecularColor;
 uniform float shininess;
+uniform sampler2D directionalShadowMap;
 
 vec3 safeNormalize(
     vec3 value,
@@ -106,6 +108,78 @@ vec3 calculatePointLight(
     );
 }
 
+float calculateDirectionalShadow(
+    vec4 fragPosLightSpace,
+    vec3 norm,
+    vec3 lightDir
+)
+{
+    vec3 projectedCoordinates =
+        fragPosLightSpace.xyz /
+        fragPosLightSpace.w;
+
+    projectedCoordinates =
+        projectedCoordinates * 0.5 + 0.5;
+
+    if (
+        projectedCoordinates.z > 1.0 ||
+        projectedCoordinates.z < 0.0
+    )
+    {
+        return 0.0;
+    }
+
+    if (
+        projectedCoordinates.x < 0.0 ||
+        projectedCoordinates.x > 1.0 ||
+        projectedCoordinates.y < 0.0 ||
+        projectedCoordinates.y > 1.0
+    )
+    {
+        return 0.0;
+    }
+
+    float currentDepth =
+        projectedCoordinates.z;
+
+    float bias = max(
+        0.005 *
+        (1.0 - dot(norm, lightDir)),
+        0.0005
+    );
+
+    vec2 texelSize =
+        1.0 /
+        textureSize(
+            directionalShadowMap,
+            0
+        );
+
+    float shadow = 0.0;
+
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            float closestDepth =
+                texture(
+                    directionalShadowMap,
+                    projectedCoordinates.xy +
+                    vec2(x, y) *
+                    texelSize
+                ).r;
+
+            shadow +=
+                currentDepth - bias >
+                closestDepth
+                    ? 1.0
+                    : 0.0;
+        }
+    }
+
+    return shadow / 9.0;
+}
+
 vec3 calculateDirectionalLight(
     vec3 norm,
     vec3 viewDir
@@ -145,7 +219,16 @@ vec3 calculateDirectionalLight(
         directionalLightColor *
         objectSpecularColor;
 
-    return ambient + diffuse + specular;
+    float shadow =
+        calculateDirectionalShadow(
+            FragPosLightSpace,
+            norm,
+            lightDir
+        );
+
+    return ambient +
+        (1.0 - shadow) *
+        (diffuse + specular);
 }
 
 vec3 calculateFlashlight(

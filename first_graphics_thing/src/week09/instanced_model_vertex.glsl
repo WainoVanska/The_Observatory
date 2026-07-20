@@ -9,10 +9,12 @@ layout (location = 3) in mat4 instanceMatrix;
 out vec3 FragPos;
 out vec3 Normal;
 out vec2 TexCoords;
+out vec4 FragPosLightSpace;
 
 uniform mat4 systemModel;
 uniform mat4 view;
 uniform mat4 projection;
+uniform mat4 lightSpaceMatrix;
 
 void main()
 {
@@ -27,6 +29,9 @@ void main()
     ) * aNormal;
 
     TexCoords = aTexCoords;
+
+    FragPosLightSpace = lightSpaceMatrix * worldPosition;
+
 
     gl_Position =
         projection *

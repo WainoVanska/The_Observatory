@@ -75,6 +75,12 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
             "src/week09/directional_depth_fragment.glsl"
         );
 
+    instancedDirectionalDepthShaderProgram =
+        createShaderProgram(
+            "src/week09/instanced_directional_depth_vertex.glsl",
+            "src/week09/directional_depth_fragment.glsl"
+        );
+
     // sRGB
     containerTexture = loadTexture("assets/textures/container.png", true);
 
@@ -1596,10 +1602,6 @@ void Week09Scene::drawMiniPlanetSystem(
 
     const glm::vec3 mainLightColor(1.25f, 1.25f, 1.25f);
 
-    const float orbitAngle =
-        static_cast<float>(glfwGetTime()) *
-        glm::radians(3.0f);
-
     glm::mat4 baseSystemModel(1.0f);
 
     baseSystemModel = glm::translate(
@@ -1622,16 +1624,7 @@ void Week09Scene::drawMiniPlanetSystem(
 
     // Asteroid parent transform
     glm::mat4 asteroidSystemModel =
-        glm::rotate(
-            baseSystemModel,
-            orbitAngle,
-            glm::vec3(0.0f, 1.0f, 0.0f)
-        );
-
-    asteroidSystemModel = glm::scale(
-        asteroidSystemModel,
-        glm::vec3(0.018f)
-    );
+        createAsteroidSystemModel();
 
     glUseProgram(modelShaderProgram);
 
@@ -1772,6 +1765,36 @@ void Week09Scene::drawMiniPlanetSystem(
     // Draw the instanced asteroid ring
 
     glUseProgram(instancedModelShaderProgram);
+
+    const glm::mat4 lightSpaceMatrix =
+        createDirectionalLightSpaceMatrix(
+            sunDirection
+        );
+
+    glUniformMatrix4fv(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "lightSpaceMatrix"
+        ),
+        1,
+        GL_FALSE,
+        glm::value_ptr(lightSpaceMatrix)
+    );
+
+    glActiveTexture(GL_TEXTURE3);
+
+    glBindTexture(
+        GL_TEXTURE_2D,
+        directionalDepthMap
+    );
+
+    glUniform1i(
+        glGetUniformLocation(
+            instancedModelShaderProgram,
+            "directionalShadowMap"
+        ),
+        3
+    );
 
     glUniformMatrix4fv(
         glGetUniformLocation(
@@ -2110,7 +2133,8 @@ glm::mat4 Week09Scene::createDirectionalLightSpaceMatrix(
 }
 
 void Week09Scene::drawDirectionalShadowCasters(
-    GLuint depthShaderProgram
+    GLuint depthShaderProgram,
+    const glm::mat4& lightSpaceMatrix
 )
 {
     const GLint modelLocation =
@@ -2203,6 +2227,48 @@ void Week09Scene::drawDirectionalShadowCasters(
             depthShaderProgram
         );
     }
+
+    // Instanced asteroid ring
+    if (rock)
+    {
+        glUseProgram(
+            instancedDirectionalDepthShaderProgram
+        );
+
+        glUniformMatrix4fv(
+            glGetUniformLocation(
+                instancedDirectionalDepthShaderProgram,
+                "lightSpaceMatrix"
+            ),
+            1,
+            GL_FALSE,
+            glm::value_ptr(
+                createDirectionalLightSpaceMatrix(
+                    glm::vec3(-0.3f, -1.0f, -0.2f)
+                )
+            )
+        );
+
+        const glm::mat4 asteroidSystemModel =
+            createAsteroidSystemModel();
+
+        glUniformMatrix4fv(
+            glGetUniformLocation(
+                instancedDirectionalDepthShaderProgram,
+                "systemModel"
+            ),
+            1,
+            GL_FALSE,
+            glm::value_ptr(asteroidSystemModel)
+        );
+
+        rock->drawInstanced(
+            instancedDirectionalDepthShaderProgram,
+            ASTEROID_COUNT
+        );
+
+        glUseProgram(depthShaderProgram);
+    }
 }
 
 void Week09Scene::renderDirectionalShadowMap(
@@ -2240,7 +2306,8 @@ void Week09Scene::renderDirectionalShadowMap(
     glCullFace(GL_FRONT);
 
     drawDirectionalShadowCasters(
-        directionalDepthShaderProgram
+        directionalDepthShaderProgram,
+        lightSpaceMatrix
     );
 
     glCullFace(GL_BACK);
@@ -2249,6 +2316,33 @@ void Week09Scene::renderDirectionalShadowMap(
         GL_FRAMEBUFFER,
         0
     );
+}
+
+glm::mat4 Week09Scene::createAsteroidSystemModel() const
+{
+    const float orbitAngle =
+        static_cast<float>(glfwGetTime()) *
+        glm::radians(3.0f);
+
+    glm::mat4 systemModel(1.0f);
+
+    systemModel = glm::translate(
+        systemModel,
+        glm::vec3(1.3f, 0.0f, -1.5f)
+    );
+
+    systemModel = glm::rotate(
+        systemModel,
+        orbitAngle,
+        glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+
+    systemModel = glm::scale(
+        systemModel,
+        glm::vec3(0.018f)
+    );
+
+    return systemModel;
 }
 
 void Week09Scene::cleanup()
@@ -2268,6 +2362,7 @@ void Week09Scene::cleanup()
     glDeleteProgram(modelDepthDebugShaderProgram);
     glDeleteProgram(modelOutlineShaderProgram);
     glDeleteProgram(glassShaderProgram);
+    glDeleteProgram(instancedDirectionalDepthShaderProgram);
 
     glDeleteTextures(1, &glassTexture);
     glDeleteVertexArrays(1, &glassVAO);
@@ -2287,6 +2382,11 @@ void Week09Scene::cleanup()
     glDeleteProgram(instancedModelShaderProgram);
 
     glDeleteProgram(screenShaderProgram);
+
+    glDeleteProgram(directionalDepthShaderProgram);
+
+    glDeleteFramebuffers(1, &directionalDepthFBO);
+    glDeleteTextures(1, &directionalDepthMap);
 
     delete backpack;
     backpack = nullptr;
