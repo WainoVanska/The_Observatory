@@ -29,6 +29,37 @@ uniform float flashlightOuterCutOff;
 uniform samplerCube skybox;
 uniform bool glassBackpackEnabled;
 
+uniform samplerCube pointShadowMap;
+uniform float pointShadowFarPlane;
+uniform bool pointShadowsEnabled;
+
+const vec3 pointShadowSampleOffsets[20] = vec3[]
+(
+    vec3( 1.0,  1.0,  1.0),
+    vec3( 1.0, -1.0,  1.0),
+    vec3(-1.0, -1.0,  1.0),
+    vec3(-1.0,  1.0,  1.0),
+
+    vec3( 1.0,  1.0, -1.0),
+    vec3( 1.0, -1.0, -1.0),
+    vec3(-1.0, -1.0, -1.0),
+    vec3(-1.0,  1.0, -1.0),
+
+    vec3( 1.0,  1.0,  0.0),
+    vec3( 1.0, -1.0,  0.0),
+    vec3(-1.0, -1.0,  0.0),
+    vec3(-1.0,  1.0,  0.0),
+
+    vec3( 1.0,  0.0,  1.0),
+    vec3(-1.0,  0.0,  1.0),
+    vec3( 1.0,  0.0, -1.0),
+    vec3(-1.0,  0.0, -1.0),
+
+    vec3( 0.0,  1.0,  1.0),
+    vec3( 0.0, -1.0,  1.0),
+    vec3( 0.0, -1.0, -1.0),
+    vec3( 0.0,  1.0, -1.0)
+);
 
 struct Material
 {
@@ -55,11 +86,90 @@ vec3 getSpecularColor()
     ).rgb;
 }
 
+float calculatePointShadow(
+    vec3 fragmentPosition,
+    vec3 pointLightPosition,
+    vec3 norm
+)
+{
+    if (!pointShadowsEnabled)
+    {
+        return 0.0;
+    }
+
+    vec3 fragToLight =
+        fragmentPosition -
+        pointLightPosition;
+
+    float currentDepth =
+        length(fragToLight);
+
+    vec3 lightDir =
+        normalize(
+            pointLightPosition -
+            fragmentPosition
+        );
+
+    float bias = max(
+        0.035 *
+        (1.0 - dot(norm, lightDir)),
+        0.012
+    );
+
+    float viewDistance =
+        length(
+            viewPos -
+            fragmentPosition
+        );
+
+    float diskRadius =
+        (
+            1.0 +
+            viewDistance /
+            pointShadowFarPlane
+        ) /
+        90.0;
+
+    float shadow = 0.0;
+
+    const int sampleCount = 20;
+
+    for (int sampleIndex = 0;
+         sampleIndex < sampleCount;
+         ++sampleIndex)
+    {
+        float closestDepth =
+            texture(
+                pointShadowMap,
+                fragToLight +
+                pointShadowSampleOffsets[
+                    sampleIndex
+                ] *
+                diskRadius
+            ).r;
+
+        closestDepth *=
+            pointShadowFarPlane;
+
+        if (
+            currentDepth - bias >
+            closestDepth
+        )
+        {
+            shadow += 1.0;
+        }
+    }
+
+    return shadow /
+        float(sampleCount);
+}
+
 vec3 calculatePointLight(
     vec3 currentLightPos,
     vec3 currentLightColor,
     vec3 norm,
-    vec3 viewDir
+    vec3 viewDir,
+    bool castsShadow
 )
 {
     vec3 baseColor = getBaseColor();
@@ -88,10 +198,16 @@ vec3 calculatePointLight(
         quadratic * distanceToLight * distanceToLight
     );
 
-    return attenuation * (
+    float shadow = 0.0;
+
+    return attenuation *
+    (
         ambient +
-        diffuse +
-        specular
+        (1.0 - shadow) *
+        (
+            diffuse +
+            specular
+        )
     );
 }
 
@@ -194,7 +310,8 @@ void main()
             lightPos,
             lightColor,
             norm,
-            viewDir
+            viewDir,
+            true
         );
     }
 
@@ -204,7 +321,8 @@ void main()
             secondLightPos,
             secondLightColor,
             norm,
-            viewDir
+            viewDir,
+            false
         );
     }
 

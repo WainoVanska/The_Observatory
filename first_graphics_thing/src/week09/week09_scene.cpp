@@ -236,6 +236,10 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     lightingUniforms.pointShadowFarPlane =glGetUniformLocation(shaderProgram,"pointShadowFarPlane");
     lightingUniforms.pointShadowsEnabled =glGetUniformLocation(shaderProgram,"pointShadowsEnabled");
 
+    modelUniforms.pointShadowMap = glGetUniformLocation(modelShaderProgram, "pointShadowMap");
+    modelUniforms.pointShadowFarPlane = glGetUniformLocation(modelShaderProgram, "pointShadowFarPlane");
+    modelUniforms.pointShadowsEnabled = glGetUniformLocation(modelShaderProgram, "pointShadowsEnabled");
+
     glUseProgram(shaderProgram);
 
     glUniform1i(
@@ -247,9 +251,15 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     glUniform1i(glGetUniformLocation(glassShaderProgram, "glassTexture"), 0);
 
     glUseProgram(modelShaderProgram);
+    configureModelPointShadows();
+
     glUniform1f(
         glGetUniformLocation(modelShaderProgram, "material.shininess"),
         32.0f
+    );
+    glUniform1i(
+        modelUniforms.pointShadowMap,
+        4
     );
 
     glUniform1i(modelUniforms.skybox, 2);
@@ -2801,6 +2811,27 @@ void Week09Scene::renderPointShadowMap(
     glBindFramebuffer(
         GL_FRAMEBUFFER,
         0
+    );
+}
+
+void Week09Scene::configureModelPointShadows()
+{
+    glActiveTexture(GL_TEXTURE4);
+
+    glBindTexture(
+        GL_TEXTURE_CUBE_MAP,
+        pointDepthCubemap
+    );
+
+    glUniform1f(
+        modelUniforms.pointShadowFarPlane,
+        POINT_SHADOW_FAR_PLANE
+    );
+
+    glUniform1i(
+        modelUniforms.pointShadowsEnabled,
+        !outdoorModeEnabled &&
+        light1Enabled
     );
 }
 

@@ -120,6 +120,10 @@ private:
         GLuint light1Enabled;
         GLuint light2Enabled;
 
+        GLuint pointShadowMap;
+        GLuint pointShadowFarPlane;
+        GLuint pointShadowsEnabled;
+
         GLuint directionalLightEnabled;
         GLuint directionalLightDirection;
         GLuint directionalLightColor;
@@ -236,6 +240,8 @@ private:
     void drawPointShadowCasters(
         GLuint depthShaderProgram
     );
+
+    void configureModelPointShadows();
 
     GLuint shaderProgram = 0;
     GLuint lampShaderProgram = 0;
