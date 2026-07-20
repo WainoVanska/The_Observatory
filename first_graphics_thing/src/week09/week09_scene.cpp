@@ -359,9 +359,19 @@ void Week09Scene::draw(
         -0.2f
     );
 
-    glm::vec3 sunColor(1.0f, 0.95f, 0.80f);
+    const glm::vec3 sunColor(
+        1.0f,
+        0.95f,
+        0.80f
+    );
+
+    const glm::vec3 lightPos =
+        movableLightPos;
 
     glm::mat4 lightSpaceMatrix(1.0f);
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
 
     if (outdoorModeEnabled)
     {
@@ -374,32 +384,59 @@ void Week09Scene::draw(
             lightSpaceMatrix
         );
     }
-
-    glViewport(0, 0, framebufferWidth, framebufferHeight);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, multisampleFramebuffer);
-
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_STENCIL_TEST);
-    glEnable(GL_CULL_FACE);
-
-    glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-    glm::vec3 lightPos = movableLightPos;
-
-    if (!outdoorModeEnabled &&
-        light1Enabled)
+    else if (light1Enabled)
     {
         renderPointShadowMap(
             lightPos
         );
     }
 
-    glm::vec3 lightColor(1.25f, 1.25f, 1.25f);
+    glViewport(
+        0,
+        0,
+        framebufferWidth,
+        framebufferHeight
+    );
 
-    glm::vec3 secondLightPos(-2.0f, 2.2f, -2.0f);
-    glm::vec3 secondLightColor(0.3f, 0.5f, 1.0f);
+    glBindFramebuffer(
+        GL_FRAMEBUFFER,
+        multisampleFramebuffer
+    );
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_STENCIL_TEST);
+    glEnable(GL_CULL_FACE);
+
+    glClearColor(
+        0.08f,
+        0.08f,
+        0.12f,
+        1.0f
+    );
+
+    glClear(
+        GL_COLOR_BUFFER_BIT |
+        GL_DEPTH_BUFFER_BIT |
+        GL_STENCIL_BUFFER_BIT
+    );
+
+    const glm::vec3 lightColor(
+        0.70f,
+        0.63f,
+        0.50f
+    );
+
+    glm::vec3 secondLightPos(
+        -2.0f,
+        2.2f,
+        -2.0f
+    );
+
+    glm::vec3 secondLightColor(
+        0.3f,
+        0.5f,
+        1.0f
+    );
 
 
     if (normalDebugEnabled)
