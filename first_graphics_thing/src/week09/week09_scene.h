@@ -59,6 +59,10 @@ private:
 
         GLuint lightSpaceMatrix;
         GLuint directionalShadowMap;
+
+        GLuint pointShadowMap;
+        GLuint pointShadowFarPlane;
+        GLuint pointShadowsEnabled;
     };
 
     struct LampShaderUniforms
@@ -218,6 +222,21 @@ private:
         const glm::mat4& lightSpaceMatrix
     );
 
+    void createPointShadowMap();
+
+    std::vector<glm::mat4>
+        createPointShadowMatrices(
+            const glm::vec3& lightPosition
+        ) const;
+
+    void renderPointShadowMap(
+        const glm::vec3& lightPosition
+    );
+
+    void drawPointShadowCasters(
+        GLuint depthShaderProgram
+    );
+
     GLuint shaderProgram = 0;
     GLuint lampShaderProgram = 0;
     GLuint normalDebugShaderProgram = 0;
@@ -252,6 +271,15 @@ private:
 
     static constexpr unsigned int SHADOW_WIDTH = 2048;
     static constexpr unsigned int SHADOW_HEIGHT = 2048;
+
+    static constexpr unsigned int POINT_SHADOW_WIDTH = 1024;
+    static constexpr unsigned int POINT_SHADOW_HEIGHT = 1024;
+    static constexpr float POINT_SHADOW_NEAR_PLANE = 0.1f;
+    static constexpr float POINT_SHADOW_FAR_PLANE = 15.0f;
+
+    GLuint pointDepthFBO = 0;
+    GLuint pointDepthCubemap = 0;
+    GLuint pointDepthShaderProgram = 0;
 
     GLuint directionalDepthFBO = 0;
     GLuint directionalDepthMap = 0;

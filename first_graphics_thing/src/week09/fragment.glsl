@@ -29,6 +29,10 @@ uniform bool directionalLightEnabled;
 uniform vec3 directionalLightDirection;
 uniform vec3 directionalLightColor;
 
+uniform samplerCube pointShadowMap;
+uniform float pointShadowFarPlane;
+uniform bool pointShadowsEnabled;
+
 uniform sampler2D directionalShadowMap;
 
 struct Material {
@@ -66,11 +70,59 @@ vec3 getSpecularColor()
     return material.specularColor;
 }
 
+
+float calculatePointShadow(
+    vec3 fragmentPosition,
+    vec3 pointLightPosition,
+    vec3 norm
+)
+{
+    if (!pointShadowsEnabled)
+    {
+        return 0.0;
+    }
+
+    vec3 fragToLight =
+        fragmentPosition -
+        pointLightPosition;
+
+    float closestDepth =
+        texture(
+            pointShadowMap,
+            fragToLight
+        ).r;
+
+    closestDepth *=
+        pointShadowFarPlane;
+
+    float currentDepth =
+        length(fragToLight);
+
+    vec3 lightDir =
+        normalize(
+            pointLightPosition -
+            fragmentPosition
+        );
+
+    float bias = max(
+        0.05 *
+        (1.0 - dot(norm, lightDir)),
+        0.01
+    );
+
+    return
+        currentDepth - bias >
+        closestDepth
+            ? 1.0
+            : 0.0;
+}
+
 vec3 calculatePointLight(
     vec3 currentLightPos,
     vec3 currentLightColor,
     vec3 norm,
-    vec3 viewDir
+    vec3 viewDir,
+    bool castsShadow
 )
 {
     vec3 baseColor = getBaseColor();
@@ -105,14 +157,27 @@ vec3 calculatePointLight(
         quadratic * distanceToLight * distanceToLight
     );
 
-    diffuse *= attenuation;
-    specular *= attenuation;
+    float shadow = 0.0;
 
-    return attenuation * (
-        ambient +
-        diffuse +
-        specular
-    );
+    if (castsShadow)
+    {
+        shadow =
+            calculatePointShadow(
+                FragPos,
+                currentLightPos,
+                norm
+            );
+    }
+
+    return attenuation *
+        (
+            ambient +
+            (1.0 - shadow) *
+            (
+                diffuse +
+                specular
+            )
+        );
 }
 
 vec3 calculateFlashlight(
@@ -188,14 +253,12 @@ float calculateDirectionalShadow(
     float currentDepth =
         projectedCoordinates.z;
 
-    // Angle-dependent bias reduces shadow acne.
     float bias = max(
         0.005 *
         (1.0 - dot(norm, lightDir)),
         0.0005
     );
 
-    // 3x3 percentage-closer filtering.
     vec2 texelSize =
         1.0 /
         textureSize(
@@ -297,13 +360,25 @@ void main()
     // first point light
     if (light1Enabled)
     {
-        result += calculatePointLight(lightPos, lightColor, norm, viewDir);
+        result += calculatePointLight(
+            lightPos,
+            lightColor,
+            norm,
+            viewDir,
+            true
+        );
     }
 
     // second point light
     if (light2Enabled)
     {
-        result += calculatePointLight(secondLightPos, secondLightColor, norm, viewDir);
+        result += calculatePointLight(
+            secondLightPos,
+            secondLightColor,
+            norm,
+            viewDir,
+            false
+        );
     }
 
     if (flashlightEnabled)
