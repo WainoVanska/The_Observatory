@@ -272,8 +272,8 @@ private:
     static constexpr unsigned int SHADOW_WIDTH = 2048;
     static constexpr unsigned int SHADOW_HEIGHT = 2048;
 
-    static constexpr unsigned int POINT_SHADOW_WIDTH = 1024;
-    static constexpr unsigned int POINT_SHADOW_HEIGHT = 1024;
+    static constexpr unsigned int POINT_SHADOW_WIDTH = 2048;
+    static constexpr unsigned int POINT_SHADOW_HEIGHT = 2048;
     static constexpr float POINT_SHADOW_NEAR_PLANE = 0.1f;
     static constexpr float POINT_SHADOW_FAR_PLANE = 15.0f;
 

@@ -2626,12 +2626,6 @@ void Week09Scene::drawPointShadowCasters(
             "model"
         );
 
-    drawClosedRoom(
-        cube.VAO,
-        modelLocation,
-        containerTexture
-    );
-
     glm::mat4 cubeModel(1.0f);
 
     cubeModel = glm::translate(
@@ -2657,7 +2651,7 @@ void Week09Scene::drawPointShadowCasters(
         modelLocation,
         sphereModel
     );
-
+    
     if (backpack)
     {
         const glm::mat4 backpackModel =
@@ -2774,19 +2768,34 @@ void Week09Scene::renderPointShadowMap(
         POINT_SHADOW_FAR_PLANE
     );
 
-    //make culling disabled since we need the back faces not shown also for shadows
     const GLboolean cullingWasEnabled =
         glIsEnabled(GL_CULL_FACE);
 
-    glDisable(GL_CULL_FACE);
+    GLint previousCullFaceMode = GL_BACK;
+
+    glGetIntegerv(
+        GL_CULL_FACE_MODE,
+        &previousCullFaceMode
+    );
+
+    glEnable(GL_CULL_FACE);
+
+    // Discard front faces and store the deeper back faces to reduce the sphere self-shadowing
+    glCullFace(GL_FRONT);
 
     drawPointShadowCasters(
         pointDepthShaderProgram
     );
 
-    if (cullingWasEnabled)
+    glCullFace(
+        static_cast<GLenum>(
+            previousCullFaceMode
+            )
+    );
+
+    if (!cullingWasEnabled)
     {
-        glEnable(GL_CULL_FACE);
+        glDisable(GL_CULL_FACE);
     }
 
     glBindFramebuffer(

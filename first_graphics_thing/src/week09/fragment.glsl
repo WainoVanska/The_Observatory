@@ -33,6 +33,34 @@ uniform samplerCube pointShadowMap;
 uniform float pointShadowFarPlane;
 uniform bool pointShadowsEnabled;
 
+const vec3 pointShadowSampleOffsets[20] = vec3[]
+(
+    vec3( 1.0,  1.0,  1.0),
+    vec3( 1.0, -1.0,  1.0),
+    vec3(-1.0, -1.0,  1.0),
+    vec3(-1.0,  1.0,  1.0),
+
+    vec3( 1.0,  1.0, -1.0),
+    vec3( 1.0, -1.0, -1.0),
+    vec3(-1.0, -1.0, -1.0),
+    vec3(-1.0,  1.0, -1.0),
+
+    vec3( 1.0,  1.0,  0.0),
+    vec3( 1.0, -1.0,  0.0),
+    vec3(-1.0, -1.0,  0.0),
+    vec3(-1.0,  1.0,  0.0),
+
+    vec3( 1.0,  0.0,  1.0),
+    vec3(-1.0,  0.0,  1.0),
+    vec3( 1.0,  0.0, -1.0),
+    vec3(-1.0,  0.0, -1.0),
+
+    vec3( 0.0,  1.0,  1.0),
+    vec3( 0.0, -1.0,  1.0),
+    vec3( 0.0, -1.0, -1.0),
+    vec3( 0.0,  1.0, -1.0)
+);
+
 uniform sampler2D directionalShadowMap;
 
 struct Material {
@@ -86,15 +114,6 @@ float calculatePointShadow(
         fragmentPosition -
         pointLightPosition;
 
-    float closestDepth =
-        texture(
-            pointShadowMap,
-            fragToLight
-        ).r;
-
-    closestDepth *=
-        pointShadowFarPlane;
-
     float currentDepth =
         length(fragToLight);
 
@@ -105,16 +124,57 @@ float calculatePointShadow(
         );
 
     float bias = max(
-        0.05 *
+        0.035 *
         (1.0 - dot(norm, lightDir)),
-        0.01
+        0.012
     );
 
-    return
-        currentDepth - bias >
-        closestDepth
-            ? 1.0
-            : 0.0;
+    float viewDistance =
+        length(
+            viewPos -
+            fragmentPosition
+        );
+
+    float diskRadius =
+        (
+            1.0 +
+            viewDistance /
+            pointShadowFarPlane
+        ) /
+        90.0;
+
+    float shadow = 0.0;
+
+    const int sampleCount = 20;
+
+    for (int sampleIndex = 0;
+         sampleIndex < sampleCount;
+         ++sampleIndex)
+    {
+        float closestDepth =
+            texture(
+                pointShadowMap,
+                fragToLight +
+                pointShadowSampleOffsets[
+                    sampleIndex
+                ] *
+                diskRadius
+            ).r;
+
+        closestDepth *=
+            pointShadowFarPlane;
+
+        if (
+            currentDepth - bias >
+            closestDepth
+        )
+        {
+            shadow += 1.0;
+        }
+    }
+
+    return shadow /
+        float(sampleCount);
 }
 
 vec3 calculatePointLight(
