@@ -104,6 +104,11 @@ float calculatePointShadow(
     float currentDepth =
         length(fragToLight);
 
+    if (currentDepth >= pointShadowFarPlane)
+    {
+        return 0.0;
+    }
+
     vec3 lightDir =
         normalize(
             pointLightPosition -
@@ -199,6 +204,18 @@ vec3 calculatePointLight(
     );
 
     float shadow = 0.0;
+
+    if (
+        castsShadow &&
+        pointShadowsEnabled
+    )
+    {
+        shadow = calculatePointShadow(
+            FragPos,
+            currentLightPos,
+            norm
+        );
+    }
 
     return attenuation *
     (

@@ -251,7 +251,6 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     glUniform1i(glGetUniformLocation(glassShaderProgram, "glassTexture"), 0);
 
     glUseProgram(modelShaderProgram);
-    configureModelPointShadows();
 
     glUniform1f(
         glGetUniformLocation(modelShaderProgram, "material.shininess"),
@@ -993,6 +992,8 @@ void Week09Scene::drawBackpack(
 
     glUseProgram(modelShaderProgram);
 
+    configureModelPointShadows();
+
     glUniform1i(
         modelUniforms.glassBackpackEnabled,
         glassBackpackEnabled
@@ -1722,6 +1723,8 @@ void Week09Scene::drawMiniPlanetSystem(
         createAsteroidSystemModel();
 
     glUseProgram(modelShaderProgram);
+
+    configureModelPointShadows();
 
     glm::mat4 planetLocal(1.0f);
 
@@ -2821,6 +2824,11 @@ void Week09Scene::configureModelPointShadows()
     glBindTexture(
         GL_TEXTURE_CUBE_MAP,
         pointDepthCubemap
+    );
+
+    glUniform1i(
+        modelUniforms.pointShadowMap,
+        4
     );
 
     glUniform1f(
