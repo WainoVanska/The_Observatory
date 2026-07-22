@@ -6,10 +6,24 @@
 
 <img src="../learning_log_images/point_shadows.png" alt="-" width="500">
 
-*Jagged edges vs. smooth edges:*
-
-<img src="../learning_log_images/jagged_shadow_edges.png" alt="-" width="500">
-<img src="../learning_log_images/jagged_edge_pcf.png" alt="-" width="500">
+<table>
+  <tr>
+    <td align="center">
+      <img src="../learning_log_images/jagged_shadow_edges.png"
+           alt="Jagged point-shadow edges"
+           width="100%">
+      <br>
+      <em>Before PCF</em>
+    </td>
+    <td align="center">
+      <img src="../learning_log_images/jagged_edge_pcf.png"
+           alt="Point shadows smoothed with PCF"
+           width="100%">
+      <br>
+      <em>After PCF</em>
+    </td>
+  </tr>
+</table>
 
 ## I struggled:
 
