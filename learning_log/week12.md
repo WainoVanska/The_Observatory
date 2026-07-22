@@ -4,6 +4,10 @@
 
 - how point shadows work. Created this by making a depth cubemap containing six faces of the room scene that each stored depth data(distance from the the point light to the closest surface). Instead of orthographic projection with directional lighting, this time I used perspective projection for each of the six faces.
 
+<img src="../learning_log_images/point_shadows.png" alt="-" width="500">
+
+*Jagged edges vs. smooth edges:*
+
 <img src="../learning_log_images/jagged_shadow_edges.png" alt="-" width="500">
 <img src="../learning_log_images/jagged_edge_pcf.png" alt="-" width="500">
 
@@ -14,3 +18,5 @@
 - The sphere had also issues with self-shadowing, it became darker after implementing the point shadows. The fix to this was to discard the front faces of the sphere in the shadow rendering part and only render things from the back faces, playing with face culling functions really worked on this issue.
 
 ## Thoughts:
+
+- I was thinking if I should add shadows also for the blue stationary light, but ended not doing it due to so much repetition. I haven't done refactoring of the code in so many weeks that at this point it probably would save a lot of time to make a lot of these repetitious functions more scalable, since at this point the repetition for certain calls and functions is just unnecessary and annoying.
