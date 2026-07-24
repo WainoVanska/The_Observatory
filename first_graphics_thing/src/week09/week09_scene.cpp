@@ -305,14 +305,9 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
 
     glUseProgram(shaderProgram);
 
-    glUseProgram(glassShaderProgram);
-    glUniform1i(glGetUniformLocation(glassShaderProgram, "glassTexture"), 0);
-
-    glUseProgram(modelShaderProgram);
-
-    glUniform1f(
-        glGetUniformLocation(modelShaderProgram, "material.shininess"),
-        32.0f
+    glUniform1i(
+        lightingUniforms.directionalShadowMap,
+        3
     );
 
     glUniform1i(
@@ -320,11 +315,27 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
         4
     );
 
-    glUniform1i(modelUniforms.skybox, 2);
+    glUseProgram(modelShaderProgram);
 
-    glUseProgram(
-        normalMappingShaderProgram
+    glUniform1f(
+        glGetUniformLocation(
+            modelShaderProgram,
+            "material.shininess"
+        ),
+        32.0f
     );
+
+    glUniform1i(
+        modelUniforms.pointShadowMap,
+        4
+    );
+
+    glUniform1i(
+        modelUniforms.skybox,
+        2
+    );
+
+    glUseProgram(normalMappingShaderProgram);
 
     glUniform1i(
         normalMappingUniforms.diffuseMap,
@@ -336,14 +347,28 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
         1
     );
 
+    glUseProgram(glassShaderProgram);
+
     glUniform1i(
-        modelUniforms.pointShadowMap,
-        4
+        glGetUniformLocation(
+            glassShaderProgram,
+            "glassTexture"
+        ),
+        0
     );
 
     glUseProgram(screenShaderProgram);
-    screenTextureUniform = glGetUniformLocation(screenShaderProgram, "screenTexture");
-    glUniform1i(screenTextureUniform, 0);
+
+    screenTextureUniform =
+        glGetUniformLocation(
+            screenShaderProgram,
+            "screenTexture"
+        );
+
+    glUniform1i(
+        screenTextureUniform,
+        0
+    );
 }
 
 void Week09Scene::handleInput(GLFWwindow* window)
