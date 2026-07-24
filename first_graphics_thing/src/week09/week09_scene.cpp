@@ -88,11 +88,19 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
             "src/week09/point_depth_fragment.glsl"
         );
 
+    normalMappingShaderProgram =
+        createShaderProgram(
+            "src/week09/normal_mapping_vertex.glsl",
+            "src/week09/normal_mapping_fragment.glsl"
+        );
+
     // sRGB
     containerTexture = loadTexture("assets/textures/container.png", true);
+    brickDiffuseTexture = loadTexture("assets/textures/brickwall.jpg",true);
 
     // not sRGB
     containerSpecularTexture = loadTexture("assets/textures/container_specular.png", false);
+    brickNormalTexture = loadTexture("assets/textures/brickwall_normal.jpg", false);
 
     // Visible RGB is sRGB, alpha is unaffected by sRGB
     glassTexture = loadTransparentTexture("assets/textures/window.png", true);
@@ -110,6 +118,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     createScreenQuad();
     createDirectionalShadowMap();
     createPointShadowMap();
+    createNormalMappedPlane();
 
     glassPanePositions.push_back(glm::vec3(-1.8f, 0.0f, -1.8f));
     glassPanePositions.push_back(glm::vec3(0.0f, 0.0f, -1.8f));
@@ -240,12 +249,61 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     modelUniforms.pointShadowFarPlane = glGetUniformLocation(modelShaderProgram, "pointShadowFarPlane");
     modelUniforms.pointShadowsEnabled = glGetUniformLocation(modelShaderProgram, "pointShadowsEnabled");
 
-    glUseProgram(shaderProgram);
+    normalMappingUniforms.model =
+        glGetUniformLocation(
+            normalMappingShaderProgram,
+            "model"
+        );
 
-    glUniform1i(
-        lightingUniforms.pointShadowMap,
-        4
-    );
+    normalMappingUniforms.view =
+        glGetUniformLocation(
+            normalMappingShaderProgram,
+            "view"
+        );
+
+    normalMappingUniforms.projection =
+        glGetUniformLocation(
+            normalMappingShaderProgram,
+            "projection"
+        );
+
+    normalMappingUniforms.lightPos =
+        glGetUniformLocation(
+            normalMappingShaderProgram,
+            "lightPos"
+        );
+
+    normalMappingUniforms.lightColor =
+        glGetUniformLocation(
+            normalMappingShaderProgram,
+            "lightColor"
+        );
+
+    normalMappingUniforms.viewPos =
+        glGetUniformLocation(
+            normalMappingShaderProgram,
+            "viewPos"
+        );
+
+    normalMappingUniforms.lightEnabled =
+        glGetUniformLocation(
+            normalMappingShaderProgram,
+            "lightEnabled"
+        );
+
+    normalMappingUniforms.diffuseMap =
+        glGetUniformLocation(
+            normalMappingShaderProgram,
+            "diffuseMap"
+        );
+
+    normalMappingUniforms.normalMap =
+        glGetUniformLocation(
+            normalMappingShaderProgram,
+            "normalMap"
+        );
+
+    glUseProgram(shaderProgram);
 
     glUseProgram(glassShaderProgram);
     glUniform1i(glGetUniformLocation(glassShaderProgram, "glassTexture"), 0);
@@ -256,12 +314,32 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
         glGetUniformLocation(modelShaderProgram, "material.shininess"),
         32.0f
     );
+
     glUniform1i(
-        modelUniforms.pointShadowMap,
+        lightingUniforms.pointShadowMap,
         4
     );
 
     glUniform1i(modelUniforms.skybox, 2);
+
+    glUseProgram(
+        normalMappingShaderProgram
+    );
+
+    glUniform1i(
+        normalMappingUniforms.diffuseMap,
+        0
+    );
+
+    glUniform1i(
+        normalMappingUniforms.normalMap,
+        1
+    );
+
+    glUniform1i(
+        modelUniforms.pointShadowMap,
+        4
+    );
 
     glUseProgram(screenShaderProgram);
     screenTextureUniform = glGetUniformLocation(screenShaderProgram, "screenTexture");
@@ -641,6 +719,17 @@ void Week09Scene::draw(
     glStencilMask(0x00);
 
     drawLitObjects();
+
+    if (!outdoorModeEnabled)
+    {
+        drawNormalMappedPlane(
+            view,
+            projection,
+            cameraPos,
+            lightPos,
+            lightColor
+        );
+    }
 
     drawMiniPlanetSystem(
         view,
@@ -2843,6 +2932,501 @@ void Week09Scene::configureModelPointShadows()
     );
 }
 
+void Week09Scene::createNormalMappedPlane()
+{
+
+    const glm::vec3 p1(
+        -1.0f,
+        1.0f,
+        0.0f
+    );
+
+    const glm::vec3 p2(
+        1.0f,
+        1.0f,
+        0.0f
+    );
+
+    const glm::vec3 p3(
+        1.0f,
+        -1.0f,
+        0.0f
+    );
+
+    const glm::vec3 p4(
+        -1.0f,
+        -1.0f,
+        0.0f
+    );
+
+    const glm::vec2 uv1(
+        0.0f,
+        1.0f
+    );
+
+    const glm::vec2 uv2(
+        1.0f,
+        1.0f
+    );
+
+    const glm::vec2 uv3(
+        1.0f,
+        0.0f
+    );
+
+    const glm::vec2 uv4(
+        0.0f,
+        0.0f
+    );
+
+    const glm::vec3 normal(
+        0.0f,
+        0.0f,
+        1.0f
+    );
+
+    const glm::vec3 edge1 =
+        p2 - p1;
+
+    const glm::vec3 edge2 =
+        p3 - p1;
+
+    const glm::vec2 deltaUV1 =
+        uv2 - uv1;
+
+    const glm::vec2 deltaUV2 =
+        uv3 - uv1;
+
+    const float determinant1 =
+        deltaUV1.x *
+        deltaUV2.y -
+        deltaUV2.x *
+        deltaUV1.y;
+
+    const float inverseDeterminant1 =
+        1.0f /
+        determinant1;
+
+    glm::vec3 tangent1;
+
+    tangent1.x =
+        inverseDeterminant1 *
+        (
+            deltaUV2.y *
+            edge1.x -
+            deltaUV1.y *
+            edge2.x
+            );
+
+    tangent1.y =
+        inverseDeterminant1 *
+        (
+            deltaUV2.y *
+            edge1.y -
+            deltaUV1.y *
+            edge2.y
+            );
+
+    tangent1.z =
+        inverseDeterminant1 *
+        (
+            deltaUV2.y *
+            edge1.z -
+            deltaUV1.y *
+            edge2.z
+            );
+
+    tangent1 =
+        glm::normalize(tangent1);
+
+    glm::vec3 bitangent1;
+
+    bitangent1.x =
+        inverseDeterminant1 *
+        (
+            -deltaUV2.x *
+            edge1.x +
+            deltaUV1.x *
+            edge2.x
+            );
+
+    bitangent1.y =
+        inverseDeterminant1 *
+        (
+            -deltaUV2.x *
+            edge1.y +
+            deltaUV1.x *
+            edge2.y
+            );
+
+    bitangent1.z =
+        inverseDeterminant1 *
+        (
+            -deltaUV2.x *
+            edge1.z +
+            deltaUV1.x *
+            edge2.z
+            );
+
+    bitangent1 =
+        glm::normalize(bitangent1);
+
+    const glm::vec3 edge3 =
+        p3 - p1;
+
+    const glm::vec3 edge4 =
+        p4 - p1;
+
+    const glm::vec2 deltaUV3 =
+        uv3 - uv1;
+
+    const glm::vec2 deltaUV4 =
+        uv4 - uv1;
+
+    const float determinant2 =
+        deltaUV3.x *
+        deltaUV4.y -
+        deltaUV4.x *
+        deltaUV3.y;
+
+    const float inverseDeterminant2 =
+        1.0f /
+        determinant2;
+
+    glm::vec3 tangent2;
+
+    tangent2.x =
+        inverseDeterminant2 *
+        (
+            deltaUV4.y *
+            edge3.x -
+            deltaUV3.y *
+            edge4.x
+            );
+
+    tangent2.y =
+        inverseDeterminant2 *
+        (
+            deltaUV4.y *
+            edge3.y -
+            deltaUV3.y *
+            edge4.y
+            );
+
+    tangent2.z =
+        inverseDeterminant2 *
+        (
+            deltaUV4.y *
+            edge3.z -
+            deltaUV3.y *
+            edge4.z
+            );
+
+    tangent2 =
+        glm::normalize(tangent2);
+
+    glm::vec3 bitangent2;
+
+    bitangent2.x =
+        inverseDeterminant2 *
+        (
+            -deltaUV4.x *
+            edge3.x +
+            deltaUV3.x *
+            edge4.x
+            );
+
+    bitangent2.y =
+        inverseDeterminant2 *
+        (
+            -deltaUV4.x *
+            edge3.y +
+            deltaUV3.x *
+            edge4.y
+            );
+
+    bitangent2.z =
+        inverseDeterminant2 *
+        (
+            -deltaUV4.x *
+            edge3.z +
+            deltaUV3.x *
+            edge4.z
+            );
+
+    bitangent2 =
+        glm::normalize(bitangent2);
+
+    /*
+     * position:  3
+     * normal:    3
+     * uv:        2
+     * tangent:   3
+     * bitangent: 3
+     *
+     * Total: 14 floats per vertex.
+     */
+    const float planeVertices[] = {
+        // Triangle 1
+        p1.x, p1.y, p1.z,
+        normal.x, normal.y, normal.z,
+        uv1.x, uv1.y,
+        tangent1.x, tangent1.y, tangent1.z,
+        bitangent1.x, bitangent1.y, bitangent1.z,
+
+        p2.x, p2.y, p2.z,
+        normal.x, normal.y, normal.z,
+        uv2.x, uv2.y,
+        tangent1.x, tangent1.y, tangent1.z,
+        bitangent1.x, bitangent1.y, bitangent1.z,
+
+        p3.x, p3.y, p3.z,
+        normal.x, normal.y, normal.z,
+        uv3.x, uv3.y,
+        tangent1.x, tangent1.y, tangent1.z,
+        bitangent1.x, bitangent1.y, bitangent1.z,
+
+        // Triangle 2
+        p1.x, p1.y, p1.z,
+        normal.x, normal.y, normal.z,
+        uv1.x, uv1.y,
+        tangent2.x, tangent2.y, tangent2.z,
+        bitangent2.x, bitangent2.y, bitangent2.z,
+
+        p3.x, p3.y, p3.z,
+        normal.x, normal.y, normal.z,
+        uv3.x, uv3.y,
+        tangent2.x, tangent2.y, tangent2.z,
+        bitangent2.x, bitangent2.y, bitangent2.z,
+
+        p4.x, p4.y, p4.z,
+        normal.x, normal.y, normal.z,
+        uv4.x, uv4.y,
+        tangent2.x, tangent2.y, tangent2.z,
+        bitangent2.x, bitangent2.y, bitangent2.z
+    };
+
+    glGenVertexArrays(
+        1,
+        &normalMappedPlaneVAO
+    );
+
+    glGenBuffers(
+        1,
+        &normalMappedPlaneVBO
+    );
+
+    glBindVertexArray(
+        normalMappedPlaneVAO
+    );
+
+    glBindBuffer(
+        GL_ARRAY_BUFFER,
+        normalMappedPlaneVBO
+    );
+
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        sizeof(planeVertices),
+        planeVertices,
+        GL_STATIC_DRAW
+    );
+
+    constexpr GLsizei stride =
+        14 *
+        sizeof(float);
+
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(
+        0,
+        3,
+        GL_FLOAT,
+        GL_FALSE,
+        stride,
+        reinterpret_cast<void*>(0)
+    );
+
+    glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(
+        1,
+        3,
+        GL_FLOAT,
+        GL_FALSE,
+        stride,
+        reinterpret_cast<void*>(
+            3 *
+            sizeof(float)
+            )
+    );
+
+    glEnableVertexAttribArray(2);
+
+    glVertexAttribPointer(
+        2,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        stride,
+        reinterpret_cast<void*>(
+            6 *
+            sizeof(float)
+            )
+    );
+
+    glEnableVertexAttribArray(3);
+
+    glVertexAttribPointer(
+        3,
+        3,
+        GL_FLOAT,
+        GL_FALSE,
+        stride,
+        reinterpret_cast<void*>(
+            8 *
+            sizeof(float)
+            )
+    );
+
+    glEnableVertexAttribArray(4);
+
+    glVertexAttribPointer(
+        4,
+        3,
+        GL_FLOAT,
+        GL_FALSE,
+        stride,
+        reinterpret_cast<void*>(
+            11 *
+            sizeof(float)
+            )
+    );
+
+    glBindVertexArray(0);
+
+    glBindBuffer(
+        GL_ARRAY_BUFFER,
+        0
+    );
+}
+
+void Week09Scene::drawNormalMappedPlane(
+    const glm::mat4& view,
+    const glm::mat4& projection,
+    const glm::vec3& cameraPos,
+    const glm::vec3& lightPos,
+    const glm::vec3& lightColor
+)
+{
+    glUseProgram(
+        normalMappingShaderProgram
+    );
+
+    glm::mat4 model(1.0f);
+
+    model = glm::translate(
+        model,
+        glm::vec3(
+            0.0f,
+            0.3f,
+            -2.75f
+        )
+    );
+
+    model = glm::scale(
+        model,
+        glm::vec3(
+            1.2f,
+            1.2f,
+            1.0f
+        )
+    );
+
+    glUniformMatrix4fv(
+        normalMappingUniforms.model,
+        1,
+        GL_FALSE,
+        glm::value_ptr(model)
+    );
+
+    glUniformMatrix4fv(
+        normalMappingUniforms.view,
+        1,
+        GL_FALSE,
+        glm::value_ptr(view)
+    );
+
+    glUniformMatrix4fv(
+        normalMappingUniforms.projection,
+        1,
+        GL_FALSE,
+        glm::value_ptr(projection)
+    );
+
+    glUniform3fv(
+        normalMappingUniforms.viewPos,
+        1,
+        glm::value_ptr(cameraPos)
+    );
+
+    glUniform3fv(
+        normalMappingUniforms.lightPos,
+        1,
+        glm::value_ptr(lightPos)
+    );
+
+    glUniform3fv(
+        normalMappingUniforms.lightColor,
+        1,
+        glm::value_ptr(lightColor)
+    );
+
+    glUniform1i(
+        normalMappingUniforms.lightEnabled,
+        !outdoorModeEnabled &&
+        light1Enabled
+    );
+
+    glActiveTexture(GL_TEXTURE0);
+
+    glBindTexture(
+        GL_TEXTURE_2D,
+        brickDiffuseTexture
+    );
+
+    glActiveTexture(GL_TEXTURE1);
+
+    glBindTexture(
+        GL_TEXTURE_2D,
+        brickNormalTexture
+    );
+
+    const GLboolean cullingWasEnabled =
+        glIsEnabled(GL_CULL_FACE);
+
+    glDisable(GL_CULL_FACE);
+
+    glBindVertexArray(
+        normalMappedPlaneVAO
+    );
+
+    glDrawArrays(
+        GL_TRIANGLES,
+        0,
+        6
+    );
+
+    glBindVertexArray(0);
+
+    if (cullingWasEnabled)
+    {
+        glEnable(GL_CULL_FACE);
+    }
+
+    glActiveTexture(GL_TEXTURE0);
+}
+
 void Week09Scene::cleanup()
 {
     deleteCubeMesh(cube);
@@ -2885,6 +3469,30 @@ void Week09Scene::cleanup()
 
     glDeleteFramebuffers(1, &directionalDepthFBO);
     glDeleteTextures(1, &directionalDepthMap);
+
+    glDeleteProgram(
+        normalMappingShaderProgram
+    );
+
+    glDeleteVertexArrays(
+        1,
+        &normalMappedPlaneVAO
+    );
+
+    glDeleteBuffers(
+        1,
+        &normalMappedPlaneVBO
+    );
+
+    glDeleteTextures(
+        1,
+        &brickDiffuseTexture
+    );
+
+    glDeleteTextures(
+        1,
+        &brickNormalTexture
+    );
 
     delete backpack;
     backpack = nullptr;

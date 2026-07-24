@@ -152,6 +152,22 @@ private:
         GLuint projection;
     };
 
+    struct NormalMappingShaderUniforms
+    {
+        GLuint model;
+        GLuint view;
+        GLuint projection;
+
+        GLuint lightPos;
+        GLuint lightColor;
+        GLuint viewPos;
+
+        GLuint lightEnabled;
+
+        GLuint diffuseMap;
+        GLuint normalMap;
+    };
+
     void drawLitObjects();
     void drawNormalDebugObjects();
     glm::mat4 createBackpackModelMatrix() const;
@@ -243,6 +259,16 @@ private:
 
     void configureModelPointShadows();
 
+    void createNormalMappedPlane();
+
+    void drawNormalMappedPlane(
+        const glm::mat4& view,
+        const glm::mat4& projection,
+        const glm::vec3& cameraPos,
+        const glm::vec3& lightPos,
+        const glm::vec3& lightColor
+    );
+
     GLuint shaderProgram = 0;
     GLuint lampShaderProgram = 0;
     GLuint normalDebugShaderProgram = 0;
@@ -305,6 +331,14 @@ private:
     GLuint screenShaderProgram = 0;
     GLuint screenTextureUniform = 0;
 
+    GLuint normalMappingShaderProgram = 0;
+
+    GLuint normalMappedPlaneVAO = 0;
+    GLuint normalMappedPlaneVBO = 0;
+
+    GLuint brickDiffuseTexture = 0;
+    GLuint brickNormalTexture = 0;
+
     CubeMesh cube{};
     SphereMesh sphere{};
 
@@ -323,6 +357,7 @@ private:
     ModelDepthDebugShaderUniforms modelDepthDebugUniforms{};
     ModelOutlineShaderUniforms modelOutlineUniforms{};
     GlassShaderUniforms glassUniforms{};
+    NormalMappingShaderUniforms normalMappingUniforms{};
 
     std::vector<glm::vec3> glassPanePositions{};
     std::vector<glm::mat4> asteroidMatrices;
