@@ -303,6 +303,12 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
             "normalMap"
         );
 
+    normalMappingUniforms.uvScale =
+        glGetUniformLocation(
+            normalMappingShaderProgram,
+            "uvScale"
+        );
+
     glUseProgram(shaderProgram);
 
     glUniform1i(
@@ -3354,16 +3360,16 @@ void Week09Scene::drawNormalMappedPlane(
         model,
         glm::vec3(
             0.0f,
-            0.3f,
-            -2.75f
+            1.0f,
+            -2.88f
         )
     );
 
     model = glm::scale(
         model,
         glm::vec3(
-            1.2f,
-            1.2f,
+            3.0f,
+            2.0f,
             1.0f
         )
     );
@@ -3413,8 +3419,13 @@ void Week09Scene::drawNormalMappedPlane(
         light1Enabled
     );
 
-    glActiveTexture(GL_TEXTURE0);
+    glUniform2f(
+        normalMappingUniforms.uvScale,
+        4.0f,
+        3.0f
+    );
 
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(
         GL_TEXTURE_2D,
         brickDiffuseTexture

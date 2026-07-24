@@ -12,6 +12,7 @@ in VS_OUT
 
 uniform sampler2D diffuseMap;
 uniform sampler2D normalMap;
+uniform vec2 uvScale;
 
 uniform vec3 lightPos;
 uniform vec3 lightColor;
@@ -21,27 +22,23 @@ uniform bool lightEnabled;
 
 void main()
 {
+    vec2 tiledTexCoords =
+        fs_in.TexCoords * uvScale;
+
     vec3 baseColor =
         texture(
             diffuseMap,
-            fs_in.TexCoords
+            tiledTexCoords
         ).rgb;
 
-    /*
-     * Normal-map values are stored in [0, 1].
-     * Convert them back into tangent-space
-     * directions in [-1, 1]
-     */
     vec3 tangentNormal =
         texture(
             normalMap,
-            fs_in.TexCoords
+            tiledTexCoords
         ).rgb;
 
     tangentNormal =
-        tangentNormal *
-        2.0 -
-        1.0;
+        tangentNormal * 2.0 - 1.0;
 
     vec3 mappedNormal =
         normalize(

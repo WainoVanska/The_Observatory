@@ -166,6 +166,7 @@ private:
 
         GLuint diffuseMap;
         GLuint normalMap;
+        GLuint uvScale;
     };
 
     void drawLitObjects();
