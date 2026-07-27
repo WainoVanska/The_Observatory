@@ -25,9 +25,9 @@
   </tr>
 </table>
 
-- about normal mapping ... --> brickwall stuff here
+- about normal mapping. Implemented a brickwall texture on one of the walls that contained a normal mapping, which made the brickwall look like it had more depth.
 
-PICTURE HERE
+<img src="../learning_log_images/normal_mapped_lighting_brickwall.png" alt="-" width="500">
 
 - how normal mapping is used for optimization of complex models. It was mindblowing to see how effective this little trick can be when normal mapped shadows are added and number of triangles is decreased.
 
