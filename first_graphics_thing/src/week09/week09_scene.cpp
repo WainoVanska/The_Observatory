@@ -3727,8 +3727,8 @@ void Week09Scene::drawNormalMappedFloorAndCeiling(
     drawNormalMappedSurface(
         floor,
         glm::vec2(3.0f, 3.0f),
-        floorDiffuseTexture,
-        floorNormalTexture,
+        brickDiffuseTexture,
+        brickNormalTexture,
         0.9f,
         view,
         projection,
@@ -3770,8 +3770,8 @@ void Week09Scene::drawNormalMappedFloorAndCeiling(
     drawNormalMappedSurface(
         ceiling,
         glm::vec2(2.0f, 2.0f),
-        ceilingDiffuseTexture,
-        ceilingNormalTexture,
+        brickDiffuseTexture,
+        brickNormalTexture,
         0.3f,
         view,
         projection,
