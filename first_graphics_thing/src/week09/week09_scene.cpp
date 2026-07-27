@@ -11,7 +11,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-
 void Week09Scene::init(int width, int height, FreeCamera* camera)
 {
     shaderProgram = createShaderProgram(
@@ -98,9 +97,45 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     containerTexture = loadTexture("assets/textures/container.png", true);
     brickDiffuseTexture = loadTexture("assets/textures/brickwall.jpg",true);
 
+    brickDiffuseTexture =
+        loadTexture(
+            "assets/textures/brickwall.jpg",
+            true
+        );
+
+    floorDiffuseTexture =
+        loadTexture(
+            "assets/textures/wood_floor_color.jpg",
+            true
+        );
+
+    ceilingDiffuseTexture =
+        loadTexture(
+            "assets/textures/plaster_color.jpg",
+            true
+        );
+
     // not sRGB
     containerSpecularTexture = loadTexture("assets/textures/container_specular.png", false);
     brickNormalTexture = loadTexture("assets/textures/brickwall_normal.jpg", false);
+
+    brickNormalTexture =
+        loadTexture(
+            "assets/textures/brickwall_normal.jpg",
+            false
+        );
+
+    floorNormalTexture =
+        loadTexture(
+            "assets/textures/wood_floor_normal.jpg",
+            false
+        );
+
+    ceilingNormalTexture =
+        loadTexture(
+            "assets/textures/plaster_normal.jpg",
+            false
+        );
 
     // Visible RGB is sRGB, alpha is unaffected by sRGB
     glassTexture = loadTransparentTexture("assets/textures/window.png", true);
@@ -309,6 +344,30 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
             "uvScale"
         );
 
+    normalMappingUniforms.normalStrength =
+        glGetUniformLocation(
+            normalMappingShaderProgram,
+            "normalStrength"
+        );
+
+    normalMappingUniforms.pointShadowMap =
+        glGetUniformLocation(
+            normalMappingShaderProgram,
+            "pointShadowMap"
+        );
+
+    normalMappingUniforms.pointShadowFarPlane =
+        glGetUniformLocation(
+            normalMappingShaderProgram,
+            "pointShadowFarPlane"
+        );
+
+    normalMappingUniforms.pointShadowsEnabled =
+        glGetUniformLocation(
+            normalMappingShaderProgram,
+            "pointShadowsEnabled"
+        );
+
     glUseProgram(shaderProgram);
 
     glUniform1i(
@@ -343,6 +402,24 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
 
     glUseProgram(normalMappingShaderProgram);
 
+    glActiveTexture(GL_TEXTURE4);
+
+    glBindTexture(
+        GL_TEXTURE_CUBE_MAP,
+        pointDepthCubemap
+    );
+
+    glUniform1f(
+        normalMappingUniforms.pointShadowFarPlane,
+        POINT_SHADOW_FAR_PLANE
+    );
+
+    glUniform1i(
+        normalMappingUniforms.pointShadowsEnabled,
+        !outdoorModeEnabled &&
+        light1Enabled
+    );
+
     glUniform1i(
         normalMappingUniforms.diffuseMap,
         0
@@ -351,6 +428,11 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     glUniform1i(
         normalMappingUniforms.normalMap,
         1
+    );
+
+    glUniform1i(
+        normalMappingUniforms.pointShadowMap,
+        4
     );
 
     glUseProgram(glassShaderProgram);
@@ -753,7 +835,15 @@ void Week09Scene::draw(
 
     if (!outdoorModeEnabled)
     {
-        drawNormalMappedPlane(
+        drawNormalMappedRoomWalls(
+            view,
+            projection,
+            cameraPos,
+            lightPos,
+            lightColor
+        );
+
+        drawNormalMappedFloorAndCeiling(
             view,
             projection,
             cameraPos,
@@ -977,19 +1067,6 @@ void Week09Scene::drawLitObjects()
             cube.VAO,
             lightingUniforms.model,
             createOutdoorGroundModelMatrix()
-        );
-    }
-    else
-    {
-        setMaterial(
-            shaderProgram,
-            matteGray
-        );
-
-        drawClosedRoom(
-            cube.VAO,
-            lightingUniforms.model,
-            containerTexture
         );
     }
 }
@@ -3342,7 +3419,12 @@ void Week09Scene::createNormalMappedPlane()
     );
 }
 
-void Week09Scene::drawNormalMappedPlane(
+void Week09Scene::drawNormalMappedSurface(
+    const glm::mat4& model,
+    const glm::vec2& uvScale,
+    GLuint diffuseTexture,
+    GLuint normalTexture,
+    float normalStrength,
     const glm::mat4& view,
     const glm::mat4& projection,
     const glm::vec3& cameraPos,
@@ -3352,26 +3434,6 @@ void Week09Scene::drawNormalMappedPlane(
 {
     glUseProgram(
         normalMappingShaderProgram
-    );
-
-    glm::mat4 model(1.0f);
-
-    model = glm::translate(
-        model,
-        glm::vec3(
-            0.0f,
-            1.0f,
-            -2.88f
-        )
-    );
-
-    model = glm::scale(
-        model,
-        glm::vec3(
-            3.0f,
-            2.0f,
-            1.0f
-        )
     );
 
     glUniformMatrix4fv(
@@ -3421,21 +3483,26 @@ void Week09Scene::drawNormalMappedPlane(
 
     glUniform2f(
         normalMappingUniforms.uvScale,
-        4.0f,
-        3.0f
+        uvScale.x,
+        uvScale.y
+    );
+
+    glUniform1f(
+        normalMappingUniforms.normalStrength,
+        normalStrength
     );
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(
         GL_TEXTURE_2D,
-        brickDiffuseTexture
+        diffuseTexture
     );
 
     glActiveTexture(GL_TEXTURE1);
 
     glBindTexture(
         GL_TEXTURE_2D,
-        brickNormalTexture
+        normalTexture
     );
 
     const GLboolean cullingWasEnabled =
@@ -3461,6 +3528,257 @@ void Week09Scene::drawNormalMappedPlane(
     }
 
     glActiveTexture(GL_TEXTURE0);
+}
+
+void Week09Scene::drawNormalMappedRoomWalls(
+    const glm::mat4& view,
+    const glm::mat4& projection,
+    const glm::vec3& cameraPos,
+    const glm::vec3& lightPos,
+    const glm::vec3& lightColor
+)
+{
+    constexpr float roomWallPosition = 2.95f;
+
+    const glm::vec3 wallScale(
+        3.0f,
+        2.0f,
+        1.0f
+    );
+
+    const glm::vec2 brickUVScale(
+        4.0f,
+        3.0f
+    );
+
+    glm::mat4 backWall(1.0f);
+
+    backWall = glm::translate(
+        backWall,
+        glm::vec3(
+            0.0f,
+            1.0f,
+            -roomWallPosition
+        )
+    );
+
+    backWall = glm::scale(
+        backWall,
+        wallScale
+    );
+
+    drawNormalMappedSurface(
+        backWall,
+        brickUVScale,
+        brickDiffuseTexture,
+        brickNormalTexture,
+        1.0f,
+        view,
+        projection,
+        cameraPos,
+        lightPos,
+        lightColor
+    );
+
+    glm::mat4 frontWall(1.0f);
+
+    frontWall = glm::translate(
+        frontWall,
+        glm::vec3(
+            0.0f,
+            1.0f,
+            roomWallPosition
+        )
+    );
+
+    frontWall = glm::rotate(
+        frontWall,
+        glm::radians(180.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+
+    frontWall = glm::scale(
+        frontWall,
+        wallScale
+    );
+
+    drawNormalMappedSurface(
+        frontWall,
+        brickUVScale,
+        brickDiffuseTexture,
+        brickNormalTexture,
+        1.0f,
+        view,
+        projection,
+        cameraPos,
+        lightPos,
+        lightColor
+    );
+
+    glm::mat4 leftWall(1.0f);
+
+    leftWall = glm::translate(
+        leftWall,
+        glm::vec3(
+            -roomWallPosition,
+            1.0f,
+            0.0f
+        )
+    );
+
+    leftWall = glm::rotate(
+        leftWall,
+        glm::radians(90.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+
+    leftWall = glm::scale(
+        leftWall,
+        wallScale
+    );
+
+    drawNormalMappedSurface(
+        leftWall,
+        brickUVScale,
+        brickDiffuseTexture,
+        brickNormalTexture,
+        1.0f,
+        view,
+        projection,
+        cameraPos,
+        lightPos,
+        lightColor
+    );
+
+    glm::mat4 rightWall(1.0f);
+
+    rightWall = glm::translate(
+        rightWall,
+        glm::vec3(
+            roomWallPosition,
+            1.0f,
+            0.0f
+        )
+    );
+
+    rightWall = glm::rotate(
+        rightWall,
+        glm::radians(-90.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+
+    rightWall = glm::scale(
+        rightWall,
+        wallScale
+    );
+
+    drawNormalMappedSurface(
+        rightWall,
+        brickUVScale,
+        brickDiffuseTexture,
+        brickNormalTexture,
+        1.0f,
+        view,
+        projection,
+        cameraPos,
+        lightPos,
+        lightColor
+    );
+}
+
+void Week09Scene::drawNormalMappedFloorAndCeiling(
+    const glm::mat4& view,
+    const glm::mat4& projection,
+    const glm::vec3& cameraPos,
+    const glm::vec3& lightPos,
+    const glm::vec3& lightColor
+)
+{
+    glm::mat4 floor(1.0f);
+
+    floor = glm::translate(
+        floor,
+        glm::vec3(
+            0.0f,
+            -0.95f,
+            0.0f
+        )
+    );
+
+    floor = glm::rotate(
+        floor,
+        glm::radians(-90.0f),
+        glm::vec3(
+            1.0f,
+            0.0f,
+            0.0f
+        )
+    );
+
+    floor = glm::scale(
+        floor,
+        glm::vec3(
+            3.0f,
+            3.0f,
+            1.0f
+        )
+    );
+
+    drawNormalMappedSurface(
+        floor,
+        glm::vec2(3.0f, 3.0f),
+        floorDiffuseTexture,
+        floorNormalTexture,
+        0.9f,
+        view,
+        projection,
+        cameraPos,
+        lightPos,
+        lightColor
+    );
+
+    glm::mat4 ceiling(1.0f);
+
+    ceiling = glm::translate(
+        ceiling,
+        glm::vec3(
+            0.0f,
+            2.95f,
+            0.0f
+        )
+    );
+
+    ceiling = glm::rotate(
+        ceiling,
+        glm::radians(90.0f),
+        glm::vec3(
+            1.0f,
+            0.0f,
+            0.0f
+        )
+    );
+
+    ceiling = glm::scale(
+        ceiling,
+        glm::vec3(
+            3.0f,
+            3.0f,
+            1.0f
+        )
+    );
+
+    drawNormalMappedSurface(
+        ceiling,
+        glm::vec2(2.0f, 2.0f),
+        ceilingDiffuseTexture,
+        ceilingNormalTexture,
+        0.3f,
+        view,
+        projection,
+        cameraPos,
+        lightPos,
+        lightColor
+    );
 }
 
 void Week09Scene::cleanup()

@@ -37,9 +37,7 @@ PICTURE HERE
 
 - The sphere had also issues with self-shadowing, it became darker after implementing the point shadows. The fix to this was to discard the front faces of the sphere in the shadow rendering part and only render things from the back faces, playing with face culling functions really worked on this issue.
 
-- with mapping the walls of my room with normal mapped textures. The issue was ... . I fixed it by separating the brick wall to the normal mapped normals in the lighting and geometric (original) normals in the shadow rendering. 
-
-- The issue ??...... The fix was to implement TBN (Tangent, bitangent, normal) matrix.
+- with mapping the walls of my room with normal mapped textures. The issue was with the shadows, on the brick wall not displaying like they should. I fixed it by separating the brick wall to the normal mapped normals in the lighting and geometric (original) normals in the shadow rendering. 
 
 ## Thoughts:
 

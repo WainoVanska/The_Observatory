@@ -167,6 +167,11 @@ private:
         GLuint diffuseMap;
         GLuint normalMap;
         GLuint uvScale;
+        GLuint normalStrength;
+
+        GLuint pointShadowMap;
+        GLuint pointShadowFarPlane;
+        GLuint pointShadowsEnabled;
     };
 
     void drawLitObjects();
@@ -262,7 +267,28 @@ private:
 
     void createNormalMappedPlane();
 
-    void drawNormalMappedPlane(
+    void drawNormalMappedSurface(
+        const glm::mat4& model,
+        const glm::vec2& uvScale,
+        GLuint diffuseTexture,
+        GLuint normalTexture,
+        float normalStrength,
+        const glm::mat4& view,
+        const glm::mat4& projection,
+        const glm::vec3& cameraPos,
+        const glm::vec3& lightPos,
+        const glm::vec3& lightColor
+    );
+
+    void drawNormalMappedRoomWalls(
+        const glm::mat4& view,
+        const glm::mat4& projection,
+        const glm::vec3& cameraPos,
+        const glm::vec3& lightPos,
+        const glm::vec3& lightColor
+    );
+
+    void drawNormalMappedFloorAndCeiling(
         const glm::mat4& view,
         const glm::mat4& projection,
         const glm::vec3& cameraPos,
@@ -340,6 +366,12 @@ private:
     GLuint brickDiffuseTexture = 0;
     GLuint brickNormalTexture = 0;
 
+    GLuint floorDiffuseTexture = 0;
+    GLuint floorNormalTexture = 0;
+
+    GLuint ceilingDiffuseTexture = 0;
+    GLuint ceilingNormalTexture = 0;
+
     CubeMesh cube{};
     SphereMesh sphere{};
 
@@ -364,7 +396,7 @@ private:
     std::vector<glm::mat4> asteroidMatrices;
 
     bool light1Enabled = true;
-    bool light2Enabled = true;
+    bool light2Enabled = false;
     bool normalDebugEnabled = false;
     bool depthDebugEnabled = false;
     bool keyVWasPressed = false;

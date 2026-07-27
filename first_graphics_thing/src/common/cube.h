@@ -35,3 +35,9 @@ void drawTexturedCubeWithSpecularMap(
 void drawSkyboxCube(const CubeMesh& cube);
 
 void drawClosedRoom(GLuint VAO, GLuint modelLoc, GLuint texture);
+
+void drawRoomFloorAndCeiling(
+    GLuint VAO,
+    GLuint modelLoc,
+    GLuint texture
+);

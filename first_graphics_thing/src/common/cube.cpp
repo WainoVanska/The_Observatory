@@ -240,3 +240,48 @@ void drawClosedRoom(GLuint VAO, GLuint modelLoc, GLuint texture)
     rightWall = glm::scale(rightWall, glm::vec3(0.2f, 8.0f, 12.0f));
     drawTexturedCube(VAO, modelLoc, rightWall, texture);
 }
+
+void drawRoomFloorAndCeiling(
+    GLuint VAO,
+    GLuint modelLoc,
+    GLuint texture
+)
+{
+    glm::mat4 floor(1.0f);
+
+    floor = glm::translate(
+        floor,
+        glm::vec3(0.0f, -1.0f, 0.0f)
+    );
+
+    floor = glm::scale(
+        floor,
+        glm::vec3(12.0f, 0.2f, 12.0f)
+    );
+
+    drawTexturedCube(
+        VAO,
+        modelLoc,
+        floor,
+        texture
+    );
+
+    glm::mat4 ceiling(1.0f);
+
+    ceiling = glm::translate(
+        ceiling,
+        glm::vec3(0.0f, 3.0f, 0.0f)
+    );
+
+    ceiling = glm::scale(
+        ceiling,
+        glm::vec3(12.0f, 0.2f, 12.0f)
+    );
+
+    drawTexturedCube(
+        VAO,
+        modelLoc,
+        ceiling,
+        texture
+    );
+}
