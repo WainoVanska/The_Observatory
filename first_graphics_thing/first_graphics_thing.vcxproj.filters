@@ -1,114 +1,54 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
+    <Filter Include="Source Files\App"><UniqueIdentifier>{DC4A86C7-5EAB-4C73-8A5F-C7353D18B303}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Engine"><UniqueIdentifier>{45374185-4399-408C-9C55-6C5880548EC5}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Scenes"><UniqueIdentifier>{B774F73C-12DB-4F27-A8E7-AC5536E80A5F}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\Engine"><UniqueIdentifier>{9CA6224E-3BA2-43BF-A1F3-EF9436194731}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\Scenes"><UniqueIdentifier>{220104FE-5738-4AA0-9DC6-B78609EB0A37}</UniqueIdentifier></Filter>
+    <Filter Include="Shaders\Scene"><UniqueIdentifier>{B0C33480-3EB4-485A-9E09-B4D6EB72560A}</UniqueIdentifier></Filter>
+    <Filter Include="Shaders\Skybox"><UniqueIdentifier>{FA48D136-D981-45A4-AFD0-A760E1A05C2B}</UniqueIdentifier></Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dependencies\glad\src\glad.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\common\cube.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\common\character.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\common\free_camera.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\common\texture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\common\character_skin.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\common\skybox.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\common\cubemap_texture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\week09\main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\common\sphere.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\common\light_controller.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\common\shader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\common\window.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\common\material.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\week09\week09_scene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\common\mesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\common\model.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <ClCompile Include="dependencies\glad\src\glad.c"><Filter>Source Files\Engine</Filter></ClCompile>
+    <ClCompile Include="src\app\main.cpp"><Filter>Source Files\App</Filter></ClCompile>
+    <ClCompile Include="src\engine\character.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
+    <ClCompile Include="src\engine\character_skin.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
+    <ClCompile Include="src\engine\cube.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
+    <ClCompile Include="src\engine\cubemap_texture.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
+    <ClCompile Include="src\engine\free_camera.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
+    <ClCompile Include="src\engine\light_controller.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
+    <ClCompile Include="src\engine\material.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
+    <ClCompile Include="src\engine\mesh.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
+    <ClCompile Include="src\engine\model.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
+    <ClCompile Include="src\engine\shader.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
+    <ClCompile Include="src\engine\skybox.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
+    <ClCompile Include="src\engine\sphere.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
+    <ClCompile Include="src\engine\texture.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
+    <ClCompile Include="src\engine\window.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
+    <ClCompile Include="src\scenes\graphics_scene.cpp"><Filter>Source Files\Scenes</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\common\cube.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\common\character.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\common\free_camera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\common\texture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\common\character_skin.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\common\cubemap_texture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\common\skybox.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\common\sphere.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\common\light_controller.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\common\shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\common\material.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\week09\week09_scene.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\common\mesh.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\common\model.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
+    <ClInclude Include="src\engine\character.h"><Filter>Header Files\Engine</Filter></ClInclude>
+    <ClInclude Include="src\engine\character_skin.h"><Filter>Header Files\Engine</Filter></ClInclude>
+    <ClInclude Include="src\engine\cube.h"><Filter>Header Files\Engine</Filter></ClInclude>
+    <ClInclude Include="src\engine\cubemap_texture.h"><Filter>Header Files\Engine</Filter></ClInclude>
+    <ClInclude Include="src\engine\free_camera.h"><Filter>Header Files\Engine</Filter></ClInclude>
+    <ClInclude Include="src\engine\light_controller.h"><Filter>Header Files\Engine</Filter></ClInclude>
+    <ClInclude Include="src\engine\material.h"><Filter>Header Files\Engine</Filter></ClInclude>
+    <ClInclude Include="src\engine\mesh.h"><Filter>Header Files\Engine</Filter></ClInclude>
+    <ClInclude Include="src\engine\model.h"><Filter>Header Files\Engine</Filter></ClInclude>
+    <ClInclude Include="src\engine\shader.h"><Filter>Header Files\Engine</Filter></ClInclude>
+    <ClInclude Include="src\engine\skybox.h"><Filter>Header Files\Engine</Filter></ClInclude>
+    <ClInclude Include="src\engine\sphere.h"><Filter>Header Files\Engine</Filter></ClInclude>
+    <ClInclude Include="src\engine\texture.h"><Filter>Header Files\Engine</Filter></ClInclude>
+    <ClInclude Include="src\engine\window.h"><Filter>Header Files\Engine</Filter></ClInclude>
+    <ClInclude Include="src\scenes\graphics_scene.h"><Filter>Header Files\Scenes</Filter></ClInclude>
+    <ClInclude Include="src\scenes\graphics_scene_legacy.h"><Filter>Header Files\Scenes</Filter></ClInclude>
+    <ClInclude Include="src\scenes\week09_scene.h"><Filter>Header Files\Scenes</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\shaders\scene\*.glsl"><Filter>Shaders\Scene</Filter></None>
+    <None Include="assets\shaders\skybox\*.glsl"><Filter>Shaders\Skybox</Filter></None>
   </ItemGroup>
 </Project>
