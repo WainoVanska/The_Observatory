@@ -3,147 +3,275 @@
 #include "../common/shader.h"
 #include "../common/texture.h"
 
-#include <map>
-#include <vector>
+#include <array>
+#include <cstddef>
 #include <iostream>
+#include <map>
 #include <random>
+#include <string>
+#include <vector>
+
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+namespace
+{
+    constexpr float FLASHLIGHT_INNER_ANGLE = 10.0f;
+    constexpr float FLASHLIGHT_OUTER_ANGLE = 28.0f;
+
+    GLint uniformLocation(GLuint program, const char* name)
+    {
+        return glGetUniformLocation(program, name);
+    }
+
+    void setMatrix(GLint location, const glm::mat4& value)
+    {
+        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
+    }
+
+    void setVector(GLint location, const glm::vec3& value)
+    {
+        glUniform3fv(location, 1, glm::value_ptr(value));
+    }
+
+    void bindTexture(GLenum unit, GLenum target, GLuint texture)
+    {
+        glActiveTexture(unit);
+        glBindTexture(target, texture);
+    }
+
+    glm::mat4 makeTransform(
+        const glm::vec3& position,
+        const glm::vec3& scale,
+        float angleDegrees = 0.0f,
+        const glm::vec3& axis = glm::vec3(0.0f, 1.0f, 0.0f))
+    {
+        glm::mat4 model(1.0f);
+        model = glm::translate(model, position);
+        if (angleDegrees != 0.0f)
+        {
+            model = glm::rotate(model, glm::radians(angleDegrees), axis);
+        }
+        return glm::scale(model, scale);
+    }
+
+    glm::vec3 sunDirection()
+    {
+        return glm::vec3(-0.3f, -1.0f, -0.2f);
+    }
+
+    glm::vec3 sunColor()
+    {
+        return glm::vec3(1.0f, 0.95f, 0.80f);
+    }
+
+    bool toggleOnKeyPress(GLFWwindow* window, int key, bool& wasPressed, bool& value)
+    {
+        const bool isPressed = glfwGetKey(window, key) == GLFW_PRESS;
+        const bool toggled = isPressed && !wasPressed;
+        if (toggled)
+        {
+            value = !value;
+        }
+        wasPressed = isPressed;
+        return toggled;
+    }
+
+    void configureVertexAttribute(
+        GLuint index,
+        GLint componentCount,
+        GLsizei stride,
+        std::size_t byteOffset)
+    {
+        glEnableVertexAttribArray(index);
+        glVertexAttribPointer(
+            index,
+            componentCount,
+            GL_FLOAT,
+            GL_FALSE,
+            stride,
+            reinterpret_cast<void*>(byteOffset));
+    }
+
+    void drawDebugPrimitives(
+        const CubeMesh& cube,
+        const SphereMesh& sphere,
+        GLint modelLocation,
+        GLuint texture)
+    {
+        drawTexturedCube(
+            cube.VAO,
+            modelLocation,
+            makeTransform(glm::vec3(-0.2f, -0.6f, 0.0f), glm::vec3(1.0f)),
+            texture);
+
+        drawSphere(
+            sphere,
+            modelLocation,
+            makeTransform(glm::vec3(0.8f, -0.4f, 0.0f), glm::vec3(1.0f)));
+
+        drawClosedRoom(cube.VAO, modelLocation, texture);
+    }
+
+    template <typename Uniforms>
+    void configureModelLighting(
+        const Uniforms& uniforms,
+        const glm::mat4& view,
+        const glm::mat4& projection,
+        const glm::vec3& cameraPos,
+        const glm::vec3& cameraFront,
+        const glm::vec3& lightPos,
+        const glm::vec3& lightColor,
+        const glm::vec3& secondLightPos,
+        const glm::vec3& secondLightColor,
+        bool light1Enabled,
+        bool light2Enabled,
+        bool directionalLightEnabled,
+        bool flashlightEnabled)
+    {
+        setMatrix(uniforms.view, view);
+        setMatrix(uniforms.projection, projection);
+        setVector(uniforms.viewPos, cameraPos);
+        setVector(uniforms.lightPos, lightPos);
+        setVector(uniforms.lightColor, lightColor);
+        setVector(uniforms.secondLightPos, secondLightPos);
+        setVector(uniforms.secondLightColor, secondLightColor);
+        glUniform1i(uniforms.light1Enabled, light1Enabled);
+        glUniform1i(uniforms.light2Enabled, light2Enabled);
+        glUniform1i(uniforms.directionalLightEnabled, directionalLightEnabled);
+        setVector(uniforms.directionalLightDirection, sunDirection());
+        setVector(uniforms.directionalLightColor, sunColor());
+        setVector(uniforms.flashlightPos, cameraPos);
+        setVector(uniforms.flashlightDir, cameraFront);
+        glUniform1i(uniforms.flashlightEnabled, flashlightEnabled);
+        glUniform1f(uniforms.flashlightCutOff, glm::cos(glm::radians(FLASHLIGHT_INNER_ANGLE)));
+        glUniform1f(uniforms.flashlightOuterCutOff, glm::cos(glm::radians(FLASHLIGHT_OUTER_ANGLE)));
+    }
+
+    void configureInstancedLighting(
+        GLuint program,
+        const glm::mat4& view,
+        const glm::mat4& projection,
+        const glm::vec3& cameraPos,
+        const glm::vec3& cameraFront,
+        const glm::vec3& lightPos,
+        const glm::vec3& lightColor,
+        const glm::vec3& secondLightPos,
+        const glm::vec3& secondLightColor,
+        bool light1Enabled,
+        bool light2Enabled,
+        bool directionalLightEnabled,
+        bool flashlightEnabled)
+    {
+        setMatrix(uniformLocation(program, "view"), view);
+        setMatrix(uniformLocation(program, "projection"), projection);
+        setVector(uniformLocation(program, "viewPos"), cameraPos);
+        setVector(uniformLocation(program, "lightPos"), lightPos);
+        setVector(uniformLocation(program, "lightColor"), lightColor);
+        setVector(uniformLocation(program, "secondLightPos"), secondLightPos);
+        setVector(uniformLocation(program, "secondLightColor"), secondLightColor);
+        glUniform1i(uniformLocation(program, "light1Enabled"), light1Enabled);
+        glUniform1i(uniformLocation(program, "light2Enabled"), light2Enabled);
+        glUniform1i(uniformLocation(program, "directionalLightEnabled"), directionalLightEnabled);
+        setVector(uniformLocation(program, "directionalLightDirection"), sunDirection());
+        setVector(uniformLocation(program, "directionalLightColor"), sunColor());
+        setVector(uniformLocation(program, "flashlightPos"), cameraPos);
+        setVector(uniformLocation(program, "flashlightDir"), cameraFront);
+        glUniform1i(uniformLocation(program, "flashlightEnabled"), flashlightEnabled);
+        glUniform1f(
+            uniformLocation(program, "flashlightCutOff"),
+            glm::cos(glm::radians(FLASHLIGHT_INNER_ANGLE)));
+        glUniform1f(
+            uniformLocation(program, "flashlightOuterCutOff"),
+            glm::cos(glm::radians(FLASHLIGHT_OUTER_ANGLE)));
+    }
+
+    template <typename Uniforms>
+    void drawModelWithMatrices(
+        Model* model,
+        GLuint program,
+        const Uniforms& uniforms,
+        const glm::mat4& view,
+        const glm::mat4& projection,
+        const glm::mat4& modelMatrix)
+    {
+        if (!model)
+        {
+            return;
+        }
+
+        glUseProgram(program);
+        setMatrix(uniforms.view, view);
+        setMatrix(uniforms.projection, projection);
+        setMatrix(uniforms.model, modelMatrix);
+        model->draw(program);
+    }
+
+    struct TangentBasis
+    {
+        glm::vec3 tangent;
+        glm::vec3 bitangent;
+    };
+
+    TangentBasis calculateTangentBasis(
+        const glm::vec3& p1,
+        const glm::vec3& p2,
+        const glm::vec3& p3,
+        const glm::vec2& uv1,
+        const glm::vec2& uv2,
+        const glm::vec2& uv3)
+    {
+        const glm::vec3 edge1 = p2 - p1;
+        const glm::vec3 edge2 = p3 - p1;
+        const glm::vec2 deltaUV1 = uv2 - uv1;
+        const glm::vec2 deltaUV2 = uv3 - uv1;
+        const float inverseDeterminant = 1.0f /
+            (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+        TangentBasis basis;
+        basis.tangent = glm::normalize(
+            inverseDeterminant * (deltaUV2.y * edge1 - deltaUV1.y * edge2));
+        basis.bitangent = glm::normalize(
+            inverseDeterminant * (-deltaUV2.x * edge1 + deltaUV1.x * edge2));
+        return basis;
+    }
+}
+
 void Week09Scene::init(int width, int height, FreeCamera* camera)
 {
-    shaderProgram = createShaderProgram(
-        "src/week09/vertex.glsl",
-        "src/week09/fragment.glsl"
-    );
+    shaderProgram = createShaderProgram("src/week09/vertex.glsl", "src/week09/fragment.glsl");
+    lampShaderProgram = createShaderProgram("src/week09/lamp_vertex.glsl", "src/week09/lamp_fragment.glsl");
+    normalDebugShaderProgram = createShaderProgram("src/week09/vertex.glsl", "src/week09/normal_debug_fragment.glsl");
+    modelShaderProgram = createShaderProgram("src/week09/model_vertex.glsl", "src/week09/model_fragment.glsl");
+    modelNormalDebugShaderProgram = createShaderProgram("src/week09/model_vertex.glsl", "src/week09/normal_debug_fragment.glsl");
+    depthDebugShaderProgram = createShaderProgram("src/week09/vertex.glsl", "src/week09/depth_debug_fragment.glsl");
+    modelDepthDebugShaderProgram = createShaderProgram("src/week09/model_vertex.glsl", "src/week09/depth_debug_fragment.glsl");
+    modelOutlineShaderProgram = createShaderProgram("src/week09/model_vertex.glsl", "src/week09/single_color_fragment.glsl");
+    glassShaderProgram = createShaderProgram("src/week09/glass_vertex.glsl", "src/week09/glass_fragment.glsl");
+    screenShaderProgram = createShaderProgram("src/week09/screen_vertex.glsl", "src/week09/screen_fragment.glsl");
+    instancedModelShaderProgram = createShaderProgram("src/week09/instanced_model_vertex.glsl", "src/week09/instanced_rock_fragment.glsl");
+    directionalDepthShaderProgram = createShaderProgram("src/week09/directional_depth_vertex.glsl", "src/week09/directional_depth_fragment.glsl");
+    instancedDirectionalDepthShaderProgram = createShaderProgram("src/week09/instanced_directional_depth_vertex.glsl", "src/week09/directional_depth_fragment.glsl");
+    pointDepthShaderProgram = createShaderProgram(
+        "src/week09/point_depth_vertex.glsl",
+        "src/week09/point_depth_geometry.glsl",
+        "src/week09/point_depth_fragment.glsl");
+    normalMappingShaderProgram = createShaderProgram("src/week09/normal_mapping_vertex.glsl", "src/week09/normal_mapping_fragment.glsl");
 
-    lampShaderProgram = createShaderProgram(
-        "src/week09/lamp_vertex.glsl",
-        "src/week09/lamp_fragment.glsl"
-    );
-
-    normalDebugShaderProgram = createShaderProgram(
-        "src/week09/vertex.glsl",
-        "src/week09/normal_debug_fragment.glsl"
-    );
-
-    modelShaderProgram = createShaderProgram(
-        "src/week09/model_vertex.glsl",
-        "src/week09/model_fragment.glsl"
-    );
-
-    modelNormalDebugShaderProgram = createShaderProgram(
-        "src/week09/model_vertex.glsl",
-        "src/week09/normal_debug_fragment.glsl"
-    );
-
-    depthDebugShaderProgram = createShaderProgram(
-        "src/week09/vertex.glsl",
-        "src/week09/depth_debug_fragment.glsl"
-    );
-
-    modelDepthDebugShaderProgram = createShaderProgram(
-        "src/week09/model_vertex.glsl",
-        "src/week09/depth_debug_fragment.glsl"
-    );
-
-    modelOutlineShaderProgram = createShaderProgram(
-        "src/week09/model_vertex.glsl",
-        "src/week09/single_color_fragment.glsl"
-    );
-
-    glassShaderProgram = createShaderProgram(
-        "src/week09/glass_vertex.glsl",
-        "src/week09/glass_fragment.glsl"
-    );
-
-    screenShaderProgram = createShaderProgram(
-        "src/week09/screen_vertex.glsl",
-        "src/week09/screen_fragment.glsl"
-    );
-
-    instancedModelShaderProgram = createShaderProgram(
-        "src/week09/instanced_model_vertex.glsl",
-        "src/week09/instanced_rock_fragment.glsl"
-    );
-
-    directionalDepthShaderProgram =
-        createShaderProgram(
-            "src/week09/directional_depth_vertex.glsl",
-            "src/week09/directional_depth_fragment.glsl"
-        );
-
-    instancedDirectionalDepthShaderProgram =
-        createShaderProgram(
-            "src/week09/instanced_directional_depth_vertex.glsl",
-            "src/week09/directional_depth_fragment.glsl"
-        );
-
-    pointDepthShaderProgram =
-        createShaderProgram(
-            "src/week09/point_depth_vertex.glsl",
-            "src/week09/point_depth_geometry.glsl",
-            "src/week09/point_depth_fragment.glsl"
-        );
-
-    normalMappingShaderProgram =
-        createShaderProgram(
-            "src/week09/normal_mapping_vertex.glsl",
-            "src/week09/normal_mapping_fragment.glsl"
-        );
-
-    // sRGB
     containerTexture = loadTexture("assets/textures/container.png", true);
-    brickDiffuseTexture = loadTexture("assets/textures/brickwall.jpg",true);
-
-    brickDiffuseTexture =
-        loadTexture(
-            "assets/textures/brickwall.jpg",
-            true
-        );
-
-    floorDiffuseTexture =
-        loadTexture(
-            "assets/textures/wood_floor_color.jpg",
-            true
-        );
-
-    ceilingDiffuseTexture =
-        loadTexture(
-            "assets/textures/plaster_color.jpg",
-            true
-        );
-
-    // not sRGB
+    brickDiffuseTexture = loadTexture("assets/textures/brickwall.jpg", true);
+    floorDiffuseTexture = loadTexture("assets/textures/wood_floor_color.jpg", true);
+    ceilingDiffuseTexture = loadTexture("assets/textures/plaster_color.jpg", true);
     containerSpecularTexture = loadTexture("assets/textures/container_specular.png", false);
     brickNormalTexture = loadTexture("assets/textures/brickwall_normal.jpg", false);
-
-    brickNormalTexture =
-        loadTexture(
-            "assets/textures/brickwall_normal.jpg",
-            false
-        );
-
-    floorNormalTexture =
-        loadTexture(
-            "assets/textures/wood_floor_normal.jpg",
-            false
-        );
-
-    ceilingNormalTexture =
-        loadTexture(
-            "assets/textures/plaster_normal.jpg",
-            false
-        );
-
-    // Visible RGB is sRGB, alpha is unaffected by sRGB
+    floorNormalTexture = loadTexture("assets/textures/wood_floor_normal.jpg", false);
+    ceilingNormalTexture = loadTexture("assets/textures/plaster_normal.jpg", false);
     glassTexture = loadTransparentTexture("assets/textures/window.png", true);
 
     backpack = new Model("assets/models/backpack/backpack.obj");
     planet = new Model("assets/models/planet/planet.obj");
     rock = new Model("assets/models/rock/rock.obj");
-
     cube = createCubeMesh();
     sphere = createSphereMesh();
 
@@ -155,394 +283,176 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     createPointShadowMap();
     createNormalMappedPlane();
 
-    glassPanePositions.push_back(glm::vec3(-1.8f, 0.0f, -1.8f));
-    glassPanePositions.push_back(glm::vec3(0.0f, 0.0f, -1.8f));
-    glassPanePositions.push_back(glm::vec3(1.8f, 0.0f, -1.8f));
-
-    glassPanePositions.push_back(glm::vec3(-1.2f, 0.0f, 0.8f));
-    glassPanePositions.push_back(glm::vec3(1.2f, 0.0f, 0.8f));
+    glassPanePositions = {
+        glm::vec3(-1.8f, 0.0f, -1.8f),
+        glm::vec3(0.0f, 0.0f, -1.8f),
+        glm::vec3(1.8f, 0.0f, -1.8f),
+        glm::vec3(-1.2f, 0.0f, 0.8f),
+        glm::vec3(1.2f, 0.0f, 0.8f)
+    };
 
     outdoorGroundMaterial.diffuseColor = glm::vec3(0.18f, 0.42f, 0.16f);
     outdoorGroundMaterial.specularColor = glm::vec3(0.05f);
-
     outdoorGroundMaterial.shininess = 8.0f;
     outdoorGroundMaterial.useDiffuseMap = false;
     outdoorGroundMaterial.useSpecularMap = false;
-
     dullOrange = createDullOrangeMaterial();
     shinyBlue = createShinyBlueMaterial();
     matteGray = createMatteGrayMaterial();
     texturedMaterial = createTexturedMaterial();
 
     skybox = new SkyBox(camera);
-
     if (!skybox->Init(
         "assets/textures/skybox1",
-        "px.png",
-        "nx.png",
-        "py.png",
-        "ny.png",
-        "pz.png",
-        "nz.png"
-    )) {
+        "px.png", "nx.png", "py.png", "ny.png", "pz.png", "nz.png"))
+    {
         std::cout << "Skybox failed to load\n";
     }
 
-    lightingUniforms.model = glGetUniformLocation(shaderProgram, "model");
-    lightingUniforms.view = glGetUniformLocation(shaderProgram, "view");
-    lightingUniforms.projection = glGetUniformLocation(shaderProgram, "projection");
-    lightingUniforms.viewPos = glGetUniformLocation(shaderProgram, "viewPos");
+    const auto location = [](GLuint program, const char* name) {
+        return static_cast<GLuint>(glGetUniformLocation(program, name));
+    };
 
-    lightingUniforms.lightPos = glGetUniformLocation(shaderProgram, "lightPos");
-    lightingUniforms.lightColor = glGetUniformLocation(shaderProgram, "lightColor");
-    lightingUniforms.secondLightPos = glGetUniformLocation(shaderProgram, "secondLightPos");
-    lightingUniforms.secondLightColor = glGetUniformLocation(shaderProgram, "secondLightColor");
+    lightingUniforms.model = location(shaderProgram, "model");
+    lightingUniforms.view = location(shaderProgram, "view");
+    lightingUniforms.projection = location(shaderProgram, "projection");
+    lightingUniforms.viewPos = location(shaderProgram, "viewPos");
+    lightingUniforms.lightPos = location(shaderProgram, "lightPos");
+    lightingUniforms.lightColor = location(shaderProgram, "lightColor");
+    lightingUniforms.secondLightPos = location(shaderProgram, "secondLightPos");
+    lightingUniforms.secondLightColor = location(shaderProgram, "secondLightColor");
+    lightingUniforms.light1Enabled = location(shaderProgram, "light1Enabled");
+    lightingUniforms.light2Enabled = location(shaderProgram, "light2Enabled");
+    lightingUniforms.flashlightPos = location(shaderProgram, "flashlightPos");
+    lightingUniforms.flashlightDir = location(shaderProgram, "flashlightDir");
+    lightingUniforms.flashlightEnabled = location(shaderProgram, "flashlightEnabled");
+    lightingUniforms.flashlightCutOff = location(shaderProgram, "flashlightCutOff");
+    lightingUniforms.flashlightOuterCutOff = location(shaderProgram, "flashlightOuterCutOff");
+    lightingUniforms.directionalLightEnabled = location(shaderProgram, "directionalLightEnabled");
+    lightingUniforms.directionalLightDirection = location(shaderProgram, "directionalLightDirection");
+    lightingUniforms.directionalLightColor = location(shaderProgram, "directionalLightColor");
+    lightingUniforms.lightSpaceMatrix = location(shaderProgram, "lightSpaceMatrix");
+    lightingUniforms.directionalShadowMap = location(shaderProgram, "directionalShadowMap");
+    lightingUniforms.pointShadowMap = location(shaderProgram, "pointShadowMap");
+    lightingUniforms.pointShadowFarPlane = location(shaderProgram, "pointShadowFarPlane");
+    lightingUniforms.pointShadowsEnabled = location(shaderProgram, "pointShadowsEnabled");
 
-    lightingUniforms.light1Enabled = glGetUniformLocation(shaderProgram, "light1Enabled");
-    lightingUniforms.light2Enabled = glGetUniformLocation(shaderProgram, "light2Enabled");
+    lampUniforms.model = location(lampShaderProgram, "model");
+    lampUniforms.view = location(lampShaderProgram, "view");
+    lampUniforms.projection = location(lampShaderProgram, "projection");
+    lampUniforms.color = location(lampShaderProgram, "lampColor");
 
-    lightingUniforms.directionalLightEnabled = glGetUniformLocation(shaderProgram, "directionalLightEnabled");
-    lightingUniforms.directionalLightDirection = glGetUniformLocation(shaderProgram, "directionalLightDirection");
-    lightingUniforms.directionalLightColor = glGetUniformLocation(shaderProgram, "directionalLightColor");
+    normalDebugUniforms.model = location(normalDebugShaderProgram, "model");
+    normalDebugUniforms.view = location(normalDebugShaderProgram, "view");
+    normalDebugUniforms.projection = location(normalDebugShaderProgram, "projection");
+    modelNormalDebugUniforms.model = location(modelNormalDebugShaderProgram, "model");
+    modelNormalDebugUniforms.view = location(modelNormalDebugShaderProgram, "view");
+    modelNormalDebugUniforms.projection = location(modelNormalDebugShaderProgram, "projection");
 
-    lightingUniforms.lightSpaceMatrix = glGetUniformLocation(shaderProgram, "lightSpaceMatrix");
-    lightingUniforms.directionalShadowMap = glGetUniformLocation(shaderProgram, "directionalShadowMap");
+    depthDebugUniforms.model = location(depthDebugShaderProgram, "model");
+    depthDebugUniforms.view = location(depthDebugShaderProgram, "view");
+    depthDebugUniforms.projection = location(depthDebugShaderProgram, "projection");
+    depthDebugUniforms.nearPlane = location(depthDebugShaderProgram, "nearPlane");
+    depthDebugUniforms.farPlane = location(depthDebugShaderProgram, "farPlane");
+    modelDepthDebugUniforms.model = location(modelDepthDebugShaderProgram, "model");
+    modelDepthDebugUniforms.view = location(modelDepthDebugShaderProgram, "view");
+    modelDepthDebugUniforms.projection = location(modelDepthDebugShaderProgram, "projection");
+    modelDepthDebugUniforms.nearPlane = location(modelDepthDebugShaderProgram, "nearPlane");
+    modelDepthDebugUniforms.farPlane = location(modelDepthDebugShaderProgram, "farPlane");
+
+    modelUniforms.model = location(modelShaderProgram, "model");
+    modelUniforms.view = location(modelShaderProgram, "view");
+    modelUniforms.projection = location(modelShaderProgram, "projection");
+    modelUniforms.viewPos = location(modelShaderProgram, "viewPos");
+    modelUniforms.lightPos = location(modelShaderProgram, "lightPos");
+    modelUniforms.lightColor = location(modelShaderProgram, "lightColor");
+    modelUniforms.secondLightPos = location(modelShaderProgram, "secondLightPos");
+    modelUniforms.secondLightColor = location(modelShaderProgram, "secondLightColor");
+    modelUniforms.light1Enabled = location(modelShaderProgram, "light1Enabled");
+    modelUniforms.light2Enabled = location(modelShaderProgram, "light2Enabled");
+    modelUniforms.pointShadowMap = location(modelShaderProgram, "pointShadowMap");
+    modelUniforms.pointShadowFarPlane = location(modelShaderProgram, "pointShadowFarPlane");
+    modelUniforms.pointShadowsEnabled = location(modelShaderProgram, "pointShadowsEnabled");
+    modelUniforms.directionalLightEnabled = location(modelShaderProgram, "directionalLightEnabled");
+    modelUniforms.directionalLightDirection = location(modelShaderProgram, "directionalLightDirection");
+    modelUniforms.directionalLightColor = location(modelShaderProgram, "directionalLightColor");
+    modelUniforms.flashlightPos = location(modelShaderProgram, "flashlightPos");
+    modelUniforms.flashlightDir = location(modelShaderProgram, "flashlightDir");
+    modelUniforms.flashlightEnabled = location(modelShaderProgram, "flashlightEnabled");
+    modelUniforms.flashlightCutOff = location(modelShaderProgram, "flashlightCutOff");
+    modelUniforms.flashlightOuterCutOff = location(modelShaderProgram, "flashlightOuterCutOff");
+    modelUniforms.skybox = location(modelShaderProgram, "skybox");
+    modelUniforms.glassBackpackEnabled = location(modelShaderProgram, "glassBackpackEnabled");
+
+    modelOutlineUniforms.model = location(modelOutlineShaderProgram, "model");
+    modelOutlineUniforms.view = location(modelOutlineShaderProgram, "view");
+    modelOutlineUniforms.projection = location(modelOutlineShaderProgram, "projection");
+    glassUniforms.model = location(glassShaderProgram, "model");
+    glassUniforms.view = location(glassShaderProgram, "view");
+    glassUniforms.projection = location(glassShaderProgram, "projection");
+
+    normalMappingUniforms.model = location(normalMappingShaderProgram, "model");
+    normalMappingUniforms.view = location(normalMappingShaderProgram, "view");
+    normalMappingUniforms.projection = location(normalMappingShaderProgram, "projection");
+    normalMappingUniforms.lightPos = location(normalMappingShaderProgram, "lightPos");
+    normalMappingUniforms.lightColor = location(normalMappingShaderProgram, "lightColor");
+    normalMappingUniforms.viewPos = location(normalMappingShaderProgram, "viewPos");
+    normalMappingUniforms.lightEnabled = location(normalMappingShaderProgram, "lightEnabled");
+    normalMappingUniforms.diffuseMap = location(normalMappingShaderProgram, "diffuseMap");
+    normalMappingUniforms.normalMap = location(normalMappingShaderProgram, "normalMap");
+    normalMappingUniforms.uvScale = location(normalMappingShaderProgram, "uvScale");
+    normalMappingUniforms.normalStrength = location(normalMappingShaderProgram, "normalStrength");
+    normalMappingUniforms.pointShadowMap = location(normalMappingShaderProgram, "pointShadowMap");
+    normalMappingUniforms.pointShadowFarPlane = location(normalMappingShaderProgram, "pointShadowFarPlane");
+    normalMappingUniforms.pointShadowsEnabled = location(normalMappingShaderProgram, "pointShadowsEnabled");
 
     glUseProgram(shaderProgram);
     glUniform1i(lightingUniforms.directionalShadowMap, 3);
-
-    lampUniforms.model = glGetUniformLocation(lampShaderProgram, "model");
-    lampUniforms.view = glGetUniformLocation(lampShaderProgram, "view");
-    lampUniforms.projection = glGetUniformLocation(lampShaderProgram, "projection");
-    lampUniforms.color = glGetUniformLocation(lampShaderProgram, "lampColor");
-
-    normalDebugUniforms.model = glGetUniformLocation(normalDebugShaderProgram, "model");
-    normalDebugUniforms.view = glGetUniformLocation(normalDebugShaderProgram, "view");
-    normalDebugUniforms.projection = glGetUniformLocation(normalDebugShaderProgram, "projection");
-
-    modelNormalDebugUniforms.model = glGetUniformLocation(modelNormalDebugShaderProgram, "model");
-    modelNormalDebugUniforms.view = glGetUniformLocation(modelNormalDebugShaderProgram, "view");
-    modelNormalDebugUniforms.projection = glGetUniformLocation(modelNormalDebugShaderProgram, "projection");
-
-    depthDebugUniforms.model = glGetUniformLocation(depthDebugShaderProgram, "model");
-    depthDebugUniforms.view = glGetUniformLocation(depthDebugShaderProgram, "view");
-    depthDebugUniforms.projection = glGetUniformLocation(depthDebugShaderProgram, "projection");
-    depthDebugUniforms.nearPlane = glGetUniformLocation(depthDebugShaderProgram, "nearPlane");
-    depthDebugUniforms.farPlane = glGetUniformLocation(depthDebugShaderProgram, "farPlane");
-
-    modelDepthDebugUniforms.model = glGetUniformLocation(modelDepthDebugShaderProgram, "model");
-    modelDepthDebugUniforms.view = glGetUniformLocation(modelDepthDebugShaderProgram, "view");
-    modelDepthDebugUniforms.projection = glGetUniformLocation(modelDepthDebugShaderProgram, "projection");
-    modelDepthDebugUniforms.nearPlane = glGetUniformLocation(modelDepthDebugShaderProgram, "nearPlane");
-    modelDepthDebugUniforms.farPlane = glGetUniformLocation(modelDepthDebugShaderProgram, "farPlane");
-
-    lightingUniforms.flashlightPos = glGetUniformLocation(shaderProgram, "flashlightPos");
-    lightingUniforms.flashlightDir = glGetUniformLocation(shaderProgram, "flashlightDir");
-    lightingUniforms.flashlightEnabled = glGetUniformLocation(shaderProgram, "flashlightEnabled");
-    lightingUniforms.flashlightCutOff = glGetUniformLocation(shaderProgram, "flashlightCutOff");
-    lightingUniforms.flashlightOuterCutOff = glGetUniformLocation(shaderProgram, "flashlightOuterCutOff");
-
-    modelUniforms.model = glGetUniformLocation(modelShaderProgram, "model");
-    modelUniforms.view = glGetUniformLocation(modelShaderProgram, "view");
-    modelUniforms.projection = glGetUniformLocation(modelShaderProgram, "projection");
-    modelUniforms.viewPos = glGetUniformLocation(modelShaderProgram, "viewPos");
-    modelUniforms.lightPos = glGetUniformLocation(modelShaderProgram, "lightPos");
-    modelUniforms.lightColor = glGetUniformLocation(modelShaderProgram, "lightColor");
-
-    modelUniforms.secondLightPos = glGetUniformLocation(modelShaderProgram, "secondLightPos");
-    modelUniforms.secondLightColor = glGetUniformLocation(modelShaderProgram, "secondLightColor");
-
-    modelUniforms.light1Enabled = glGetUniformLocation(modelShaderProgram, "light1Enabled");
-    modelUniforms.light2Enabled = glGetUniformLocation(modelShaderProgram, "light2Enabled");
-
-    modelUniforms.directionalLightEnabled = glGetUniformLocation(modelShaderProgram, "directionalLightEnabled");
-    modelUniforms.directionalLightDirection = glGetUniformLocation(modelShaderProgram, "directionalLightDirection");
-    modelUniforms.directionalLightColor = glGetUniformLocation(modelShaderProgram, "directionalLightColor");
-
-    modelUniforms.skybox = glGetUniformLocation(modelShaderProgram, "skybox");
-    modelUniforms.glassBackpackEnabled = glGetUniformLocation(modelShaderProgram, "glassBackpackEnabled");
-
-    modelUniforms.flashlightPos = glGetUniformLocation(modelShaderProgram, "flashlightPos");
-    modelUniforms.flashlightDir = glGetUniformLocation(modelShaderProgram, "flashlightDir");
-    modelUniforms.flashlightEnabled = glGetUniformLocation(modelShaderProgram, "flashlightEnabled");
-    modelUniforms.flashlightCutOff = glGetUniformLocation(modelShaderProgram, "flashlightCutOff");
-    modelUniforms.flashlightOuterCutOff = glGetUniformLocation(modelShaderProgram, "flashlightOuterCutOff");
-
-    modelOutlineUniforms.model = glGetUniformLocation(modelOutlineShaderProgram, "model");
-    modelOutlineUniforms.view = glGetUniformLocation(modelOutlineShaderProgram, "view");
-    modelOutlineUniforms.projection = glGetUniformLocation(modelOutlineShaderProgram, "projection");
-
-    glassUniforms.model = glGetUniformLocation(glassShaderProgram, "model");
-    glassUniforms.view = glGetUniformLocation(glassShaderProgram, "view");
-    glassUniforms.projection = glGetUniformLocation(glassShaderProgram, "projection");
-
-    lightingUniforms.pointShadowMap = glGetUniformLocation(shaderProgram,"pointShadowMap");
-    lightingUniforms.pointShadowFarPlane =glGetUniformLocation(shaderProgram,"pointShadowFarPlane");
-    lightingUniforms.pointShadowsEnabled =glGetUniformLocation(shaderProgram,"pointShadowsEnabled");
-
-    modelUniforms.pointShadowMap = glGetUniformLocation(modelShaderProgram, "pointShadowMap");
-    modelUniforms.pointShadowFarPlane = glGetUniformLocation(modelShaderProgram, "pointShadowFarPlane");
-    modelUniforms.pointShadowsEnabled = glGetUniformLocation(modelShaderProgram, "pointShadowsEnabled");
-
-    normalMappingUniforms.model =
-        glGetUniformLocation(
-            normalMappingShaderProgram,
-            "model"
-        );
-
-    normalMappingUniforms.view =
-        glGetUniformLocation(
-            normalMappingShaderProgram,
-            "view"
-        );
-
-    normalMappingUniforms.projection =
-        glGetUniformLocation(
-            normalMappingShaderProgram,
-            "projection"
-        );
-
-    normalMappingUniforms.lightPos =
-        glGetUniformLocation(
-            normalMappingShaderProgram,
-            "lightPos"
-        );
-
-    normalMappingUniforms.lightColor =
-        glGetUniformLocation(
-            normalMappingShaderProgram,
-            "lightColor"
-        );
-
-    normalMappingUniforms.viewPos =
-        glGetUniformLocation(
-            normalMappingShaderProgram,
-            "viewPos"
-        );
-
-    normalMappingUniforms.lightEnabled =
-        glGetUniformLocation(
-            normalMappingShaderProgram,
-            "lightEnabled"
-        );
-
-    normalMappingUniforms.diffuseMap =
-        glGetUniformLocation(
-            normalMappingShaderProgram,
-            "diffuseMap"
-        );
-
-    normalMappingUniforms.normalMap =
-        glGetUniformLocation(
-            normalMappingShaderProgram,
-            "normalMap"
-        );
-
-    normalMappingUniforms.uvScale =
-        glGetUniformLocation(
-            normalMappingShaderProgram,
-            "uvScale"
-        );
-
-    normalMappingUniforms.normalStrength =
-        glGetUniformLocation(
-            normalMappingShaderProgram,
-            "normalStrength"
-        );
-
-    normalMappingUniforms.pointShadowMap =
-        glGetUniformLocation(
-            normalMappingShaderProgram,
-            "pointShadowMap"
-        );
-
-    normalMappingUniforms.pointShadowFarPlane =
-        glGetUniformLocation(
-            normalMappingShaderProgram,
-            "pointShadowFarPlane"
-        );
-
-    normalMappingUniforms.pointShadowsEnabled =
-        glGetUniformLocation(
-            normalMappingShaderProgram,
-            "pointShadowsEnabled"
-        );
-
-    glUseProgram(shaderProgram);
-
-    glUniform1i(
-        lightingUniforms.directionalShadowMap,
-        3
-    );
-
-    glUniform1i(
-        lightingUniforms.pointShadowMap,
-        4
-    );
+    glUniform1i(lightingUniforms.pointShadowMap, 4);
 
     glUseProgram(modelShaderProgram);
-
-    glUniform1f(
-        glGetUniformLocation(
-            modelShaderProgram,
-            "material.shininess"
-        ),
-        32.0f
-    );
-
-    glUniform1i(
-        modelUniforms.pointShadowMap,
-        4
-    );
-
-    glUniform1i(
-        modelUniforms.skybox,
-        2
-    );
+    glUniform1f(uniformLocation(modelShaderProgram, "material.shininess"), 32.0f);
+    glUniform1i(modelUniforms.pointShadowMap, 4);
+    glUniform1i(modelUniforms.skybox, 2);
 
     glUseProgram(normalMappingShaderProgram);
-
-    glActiveTexture(GL_TEXTURE4);
-
-    glBindTexture(
-        GL_TEXTURE_CUBE_MAP,
-        pointDepthCubemap
-    );
-
-    glUniform1f(
-        normalMappingUniforms.pointShadowFarPlane,
-        POINT_SHADOW_FAR_PLANE
-    );
-
-    glUniform1i(
-        normalMappingUniforms.pointShadowsEnabled,
-        !outdoorModeEnabled &&
-        light1Enabled
-    );
-
-    glUniform1i(
-        normalMappingUniforms.diffuseMap,
-        0
-    );
-
-    glUniform1i(
-        normalMappingUniforms.normalMap,
-        1
-    );
-
-    glUniform1i(
-        normalMappingUniforms.pointShadowMap,
-        4
-    );
+    bindTexture(GL_TEXTURE4, GL_TEXTURE_CUBE_MAP, pointDepthCubemap);
+    glUniform1f(normalMappingUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
+    glUniform1i(normalMappingUniforms.pointShadowsEnabled, !outdoorModeEnabled && light1Enabled);
+    glUniform1i(normalMappingUniforms.diffuseMap, 0);
+    glUniform1i(normalMappingUniforms.normalMap, 1);
+    glUniform1i(normalMappingUniforms.pointShadowMap, 4);
 
     glUseProgram(glassShaderProgram);
-
-    glUniform1i(
-        glGetUniformLocation(
-            glassShaderProgram,
-            "glassTexture"
-        ),
-        0
-    );
+    glUniform1i(uniformLocation(glassShaderProgram, "glassTexture"), 0);
 
     glUseProgram(screenShaderProgram);
-
-    screenTextureUniform =
-        glGetUniformLocation(
-            screenShaderProgram,
-            "screenTexture"
-        );
-
-    glUniform1i(
-        screenTextureUniform,
-        0
-    );
+    screenTextureUniform = location(screenShaderProgram, "screenTexture");
+    glUniform1i(screenTextureUniform, 0);
 }
 
 void Week09Scene::handleInput(GLFWwindow* window)
 {
-    bool key1IsPressed = glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS;
-    bool key2IsPressed = glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS;
-    bool keyNIsPressed = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
-    bool keyVIsPressed = glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS;
-    bool keyPIsPressed = glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS;
-    bool keyGIsPressed = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
-    bool keyFIsPressed = glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS;
-    bool keyBIsPressed = glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS;
-    bool keyMIsPressed = glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS;
-    bool keyHIsPressed = glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS;
+    toggleOnKeyPress(window, GLFW_KEY_1, key1WasPressed, light1Enabled);
+    toggleOnKeyPress(window, GLFW_KEY_2, key2WasPressed, light2Enabled);
 
-    if (key1IsPressed && !key1WasPressed)
+    if (toggleOnKeyPress(window, GLFW_KEY_N, keyNWasPressed, normalDebugEnabled) && normalDebugEnabled)
     {
-        light1Enabled = !light1Enabled;
+        depthDebugEnabled = false;
     }
 
-    if (key2IsPressed && !key2WasPressed)
+    toggleOnKeyPress(window, GLFW_KEY_F, keyFWasPressed, flashlightEnabled);
+
+    if (toggleOnKeyPress(window, GLFW_KEY_V, keyVWasPressed, depthDebugEnabled) && depthDebugEnabled)
     {
-        light2Enabled = !light2Enabled;
+        normalDebugEnabled = false;
     }
 
-
-    if (keyNIsPressed && !keyNWasPressed)
-    {
-        normalDebugEnabled = !normalDebugEnabled;
-
-        if (normalDebugEnabled)
-        {
-            depthDebugEnabled = false;
-        }
-    }
-
-    if (keyFIsPressed && !keyFWasPressed)
-    {
-        flashlightEnabled = !flashlightEnabled;
-    }
-
-    if (keyVIsPressed && !keyVWasPressed)
-    {
-        depthDebugEnabled = !depthDebugEnabled;
-
-        if (depthDebugEnabled)
-        {
-            normalDebugEnabled = false;
-        }
-    }
-
-    if (keyPIsPressed && !keyPWasPressed)
-    {
-        outlineEnabled = !outlineEnabled;
-    }
-
-    if (keyGIsPressed && !keyGWasPressed)
-    {
-        glassEnabled = !glassEnabled;
-    }
-
-    if (keyBIsPressed && !keyBWasPressed)
-    {
-        blurEnabled = !blurEnabled;
-    }
-
-    if (keyMIsPressed && !keyMWasPressed)
-    {
-        outdoorModeEnabled = !outdoorModeEnabled;
-    }
-
-    if (keyHIsPressed && !keyHWasPressed)
-    {
-        glassBackpackEnabled = !glassBackpackEnabled;
-    }
-
-    keyBWasPressed = keyBIsPressed;
-    keyVWasPressed = keyVIsPressed;
-    keyFWasPressed = keyFIsPressed;
-    keyNWasPressed = keyNIsPressed;
-    key1WasPressed = key1IsPressed;
-    key2WasPressed = key2IsPressed;
-    keyPWasPressed = keyPIsPressed;
-    keyGWasPressed = keyGIsPressed;
-    keyMWasPressed = keyMIsPressed;
-    keyHWasPressed = keyHIsPressed;
+    toggleOnKeyPress(window, GLFW_KEY_P, keyPWasPressed, outlineEnabled);
+    toggleOnKeyPress(window, GLFW_KEY_G, keyGWasPressed, glassEnabled);
+    toggleOnKeyPress(window, GLFW_KEY_B, keyBWasPressed, blurEnabled);
+    toggleOnKeyPress(window, GLFW_KEY_M, keyMWasPressed, outdoorModeEnabled);
+    toggleOnKeyPress(window, GLFW_KEY_H, keyHWasPressed, glassBackpackEnabled);
 }
 
 void Week09Scene::draw(
@@ -550,24 +460,12 @@ void Week09Scene::draw(
     const glm::mat4& projection,
     const glm::vec3& cameraPos,
     const glm::vec3& movableLightPos,
-    const glm::vec3& cameraFront
-)
+    const glm::vec3& cameraFront)
 {
-    const glm::vec3 sunDirection(
-        -0.3f,
-        -1.0f,
-        -0.2f
-    );
-
-    const glm::vec3 sunColor(
-        1.0f,
-        0.95f,
-        0.80f
-    );
-
-    const glm::vec3 lightPos =
-        movableLightPos;
-
+    const glm::vec3 lightPos = movableLightPos;
+    const glm::vec3 lightColor(0.70f, 0.63f, 0.50f);
+    const glm::vec3 secondLightPos(-2.0f, 2.2f, -2.0f);
+    const glm::vec3 secondLightColor(0.3f, 0.5f, 1.0f);
     glm::mat4 lightSpaceMatrix(1.0f);
 
     glEnable(GL_DEPTH_TEST);
@@ -575,281 +473,72 @@ void Week09Scene::draw(
 
     if (outdoorModeEnabled)
     {
-        lightSpaceMatrix =
-            createDirectionalLightSpaceMatrix(
-                sunDirection
-            );
-
-        renderDirectionalShadowMap(
-            lightSpaceMatrix
-        );
+        lightSpaceMatrix = createDirectionalLightSpaceMatrix(sunDirection());
+        renderDirectionalShadowMap(lightSpaceMatrix);
     }
     else if (light1Enabled)
     {
-        renderPointShadowMap(
-            lightPos
-        );
+        renderPointShadowMap(lightPos);
     }
 
-    glViewport(
-        0,
-        0,
-        framebufferWidth,
-        framebufferHeight
-    );
-
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        multisampleFramebuffer
-    );
-
+    glViewport(0, 0, framebufferWidth, framebufferHeight);
+    glBindFramebuffer(GL_FRAMEBUFFER, multisampleFramebuffer);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
     glEnable(GL_CULL_FACE);
-
-    glClearColor(
-        0.08f,
-        0.08f,
-        0.12f,
-        1.0f
-    );
-
-    glClear(
-        GL_COLOR_BUFFER_BIT |
-        GL_DEPTH_BUFFER_BIT |
-        GL_STENCIL_BUFFER_BIT
-    );
-
-    const glm::vec3 lightColor(
-        0.70f,
-        0.63f,
-        0.50f
-    );
-
-    glm::vec3 secondLightPos(
-        -2.0f,
-        2.2f,
-        -2.0f
-    );
-
-    glm::vec3 secondLightColor(
-        0.3f,
-        0.5f,
-        1.0f
-    );
-
+    glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     if (normalDebugEnabled)
     {
         glUseProgram(normalDebugShaderProgram);
-
-        glUniformMatrix4fv(
-            normalDebugUniforms.view,
-            1,
-            GL_FALSE,
-            glm::value_ptr(view)
-        );
-
-        glUniformMatrix4fv(
-            normalDebugUniforms.projection,
-            1,
-            GL_FALSE,
-            glm::value_ptr(projection)
-        );
-
+        setMatrix(normalDebugUniforms.view, view);
+        setMatrix(normalDebugUniforms.projection, projection);
         drawNormalDebugObjects();
-
-        drawBackpackNormalDebug(
-            view,
-            projection
-        );
+        drawBackpackNormalDebug(view, projection);
     }
     else if (depthDebugEnabled)
     {
         glUseProgram(depthDebugShaderProgram);
-
-        glUniformMatrix4fv(
-            depthDebugUniforms.view,
-            1,
-            GL_FALSE,
-            glm::value_ptr(view)
-        );
-
-        glUniformMatrix4fv(
-            depthDebugUniforms.projection,
-            1,
-            GL_FALSE,
-            glm::value_ptr(projection)
-        );
-
+        setMatrix(depthDebugUniforms.view, view);
+        setMatrix(depthDebugUniforms.projection, projection);
         glUniform1f(depthDebugUniforms.nearPlane, 0.1f);
         glUniform1f(depthDebugUniforms.farPlane, 100.0f);
-
         drawDepthDebugObjects();
-
-        drawBackpackDepthDebug(
-            view,
-            projection
-        );
+        drawBackpackDepthDebug(view, projection);
     }
 
-    // Draw lit objects
     glUseProgram(shaderProgram);
+    setMatrix(lightingUniforms.lightSpaceMatrix, lightSpaceMatrix);
+    bindTexture(GL_TEXTURE3, GL_TEXTURE_2D, directionalDepthMap);
+    bindTexture(GL_TEXTURE4, GL_TEXTURE_CUBE_MAP, pointDepthCubemap);
+    glUniform1f(lightingUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
+    glUniform1i(lightingUniforms.pointShadowsEnabled, !outdoorModeEnabled && light1Enabled);
+    glUniform1i(lightingUniforms.light1Enabled, !outdoorModeEnabled && light1Enabled);
+    glUniform1i(lightingUniforms.light2Enabled, !outdoorModeEnabled && light2Enabled);
+    glUniform1i(lightingUniforms.directionalLightEnabled, outdoorModeEnabled);
+    setVector(lightingUniforms.directionalLightDirection, sunDirection());
+    setVector(lightingUniforms.directionalLightColor, sunColor());
+    setMatrix(lightingUniforms.view, view);
+    setMatrix(lightingUniforms.projection, projection);
+    setVector(lightingUniforms.viewPos, cameraPos);
+    setVector(lightingUniforms.lightPos, lightPos);
+    setVector(lightingUniforms.lightColor, lightColor);
+    setVector(lightingUniforms.secondLightPos, secondLightPos);
+    setVector(lightingUniforms.secondLightColor, secondLightColor);
+    setVector(lightingUniforms.flashlightPos, cameraPos);
+    setVector(lightingUniforms.flashlightDir, cameraFront);
+    glUniform1i(lightingUniforms.flashlightEnabled, flashlightEnabled);
+    glUniform1f(lightingUniforms.flashlightCutOff, glm::cos(glm::radians(FLASHLIGHT_INNER_ANGLE)));
+    glUniform1f(lightingUniforms.flashlightOuterCutOff, glm::cos(glm::radians(FLASHLIGHT_OUTER_ANGLE)));
 
-    glUniformMatrix4fv(
-        lightingUniforms.lightSpaceMatrix,
-        1,
-        GL_FALSE,
-        glm::value_ptr(lightSpaceMatrix)
-    );
-
-    //directional shadow map
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(
-        GL_TEXTURE_2D,
-        directionalDepthMap
-    );
-
-    // First point-light shadow cubemap
-    glActiveTexture(GL_TEXTURE4);
-
-    glBindTexture(
-        GL_TEXTURE_CUBE_MAP,
-        pointDepthCubemap
-    );
-
-    glUniform1f(
-        lightingUniforms.pointShadowFarPlane,
-        POINT_SHADOW_FAR_PLANE
-    );
-
-    glUniform1i(
-        lightingUniforms.pointShadowsEnabled,
-        !outdoorModeEnabled &&
-        light1Enabled
-    );
-
-    glUniform1i(
-        lightingUniforms.light1Enabled,
-        !outdoorModeEnabled && light1Enabled
-    );
-
-    glUniform1i(
-        lightingUniforms.light2Enabled,
-        !outdoorModeEnabled && light2Enabled
-    );
-
-    glUniform1i(
-        lightingUniforms.directionalLightEnabled,
-        outdoorModeEnabled
-    );
-
-    glUniform3fv(
-        lightingUniforms.directionalLightDirection,
-        1,
-        glm::value_ptr(sunDirection)
-    );
-
-    glUniform3fv(
-        lightingUniforms.directionalLightColor,
-        1,
-        glm::value_ptr(sunColor)
-    );
-
-    glUniformMatrix4fv(
-        lightingUniforms.view,
-        1,
-        GL_FALSE,
-        glm::value_ptr(view)
-    );
-
-    glUniformMatrix4fv(
-        lightingUniforms.projection,
-        1,
-        GL_FALSE,
-        glm::value_ptr(projection)
-    );
-
-    glUniform3fv(
-        lightingUniforms.viewPos,
-        1,
-        glm::value_ptr(cameraPos)
-    );
-
-    glUniform3fv(
-        lightingUniforms.lightPos,
-        1,
-        glm::value_ptr(lightPos)
-    );
-
-    glUniform3fv(
-        lightingUniforms.lightColor,
-        1,
-        glm::value_ptr(lightColor)
-    );
-
-    glUniform3fv(
-        lightingUniforms.secondLightPos,
-        1,
-        glm::value_ptr(secondLightPos)
-    );
-
-    glUniform3fv(
-        lightingUniforms.secondLightColor,
-        1,
-        glm::value_ptr(secondLightColor)
-    );
-
-    // draw flashlight uniforms
-    glUniform3fv(
-        lightingUniforms.flashlightPos,
-        1,
-        glm::value_ptr(cameraPos)
-    );
-
-    glUniform3fv(
-        lightingUniforms.flashlightDir,
-        1,
-        glm::value_ptr(cameraFront)
-    );
-
-    glUniform1i(
-        lightingUniforms.flashlightEnabled,
-        flashlightEnabled
-    );
-
-    glUniform1f(
-        lightingUniforms.flashlightCutOff,
-        glm::cos(glm::radians(10.0f))
-    );
-
-    glUniform1f(
-        lightingUniforms.flashlightOuterCutOff,
-        glm::cos(glm::radians(28.0f))
-    );
-
-    // Do not write the room/cube/sphere into stencil
     glStencilMask(0x00);
-
     drawLitObjects();
 
     if (!outdoorModeEnabled)
     {
-        drawNormalMappedRoomWalls(
-            view,
-            projection,
-            cameraPos,
-            lightPos,
-            lightColor
-        );
-
-        drawNormalMappedFloorAndCeiling(
-            view,
-            projection,
-            cameraPos,
-            lightPos,
-            lightColor
-        );
+        drawNormalMappedRoomWalls(view, projection, cameraPos, lightPos, lightColor);
+        drawNormalMappedFloorAndCeiling(view, projection, cameraPos, lightPos, lightColor);
     }
 
     drawMiniPlanetSystem(
@@ -859,74 +548,32 @@ void Week09Scene::draw(
         cameraFront,
         lightPos,
         secondLightPos,
-        secondLightColor
-    );
+        secondLightColor);
 
     if (outlineEnabled)
     {
-        // 1. Draw backpack normally and write value 1 into stencil.
         glStencilFunc(GL_ALWAYS, 1, 0xFF);
         glStencilMask(0xFF);
+        drawBackpack(view, projection, cameraPos, cameraFront, lightPos, secondLightPos, secondLightColor);
 
-        drawBackpack(
-            view,
-            projection,
-            cameraPos,
-            cameraFront,
-            lightPos,
-            secondLightPos,
-            secondLightColor
-        );
-
-        // 2. Draw scaled-up backpack only where stencil is NOT 1.
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
         glStencilMask(0x00);
+        drawBackpackOutline(view, projection);
 
-        drawBackpackOutline(
-            view,
-            projection
-        );
-
-        // 3. Restore normal stencil state.
         glStencilMask(0xFF);
         glStencilFunc(GL_ALWAYS, 0, 0xFF);
     }
     else
     {
-        // No outline: draw backpack normally, no stencil writing.
         glStencilMask(0x00);
-
-        drawBackpack(
-            view,
-            projection,
-            cameraPos,
-            cameraFront,
-            lightPos,
-            secondLightPos,
-            secondLightColor
-        );
-
+        drawBackpack(view, projection, cameraPos, cameraFront, lightPos, secondLightPos, secondLightColor);
         glStencilMask(0xFF);
     }
 
     glStencilMask(0x00);
-
-    // Draw lamp markers
     glUseProgram(lampShaderProgram);
-
-    glUniformMatrix4fv(
-        lampUniforms.view,
-        1,
-        GL_FALSE,
-        glm::value_ptr(view)
-    );
-
-    glUniformMatrix4fv(
-        lampUniforms.projection,
-        1,
-        GL_FALSE,
-        glm::value_ptr(projection)
-    );
+    setMatrix(lampUniforms.view, view);
+    setMatrix(lampUniforms.projection, projection);
 
     if (!outdoorModeEnabled)
     {
@@ -934,7 +581,6 @@ void Week09Scene::draw(
         {
             drawLampMarker(lightPos, glm::vec3(1.0f, 1.0f, 0.3f));
         }
-
         if (light2Enabled)
         {
             drawLampMarker(secondLightPos, glm::vec3(0.3f, 0.5f, 1.0f));
@@ -942,89 +588,31 @@ void Week09Scene::draw(
     }
 
     glStencilMask(0xFF);
-
     if (glassEnabled)
     {
-        drawGlassPanes(
-            view,
-            projection,
-            cameraPos
-        );
+        drawGlassPanes(view, projection, cameraPos);
     }
-
     if (outdoorModeEnabled && skybox)
     {
         skybox->Render(projection);
     }
 
-    // Resolve multisampled framebuffer into the normal framebuffer texture.
-    // The screen shader samples framebufferTexture as a normal sampler2D,
-    // so we cannot directly sample the multisampled texture.
     glBindFramebuffer(GL_READ_FRAMEBUFFER, multisampleFramebuffer);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
-
     glBlitFramebuffer(
         0, 0, framebufferWidth, framebufferHeight,
         0, 0, framebufferWidth, framebufferHeight,
         GL_COLOR_BUFFER_BIT,
-        GL_NEAREST
-    );
+        GL_NEAREST);
 
-    // Second pass: draw resolved framebuffer texture to the real screen
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_STENCIL_TEST);
     glDisable(GL_CULL_FACE);
-
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+    drawScreenQuad();
 
-    glUseProgram(screenShaderProgram);
-
-    glUniform1i(
-        glGetUniformLocation(
-            screenShaderProgram,
-            "blurEnabled"
-        ),
-        blurEnabled
-    );
-
-    glUniform1i(
-        glGetUniformLocation(
-            screenShaderProgram,
-            "gammaCorrectionEnabled"
-        ),
-        true
-    );
-
-    glUniform1i(
-        glGetUniformLocation(
-            screenShaderProgram,
-            "hdrEnabled"
-        ),
-        true
-    );
-
-    glUniform1f(
-        glGetUniformLocation(
-            screenShaderProgram,
-            "exposure"
-        ),
-        1.2f
-    );
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(
-        GL_TEXTURE_2D,
-        framebufferTexture
-    );
-
-    glBindVertexArray(screenQuadVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindVertexArray(0);
-
-    // Restore state for next frame
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
     glEnable(GL_CULL_FACE);
@@ -1032,144 +620,49 @@ void Week09Scene::draw(
 
 void Week09Scene::drawLitObjects()
 {
-    // test cube
-    glm::mat4 testCube = glm::mat4(1.0f);
-    testCube = glm::translate(testCube, glm::vec3(-0.2f, -0.6f, 0.0f));
-
     setMaterial(shaderProgram, texturedMaterial);
     drawTexturedCubeWithSpecularMap(
         cube.VAO,
         lightingUniforms.model,
-        testCube,
+        makeTransform(glm::vec3(-0.2f, -0.6f, 0.0f), glm::vec3(1.0f)),
         containerTexture,
-        containerSpecularTexture
-    );
-
-    // test sphere
-    glm::mat4 testSphere = glm::mat4(1.0f);
-    testSphere = glm::translate(testSphere, glm::vec3(0.8f, -0.4f, 0.0f));
+        containerSpecularTexture);
 
     setMaterial(shaderProgram, shinyBlue);
     drawSphere(
         sphere,
         lightingUniforms.model,
-        testSphere
-    );
+        makeTransform(glm::vec3(0.8f, -0.4f, 0.0f), glm::vec3(1.0f)));
 
     if (outdoorModeEnabled)
     {
-        setMaterial(
-            shaderProgram,
-            outdoorGroundMaterial
-        );
-
-        drawCube(
-            cube.VAO,
-            lightingUniforms.model,
-            createOutdoorGroundModelMatrix()
-        );
+        setMaterial(shaderProgram, outdoorGroundMaterial);
+        drawCube(cube.VAO, lightingUniforms.model, createOutdoorGroundModelMatrix());
     }
 }
 
 glm::mat4 Week09Scene::createOutdoorGroundModelMatrix() const
 {
-    glm::mat4 model(1.0f);
-
-    model = glm::translate(
-        model,
-        glm::vec3(0.0f, -0.95f, 0.0f)
-    );
-
-    model = glm::scale(
-        model,
-        glm::vec3(20.0f, 0.1f, 20.0f)
-    );
-
-    return model;
+    return makeTransform(glm::vec3(0.0f, -0.95f, 0.0f), glm::vec3(20.0f, 0.1f, 20.0f));
 }
 
 void Week09Scene::drawNormalDebugObjects()
 {
-    // test cube
-    glm::mat4 testCube = glm::mat4(1.0f);
-    testCube = glm::translate(testCube, glm::vec3(-0.2f, -0.6f, 0.0f));
-
-    drawTexturedCube(
-        cube.VAO,
-        normalDebugUniforms.model,
-        testCube,
-        containerTexture
-    );
-
-    // test sphere
-    glm::mat4 testSphere = glm::mat4(1.0f);
-    testSphere = glm::translate(testSphere, glm::vec3(0.8f, -0.4f, 0.0f));
-
-    drawSphere(
-        sphere,
-        normalDebugUniforms.model,
-        testSphere
-    );
-
-    // room
-    drawClosedRoom(
-        cube.VAO,
-        normalDebugUniforms.model,
-        containerTexture
-    );
+    drawDebugPrimitives(cube, sphere, normalDebugUniforms.model, containerTexture);
 }
 
 void Week09Scene::drawDepthDebugObjects()
 {
-    // test cube
-    glm::mat4 testCube = glm::mat4(1.0f);
-    testCube = glm::translate(testCube, glm::vec3(-0.2f, -0.6f, 0.0f));
-
-    drawTexturedCube(
-        cube.VAO,
-        depthDebugUniforms.model,
-        testCube,
-        containerTexture
-    );
-
-    // test sphere
-    glm::mat4 testSphere = glm::mat4(1.0f);
-    testSphere = glm::translate(testSphere, glm::vec3(0.8f, -0.4f, 0.0f));
-
-    drawSphere(
-        sphere,
-        depthDebugUniforms.model,
-        testSphere
-    );
-
-    // room
-    drawClosedRoom(
-        cube.VAO,
-        depthDebugUniforms.model,
-        containerTexture
-    );
+    drawDebugPrimitives(cube, sphere, depthDebugUniforms.model, containerTexture);
 }
 
-void Week09Scene::drawLampMarker(
-    const glm::vec3& position,
-    const glm::vec3& color
-)
+void Week09Scene::drawLampMarker(const glm::vec3& position, const glm::vec3& color)
 {
-    glm::mat4 lampModel = glm::mat4(1.0f);
-    lampModel = glm::translate(lampModel, position);
-    lampModel = glm::scale(lampModel, glm::vec3(0.15f));
-
-    glUniform3fv(
-        lampUniforms.color,
-        1,
-        glm::value_ptr(color)
-    );
-
+    setVector(lampUniforms.color, color);
     drawCube(
         cube.VAO,
         lampUniforms.model,
-        lampModel
-    );
+        makeTransform(position, glm::vec3(0.15f)));
 }
 
 void Week09Scene::drawBackpack(
@@ -1179,8 +672,7 @@ void Week09Scene::drawBackpack(
     const glm::vec3& cameraFront,
     const glm::vec3& lightPos,
     const glm::vec3& secondLightPos,
-    const glm::vec3& secondLightColor
-)
+    const glm::vec3& secondLightColor)
 {
     if (!backpack)
     {
@@ -1188,237 +680,64 @@ void Week09Scene::drawBackpack(
     }
 
     glUseProgram(modelShaderProgram);
-
     configureModelPointShadows();
-
-    glUniform1i(
-        modelUniforms.glassBackpackEnabled,
-        glassBackpackEnabled
-    );
-
+    glUniform1i(modelUniforms.glassBackpackEnabled, glassBackpackEnabled);
     if (skybox)
     {
         skybox->BindTexture(GL_TEXTURE2);
     }
 
-    glUniformMatrix4fv(
-        modelUniforms.view,
-        1,
-        GL_FALSE,
-        glm::value_ptr(view)
-    );
+    configureModelLighting(
+        modelUniforms,
+        view,
+        projection,
+        cameraPos,
+        cameraFront,
+        lightPos,
+        glm::vec3(1.0f),
+        secondLightPos,
+        secondLightColor,
+        !outdoorModeEnabled && light1Enabled,
+        !outdoorModeEnabled && light2Enabled,
+        outdoorModeEnabled,
+        flashlightEnabled);
 
-    glUniformMatrix4fv(
-        modelUniforms.projection,
-        1,
-        GL_FALSE,
-        glm::value_ptr(projection)
-    );
-
-    glUniform3fv(
-        modelUniforms.viewPos,
-        1,
-        glm::value_ptr(cameraPos)
-    );
-
-    glUniform3fv(
-        modelUniforms.lightPos,
-        1,
-        glm::value_ptr(lightPos)
-    );
-
-    glm::vec3 modelLightColor(1.0f, 1.0f, 1.0f);
-
-    glUniform3fv(
-        modelUniforms.lightColor,
-        1,
-        glm::value_ptr(modelLightColor)
-    );
-
-    glUniform3fv(
-        modelUniforms.secondLightPos,
-        1,
-        glm::value_ptr(secondLightPos)
-    );
-
-    glUniform3fv(
-        modelUniforms.secondLightColor,
-        1,
-        glm::value_ptr(secondLightColor)
-    );
-
-    glUniform1i(
-        modelUniforms.light1Enabled,
-        !outdoorModeEnabled && light1Enabled
-    );
-
-    glUniform1i(
-        modelUniforms.light2Enabled,
-        !outdoorModeEnabled && light2Enabled
-    );
-
-    glm::vec3 sunDirection(-0.3f, -1.0f, -0.2f);
-    glm::vec3 sunColor(1.0f, 0.95f, 0.80f);
-
-    glUniform1i(
-        modelUniforms.directionalLightEnabled,
-        outdoorModeEnabled
-    );
-
-    glUniform3fv(
-        modelUniforms.directionalLightDirection,
-        1,
-        glm::value_ptr(sunDirection)
-    );
-
-    glUniform3fv(
-        modelUniforms.directionalLightColor,
-        1,
-        glm::value_ptr(sunColor)
-    );
-
-    glUniform3fv(
-        modelUniforms.flashlightPos,
-        1,
-        glm::value_ptr(cameraPos)
-    );
-
-    glUniform3fv(
-        modelUniforms.flashlightDir,
-        1,
-        glm::value_ptr(cameraFront)
-    );
-
-    glUniform1i(
-        modelUniforms.flashlightEnabled,
-        flashlightEnabled
-    );
-
-    glUniform1f(
-        modelUniforms.flashlightCutOff,
-        glm::cos(glm::radians(10.0f))
-    );
-
-    glUniform1f(
-        modelUniforms.flashlightOuterCutOff,
-        glm::cos(glm::radians(28.0f))
-    );
-
-    glm::mat4 backpackModel = createBackpackModelMatrix();
-
-    glUniformMatrix4fv(
-        modelUniforms.model,
-        1,
-        GL_FALSE,
-        glm::value_ptr(backpackModel)
-    );
-
+    setMatrix(modelUniforms.model, createBackpackModelMatrix());
     backpack->draw(modelShaderProgram);
 }
 
 glm::mat4 Week09Scene::createBackpackOutlineModelMatrix() const
 {
-    glm::mat4 backpackModel = glm::mat4(1.0f);
-
-    backpackModel = glm::translate(
-        backpackModel,
-        glm::vec3(-1.0f, -0.5f, 0.0f)
-    );
-
-    backpackModel = glm::rotate(
-        backpackModel,
-        glm::radians(90.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f)
-    );
-
-    backpackModel = glm::scale(
-        backpackModel,
-        glm::vec3(0.215f)
-    );
-
-    return backpackModel;
+    return makeTransform(
+        glm::vec3(-1.0f, -0.5f, 0.0f),
+        glm::vec3(0.215f),
+        90.0f,
+        glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
-void Week09Scene::drawBackpackNormalDebug(
-    const glm::mat4& view,
-    const glm::mat4& projection
-)
+void Week09Scene::drawBackpackNormalDebug(const glm::mat4& view, const glm::mat4& projection)
 {
-    if (!backpack)
-    {
-        return;
-    }
-
-    glUseProgram(modelNormalDebugShaderProgram);
-
-    glUniformMatrix4fv(
-        modelNormalDebugUniforms.view,
-        1,
-        GL_FALSE,
-        glm::value_ptr(view)
-    );
-
-    glUniformMatrix4fv(
-        modelNormalDebugUniforms.projection,
-        1,
-        GL_FALSE,
-        glm::value_ptr(projection)
-    );
-
-    glm::mat4 backpackModel = createBackpackModelMatrix();
-
-    glUniformMatrix4fv(
-        modelNormalDebugUniforms.model,
-        1,
-        GL_FALSE,
-        glm::value_ptr(backpackModel)
-    );
-
-    backpack->draw(modelNormalDebugShaderProgram);
+    drawModelWithMatrices(
+        backpack,
+        modelNormalDebugShaderProgram,
+        modelNormalDebugUniforms,
+        view,
+        projection,
+        createBackpackModelMatrix());
 }
 
-void Week09Scene::drawBackpackOutline(
-    const glm::mat4& view,
-    const glm::mat4& projection
-)
+void Week09Scene::drawBackpackOutline(const glm::mat4& view, const glm::mat4& projection)
 {
-    if (!backpack)
-    {
-        return;
-    }
-
-    glUseProgram(modelOutlineShaderProgram);
-
-    glUniformMatrix4fv(
-        modelOutlineUniforms.view,
-        1,
-        GL_FALSE,
-        glm::value_ptr(view)
-    );
-
-    glUniformMatrix4fv(
-        modelOutlineUniforms.projection,
-        1,
-        GL_FALSE,
-        glm::value_ptr(projection)
-    );
-
-    glm::mat4 backpackModel = createBackpackOutlineModelMatrix();
-
-    glUniformMatrix4fv(
-        modelOutlineUniforms.model,
-        1,
-        GL_FALSE,
-        glm::value_ptr(backpackModel)
-    );
-
-    backpack->draw(modelOutlineShaderProgram);
+    drawModelWithMatrices(
+        backpack,
+        modelOutlineShaderProgram,
+        modelOutlineUniforms,
+        view,
+        projection,
+        createBackpackOutlineModelMatrix());
 }
 
-void Week09Scene::drawBackpackDepthDebug(
-    const glm::mat4& view,
-    const glm::mat4& projection
-)
+void Week09Scene::drawBackpackDepthDebug(const glm::mat4& view, const glm::mat4& projection)
 {
     if (!backpack)
     {
@@ -1426,174 +745,77 @@ void Week09Scene::drawBackpackDepthDebug(
     }
 
     glUseProgram(modelDepthDebugShaderProgram);
-
-    glUniformMatrix4fv(
-        modelDepthDebugUniforms.view,
-        1,
-        GL_FALSE,
-        glm::value_ptr(view)
-    );
-
-    glUniformMatrix4fv(
-        modelDepthDebugUniforms.projection,
-        1,
-        GL_FALSE,
-        glm::value_ptr(projection)
-    );
-
+    setMatrix(modelDepthDebugUniforms.view, view);
+    setMatrix(modelDepthDebugUniforms.projection, projection);
     glUniform1f(modelDepthDebugUniforms.nearPlane, 0.1f);
     glUniform1f(modelDepthDebugUniforms.farPlane, 100.0f);
-
-    glm::mat4 backpackModel = createBackpackModelMatrix();
-
-    glUniformMatrix4fv(
-        modelDepthDebugUniforms.model,
-        1,
-        GL_FALSE,
-        glm::value_ptr(backpackModel)
-    );
-
+    setMatrix(modelDepthDebugUniforms.model, createBackpackModelMatrix());
     backpack->draw(modelDepthDebugShaderProgram);
 }
 
 glm::mat4 Week09Scene::createBackpackModelMatrix() const
 {
-    glm::mat4 backpackModel = glm::mat4(1.0f);
-
-    backpackModel = glm::translate(
-        backpackModel,
-        glm::vec3(-1.0f, -0.5f, 0.0f)
-    );
-
-    backpackModel = glm::rotate(
-        backpackModel,
-        glm::radians(90.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f)
-    );
-
-    backpackModel = glm::scale(
-        backpackModel,
-        glm::vec3(0.205f)
-    );
-
-    return backpackModel;
+    return makeTransform(
+        glm::vec3(-1.0f, -0.5f, 0.0f),
+        glm::vec3(0.205f),
+        90.0f,
+        glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void Week09Scene::createGlassPaneMesh()
 {
-    float vertices[] = {
-        // positions          // UVs
-        -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,
-         0.5f, -0.5f, 0.0f,   1.0f, 0.0f,
-
-        -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,
-         0.5f, -0.5f, 0.0f,   1.0f, 0.0f,
-         0.5f,  0.5f, 0.0f,   1.0f, 1.0f
+    const float vertices[] = {
+        -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
+         0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+        -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
+         0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+         0.5f,  0.5f, 0.0f, 1.0f, 1.0f
     };
 
     glGenVertexArrays(1, &glassVAO);
     glGenBuffers(1, &glassVBO);
-
     glBindVertexArray(glassVAO);
-
     glBindBuffer(GL_ARRAY_BUFFER, glassVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // position
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(
-        0,
-        3,
-        GL_FLOAT,
-        GL_FALSE,
-        5 * sizeof(float),
-        (void*)0
-    );
-
-    // texture coordinates
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(
-        1,
-        2,
-        GL_FLOAT,
-        GL_FALSE,
-        5 * sizeof(float),
-        (void*)(3 * sizeof(float))
-    );
-
+    configureVertexAttribute(0, 3, 5 * sizeof(float), 0);
+    configureVertexAttribute(1, 2, 5 * sizeof(float), 3 * sizeof(float));
     glBindVertexArray(0);
 }
 
 void Week09Scene::drawGlassPanes(
     const glm::mat4& view,
     const glm::mat4& projection,
-    const glm::vec3& cameraPos
-)
+    const glm::vec3& cameraPos)
 {
     std::map<float, glm::vec3> sorted;
-
     for (const glm::vec3& position : glassPanePositions)
     {
         float distance = glm::length(cameraPos - position);
-
-        // Tiny offset avoids overwriting if two distances are exactly equal.
         while (sorted.find(distance) != sorted.end())
         {
             distance += 0.0001f;
         }
-
         sorted[distance] = position;
     }
 
     glUseProgram(glassShaderProgram);
-
-    glUniformMatrix4fv(
-        glassUniforms.view,
-        1,
-        GL_FALSE,
-        glm::value_ptr(view)
-    );
-
-    glUniformMatrix4fv(
-        glassUniforms.projection,
-        1,
-        GL_FALSE,
-        glm::value_ptr(projection)
-    );
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, glassTexture);
-
+    setMatrix(glassUniforms.view, view);
+    setMatrix(glassUniforms.projection, projection);
+    bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, glassTexture);
     glBindVertexArray(glassVAO);
-
-    // Transparent objects should not write depth, otherwise front panes can hide back panes.
     glDepthMask(GL_FALSE);
-
-    // Do not let transparent panes affect stencil/outline.
     glStencilMask(0x00);
 
-    for (auto it = sorted.rbegin(); it != sorted.rend(); ++it)
+    for (std::map<float, glm::vec3>::const_reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
     {
-        glm::mat4 model = glm::mat4(1.0f);
-
-        model = glm::translate(model, it->second);
-
-        // Put the pane vertically: local quad is XY plane already, facing ±Z.
-        model = glm::scale(model, glm::vec3(1.0f, 1.4f, 1.0f));
-
-        glUniformMatrix4fv(
+        setMatrix(
             glassUniforms.model,
-            1,
-            GL_FALSE,
-            glm::value_ptr(model)
-        );
-
+            makeTransform(it->second, glm::vec3(1.0f, 1.4f, 1.0f)));
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
 
     glBindVertexArray(0);
-
     glDepthMask(GL_TRUE);
     glStencilMask(0xFF);
 }
@@ -1603,64 +825,48 @@ void Week09Scene::createFramebuffer(int width, int height)
     framebufferWidth = width;
     framebufferHeight = height;
 
-    // Multisampled framebuffer
-
     glGenFramebuffers(1, &multisampleFramebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, multisampleFramebuffer);
-
     glGenTextures(1, &multisampleColorTexture);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, multisampleColorTexture);
-
     glTexImage2DMultisample(
         GL_TEXTURE_2D_MULTISAMPLE,
         MSAA_SAMPLES,
         GL_RGB16F,
         width,
         height,
-        GL_TRUE
-    );
-
+        GL_TRUE);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-
     glFramebufferTexture2D(
         GL_FRAMEBUFFER,
         GL_COLOR_ATTACHMENT0,
         GL_TEXTURE_2D_MULTISAMPLE,
         multisampleColorTexture,
-        0
-    );
+        0);
 
     glGenRenderbuffers(1, &multisampleRBO);
     glBindRenderbuffer(GL_RENDERBUFFER, multisampleRBO);
-
     glRenderbufferStorageMultisample(
         GL_RENDERBUFFER,
         MSAA_SAMPLES,
         GL_DEPTH24_STENCIL8,
         width,
-        height
-    );
-
+        height);
     glFramebufferRenderbuffer(
         GL_FRAMEBUFFER,
         GL_DEPTH_STENCIL_ATTACHMENT,
         GL_RENDERBUFFER,
-        multisampleRBO
-    );
+        multisampleRBO);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
         std::cout << "ERROR::FRAMEBUFFER:: Multisample framebuffer is not complete!" << std::endl;
     }
 
-    // Normal resolved framebuffer
-
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-
     glGenTextures(1, &framebufferTexture);
     glBindTexture(GL_TEXTURE_2D, framebufferTexture);
-
     glTexImage2D(
         GL_TEXTURE_2D,
         0,
@@ -1670,19 +876,15 @@ void Week09Scene::createFramebuffer(int width, int height)
         0,
         GL_RGB,
         GL_UNSIGNED_BYTE,
-        nullptr
-    );
-
+        nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
     glFramebufferTexture2D(
         GL_FRAMEBUFFER,
         GL_COLOR_ATTACHMENT0,
         GL_TEXTURE_2D,
         framebufferTexture,
-        0
-    );
+        0);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
@@ -1694,89 +896,33 @@ void Week09Scene::createFramebuffer(int width, int height)
 
 void Week09Scene::createScreenQuad()
 {
-    float quadVertices[] = {
-        // positions   // texCoords
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        -1.0f, -1.0f,  0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-
-        -1.0f,  1.0f,  0.0f, 1.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-         1.0f,  1.0f,  1.0f, 1.0f
+    const float vertices[] = {
+        -1.0f,  1.0f, 0.0f, 1.0f,
+        -1.0f, -1.0f, 0.0f, 0.0f,
+         1.0f, -1.0f, 1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f, 1.0f,
+         1.0f, -1.0f, 1.0f, 0.0f,
+         1.0f,  1.0f, 1.0f, 1.0f
     };
 
     glGenVertexArrays(1, &screenQuadVAO);
     glGenBuffers(1, &screenQuadVBO);
-
     glBindVertexArray(screenQuadVAO);
     glBindBuffer(GL_ARRAY_BUFFER, screenQuadVBO);
-
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        sizeof(quadVertices),
-        quadVertices,
-        GL_STATIC_DRAW
-    );
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(
-        0,
-        2,
-        GL_FLOAT,
-        GL_FALSE,
-        4 * sizeof(float),
-        (void*)0
-    );
-
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(
-        1,
-        2,
-        GL_FLOAT,
-        GL_FALSE,
-        4 * sizeof(float),
-        (void*)(2 * sizeof(float))
-    );
-
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    configureVertexAttribute(0, 2, 4 * sizeof(float), 0);
+    configureVertexAttribute(1, 2, 4 * sizeof(float), 2 * sizeof(float));
     glBindVertexArray(0);
 }
 
 void Week09Scene::drawScreenQuad()
 {
     glUseProgram(screenShaderProgram);
-
-    glUniform1i(
-        glGetUniformLocation(screenShaderProgram, "blurEnabled"),
-        blurEnabled
-    );
-
-    glUniform1i(
-        glGetUniformLocation(
-            screenShaderProgram,
-            "gammaCorrectionEnabled"
-        ),
-        true
-    );
-
-    glUniform1i(
-        glGetUniformLocation(
-            screenShaderProgram,
-            "hdrEnabled"
-        ),
-        true
-    );
-
-    glUniform1f(
-        glGetUniformLocation(
-            screenShaderProgram,
-            "exposure"
-        ),
-        1.2f
-    );
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, framebufferTexture);
-
+    glUniform1i(uniformLocation(screenShaderProgram, "blurEnabled"), blurEnabled);
+    glUniform1i(uniformLocation(screenShaderProgram, "gammaCorrectionEnabled"), true);
+    glUniform1i(uniformLocation(screenShaderProgram, "hdrEnabled"), true);
+    glUniform1f(uniformLocation(screenShaderProgram, "exposure"), 1.2f);
+    bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, framebufferTexture);
     glBindVertexArray(screenQuadVAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
@@ -1790,92 +936,37 @@ void Week09Scene::createAsteroidInstances()
     }
 
     asteroidMatrices.resize(ASTEROID_COUNT);
-
     std::mt19937 randomEngine(1337);
-
-    std::uniform_real_distribution<float> displacement(
-        -8.0f,
-        8.0f
-    );
-
-    std::uniform_real_distribution<float> scaleDistribution(
-        0.10f,
-        0.28f
-    );
-
-    std::uniform_real_distribution<float> rotationDistribution(
-        0.0f,
-        glm::two_pi<float>()
-    );
-
+    std::uniform_real_distribution<float> displacement(-8.0f, 8.0f);
+    std::uniform_real_distribution<float> scaleDistribution(0.10f, 0.28f);
+    std::uniform_real_distribution<float> rotationDistribution(0.0f, glm::two_pi<float>());
+    const glm::vec3 rotationAxis = glm::normalize(glm::vec3(0.4f, 0.6f, 0.8f));
     constexpr float radius = 50.0f;
 
-    for (unsigned int i = 0; i < ASTEROID_COUNT; i++)
+    for (unsigned int i = 0; i < ASTEROID_COUNT; ++i)
     {
-        float percentage =
-            static_cast<float>(i) /
-            static_cast<float>(ASTEROID_COUNT);
+        const float percentage = static_cast<float>(i) / static_cast<float>(ASTEROID_COUNT);
+        const float angle = percentage * glm::two_pi<float>();
+        const float x = std::sin(angle) * radius + displacement(randomEngine);
+        const float y = displacement(randomEngine) * 0.25f;
+        const float z = std::cos(angle) * radius + displacement(randomEngine);
+        const glm::vec3 position(x, y, z);
+        const float scale = scaleDistribution(randomEngine);
 
-        float angle =
-            percentage *
-            glm::two_pi<float>();
-
-        float x =
-            std::sin(angle) * radius +
-            displacement(randomEngine);
-
-        float y =
-            displacement(randomEngine) * 0.25f;
-
-        float z =
-            std::cos(angle) * radius +
-            displacement(randomEngine);
-
-        glm::mat4 model(1.0f);
-
-        model = glm::translate(
-            model,
-            glm::vec3(x, y, z)
-        );
-
-        float scale =
-            scaleDistribution(randomEngine);
-
-        model = glm::scale(
-            model,
-            glm::vec3(scale)
-        );
-
-        model = glm::rotate(
-            model,
-            rotationDistribution(randomEngine),
-            glm::normalize(
-                glm::vec3(0.4f, 0.6f, 0.8f)
-            )
-        );
-
-        asteroidMatrices[i] = model;
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
+        model = glm::scale(model, glm::vec3(scale));
+        asteroidMatrices[i] = glm::rotate(model, rotationDistribution(randomEngine), rotationAxis);
     }
 
     glGenBuffers(1, &asteroidInstanceVBO);
-
-    glBindBuffer(
-        GL_ARRAY_BUFFER,
-        asteroidInstanceVBO
-    );
-
+    glBindBuffer(GL_ARRAY_BUFFER, asteroidInstanceVBO);
     glBufferData(
         GL_ARRAY_BUFFER,
         asteroidMatrices.size() * sizeof(glm::mat4),
         asteroidMatrices.data(),
-        GL_STATIC_DRAW
-    );
-
+        GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    rock->configureInstancing(
-        asteroidInstanceVBO
-    );
+    rock->configureInstancing(asteroidInstanceVBO);
 }
 
 void Week09Scene::drawMiniPlanetSystem(
@@ -1885,433 +976,73 @@ void Week09Scene::drawMiniPlanetSystem(
     const glm::vec3& cameraFront,
     const glm::vec3& lightPos,
     const glm::vec3& secondLightPos,
-    const glm::vec3& secondLightColor
-)
+    const glm::vec3& secondLightColor)
 {
     if (!planet || !rock)
     {
         return;
     }
 
-    const glm::vec3 mainLightColor(1.25f, 1.25f, 1.25f);
-
-    glm::mat4 baseSystemModel(1.0f);
-
-    baseSystemModel = glm::translate(
-        baseSystemModel,
-        glm::vec3(1.3f, 0.0f, -1.5f)
-    );
-
-    baseSystemModel = glm::rotate(
-        baseSystemModel,
-        glm::radians(0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f)
-    );
-
-    // Planet parent transform
-    glm::mat4 planetSystemModel =
-        glm::scale(
-            baseSystemModel,
-            glm::vec3(0.018f)
-        );
-
-    // Asteroid parent transform
-    glm::mat4 asteroidSystemModel =
-        createAsteroidSystemModel();
+    const glm::vec3 mainLightColor(1.25f);
+    const glm::mat4 planetSystemModel = makeTransform(
+        glm::vec3(1.3f, 0.0f, -1.5f),
+        glm::vec3(0.018f));
+    const glm::mat4 planetModel = glm::scale(planetSystemModel, glm::vec3(8.0f));
+    const glm::mat4 asteroidSystemModel = createAsteroidSystemModel();
 
     glUseProgram(modelShaderProgram);
-
     configureModelPointShadows();
-
-    glm::mat4 planetLocal(1.0f);
-
-    planetLocal = glm::scale(
-        planetLocal,
-        glm::vec3(8.0f)
-    );
-
-    glm::mat4 planetModel =
-        planetSystemModel * planetLocal;
-
-    glUniformMatrix4fv(
-        modelUniforms.model,
-        1,
-        GL_FALSE,
-        glm::value_ptr(planetModel)
-    );
-
-    glUniformMatrix4fv(
-        modelUniforms.view,
-        1,
-        GL_FALSE,
-        glm::value_ptr(view)
-    );
-
-    glUniformMatrix4fv(
-        modelUniforms.projection,
-        1,
-        GL_FALSE,
-        glm::value_ptr(projection)
-    );
-
-    glUniform3fv(
-        modelUniforms.viewPos,
-        1,
-        glm::value_ptr(cameraPos)
-    );
-
-    glUniform3fv(
-        modelUniforms.lightPos,
-        1,
-        glm::value_ptr(lightPos)
-    );
-
-    glUniform3fv(
-        modelUniforms.lightColor,
-        1,
-        glm::value_ptr(mainLightColor)
-    );
-
-    glUniform3fv(
-        modelUniforms.secondLightPos,
-        1,
-        glm::value_ptr(secondLightPos)
-    );
-
-    glUniform3fv(
-        modelUniforms.secondLightColor,
-        1,
-        glm::value_ptr(secondLightColor)
-    );
-
-    glUniform1i(
-        modelUniforms.light1Enabled,
-        !outdoorModeEnabled && light1Enabled
-    );
-
-    glUniform1i(
-        modelUniforms.light2Enabled,
-        !outdoorModeEnabled && light2Enabled
-    );
-
-    glm::vec3 sunDirection(-0.3f, -1.0f, -0.2f);
-    glm::vec3 sunColor(1.0f, 0.95f, 0.80f);
-
-    glUniform1i(
-        modelUniforms.directionalLightEnabled,
-        outdoorModeEnabled
-    );
-
-    glUniform3fv(
-        modelUniforms.directionalLightDirection,
-        1,
-        glm::value_ptr(sunDirection)
-    );
-
-    glUniform3fv(
-        modelUniforms.directionalLightColor,
-        1,
-        glm::value_ptr(sunColor)
-    );
-
-    glUniform3fv(
-        modelUniforms.flashlightPos,
-        1,
-        glm::value_ptr(cameraPos)
-    );
-
-    glUniform3fv(
-        modelUniforms.flashlightDir,
-        1,
-        glm::value_ptr(cameraFront)
-    );
-
-    glUniform1i(
-        modelUniforms.flashlightEnabled,
-        flashlightEnabled
-    );
-
-    glUniform1f(
-        modelUniforms.flashlightCutOff,
-        glm::cos(glm::radians(10.0f))
-    );
-
-    glUniform1f(
-        modelUniforms.flashlightOuterCutOff,
-        glm::cos(glm::radians(28.0f))
-    );
-
-    // Ensure the planet is not rendered using backpack refraction.
-    glUniform1i(
-        modelUniforms.glassBackpackEnabled,
-        false
-    );
-
-    glUniform1f(
-        glGetUniformLocation(
-            modelShaderProgram,
-            "material.shininess"
-        ),
-        16.0f
-    );
-
+    configureModelLighting(
+        modelUniforms,
+        view,
+        projection,
+        cameraPos,
+        cameraFront,
+        lightPos,
+        mainLightColor,
+        secondLightPos,
+        secondLightColor,
+        !outdoorModeEnabled && light1Enabled,
+        !outdoorModeEnabled && light2Enabled,
+        outdoorModeEnabled,
+        flashlightEnabled);
+    glUniform1i(modelUniforms.glassBackpackEnabled, false);
+    glUniform1f(uniformLocation(modelShaderProgram, "material.shininess"), 16.0f);
+    setMatrix(modelUniforms.model, planetModel);
     planet->draw(modelShaderProgram);
 
-    // Draw the instanced asteroid ring
-
     glUseProgram(instancedModelShaderProgram);
-
-    const glm::mat4 lightSpaceMatrix =
-        createDirectionalLightSpaceMatrix(
-            sunDirection
-        );
-
-    glUniformMatrix4fv(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "lightSpaceMatrix"
-        ),
-        1,
-        GL_FALSE,
-        glm::value_ptr(lightSpaceMatrix)
-    );
-
-    glActiveTexture(GL_TEXTURE3);
-
-    glBindTexture(
-        GL_TEXTURE_2D,
-        directionalDepthMap
-    );
-
-    glUniform1i(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "directionalShadowMap"
-        ),
-        3
-    );
-
-    glUniformMatrix4fv(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "systemModel"
-        ),
-        1,
-        GL_FALSE,
-        glm::value_ptr(asteroidSystemModel)
-    );
-
-    glUniformMatrix4fv(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "view"
-        ),
-        1,
-        GL_FALSE,
-        glm::value_ptr(view)
-    );
-
-    glUniformMatrix4fv(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "projection"
-        ),
-        1,
-        GL_FALSE,
-        glm::value_ptr(projection)
-    );
-
-    glUniform3fv(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "viewPos"
-        ),
-        1,
-        glm::value_ptr(cameraPos)
-    );
-
-    glUniform3fv(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "lightPos"
-        ),
-        1,
-        glm::value_ptr(lightPos)
-    );
-
-    glUniform3fv(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "lightColor"
-        ),
-        1,
-        glm::value_ptr(mainLightColor)
-    );
-
-    glUniform3fv(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "secondLightPos"
-        ),
-        1,
-        glm::value_ptr(secondLightPos)
-    );
-
-    glUniform3fv(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "secondLightColor"
-        ),
-        1,
-        glm::value_ptr(secondLightColor)
-    );
-
-    glUniform1i(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "light1Enabled"
-        ),
-        !outdoorModeEnabled && light1Enabled
-    );
-
-    glUniform1i(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "light2Enabled"
-        ),
-        !outdoorModeEnabled && light2Enabled
-    );
-
-    glUniform1i(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "directionalLightEnabled"
-        ),
-        outdoorModeEnabled
-    );
-
-    glUniform3fv(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "directionalLightDirection"
-        ),
-        1,
-        glm::value_ptr(sunDirection)
-    );
-
-    glUniform3fv(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "directionalLightColor"
-        ),
-        1,
-        glm::value_ptr(sunColor)
-    );
-
-    glUniform3fv(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "flashlightPos"
-        ),
-        1,
-        glm::value_ptr(cameraPos)
-    );
-
-    glUniform3fv(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "flashlightDir"
-        ),
-        1,
-        glm::value_ptr(cameraFront)
-    );
-
-    glUniform1i(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "flashlightEnabled"
-        ),
-        flashlightEnabled
-    );
-
-    glUniform1f(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "flashlightCutOff"
-        ),
-        glm::cos(glm::radians(10.0f))
-    );
-
-    glUniform1f(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "flashlightOuterCutOff"
-        ),
-        glm::cos(glm::radians(28.0f))
-    );
-
-    const glm::vec3 rockColor(
-        0.55f,
-        0.45f,
-        0.34f
-    );
-
-    const glm::vec3 rockSpecularColor(
-        0.08f,
-        0.08f,
-        0.08f
-    );
-
-    glUniform3fv(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "objectColor"
-        ),
-        1,
-        glm::value_ptr(rockColor)
-    );
-
-    glUniform3fv(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "objectSpecularColor"
-        ),
-        1,
-        glm::value_ptr(rockSpecularColor)
-    );
-
-    glUniform1f(
-        glGetUniformLocation(
-            instancedModelShaderProgram,
-            "shininess"
-        ),
-        8.0f
-    );
-
-    rock->drawInstanced(
+    const glm::mat4 lightSpaceMatrix = createDirectionalLightSpaceMatrix(sunDirection());
+    setMatrix(uniformLocation(instancedModelShaderProgram, "lightSpaceMatrix"), lightSpaceMatrix);
+    bindTexture(GL_TEXTURE3, GL_TEXTURE_2D, directionalDepthMap);
+    glUniform1i(uniformLocation(instancedModelShaderProgram, "directionalShadowMap"), 3);
+    setMatrix(uniformLocation(instancedModelShaderProgram, "systemModel"), asteroidSystemModel);
+    configureInstancedLighting(
         instancedModelShaderProgram,
-        ASTEROID_COUNT
-    );
+        view,
+        projection,
+        cameraPos,
+        cameraFront,
+        lightPos,
+        mainLightColor,
+        secondLightPos,
+        secondLightColor,
+        !outdoorModeEnabled && light1Enabled,
+        !outdoorModeEnabled && light2Enabled,
+        outdoorModeEnabled,
+        flashlightEnabled);
 
+    setVector(uniformLocation(instancedModelShaderProgram, "objectColor"), glm::vec3(0.55f, 0.45f, 0.34f));
+    setVector(uniformLocation(instancedModelShaderProgram, "objectSpecularColor"), glm::vec3(0.08f));
+    glUniform1f(uniformLocation(instancedModelShaderProgram, "shininess"), 8.0f);
+    rock->drawInstanced(instancedModelShaderProgram, ASTEROID_COUNT);
 }
 
 void Week09Scene::createDirectionalShadowMap()
 {
-    glGenFramebuffers(
-        1,
-        &directionalDepthFBO
-    );
-
-    glGenTextures(
-        1,
-        &directionalDepthMap
-    );
-
-    glBindTexture(
-        GL_TEXTURE_2D,
-        directionalDepthMap
-    );
-
+    glGenFramebuffers(1, &directionalDepthFBO);
+    glGenTextures(1, &directionalDepthMap);
+    glBindTexture(GL_TEXTURE_2D, directionalDepthMap);
     glTexImage2D(
         GL_TEXTURE_2D,
         0,
@@ -2321,349 +1052,118 @@ void Week09Scene::createDirectionalShadowMap()
         0,
         GL_DEPTH_COMPONENT,
         GL_FLOAT,
-        nullptr
-    );
+        nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    const float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_MIN_FILTER,
-        GL_NEAREST
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_MAG_FILTER,
-        GL_NEAREST
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_WRAP_S,
-        GL_CLAMP_TO_BORDER
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_WRAP_T,
-        GL_CLAMP_TO_BORDER
-    );
-
-    const float borderColor[] = {
-        1.0f,
-        1.0f,
-        1.0f,
-        1.0f
-    };
-
-    glTexParameterfv(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_BORDER_COLOR,
-        borderColor
-    );
-
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        directionalDepthFBO
-    );
-
+    glBindFramebuffer(GL_FRAMEBUFFER, directionalDepthFBO);
     glFramebufferTexture2D(
         GL_FRAMEBUFFER,
         GL_DEPTH_ATTACHMENT,
         GL_TEXTURE_2D,
         directionalDepthMap,
-        0
-    );
-
+        0);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
-
-    if (
-        glCheckFramebufferStatus(GL_FRAMEBUFFER) !=
-        GL_FRAMEBUFFER_COMPLETE
-        )
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
-        std::cerr
-            << "Directional shadow framebuffer incomplete\n";
+        std::cerr << "Directional shadow framebuffer incomplete\n";
     }
-
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        0
-    );
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-glm::mat4 Week09Scene::createDirectionalLightSpaceMatrix(
-    const glm::vec3& sunDirection
-) const
+glm::mat4 Week09Scene::createDirectionalLightSpaceMatrix(const glm::vec3& direction) const
 {
-    const glm::vec3 sceneCenter(
-        0.0f,
-        0.0f,
-        0.0f
-    );
-
-    const glm::vec3 lightPosition =
-        sceneCenter -
-        glm::normalize(sunDirection) *
-        10.0f;
-
-    const glm::mat4 lightProjection =
-        glm::ortho(
-            -7.0f,
-            7.0f,
-            -7.0f,
-            7.0f,
-            0.1f,
-            25.0f
-        );
-
-    const glm::mat4 lightView =
-        glm::lookAt(
-            lightPosition,
-            sceneCenter,
-            glm::vec3(0.0f, 1.0f, 0.0f)
-        );
-
+    const glm::vec3 sceneCenter(0.0f);
+    const glm::vec3 lightPosition = sceneCenter - glm::normalize(direction) * 10.0f;
+    const glm::mat4 lightProjection = glm::ortho(-7.0f, 7.0f, -7.0f, 7.0f, 0.1f, 25.0f);
+    const glm::mat4 lightView = glm::lookAt(
+        lightPosition,
+        sceneCenter,
+        glm::vec3(0.0f, 1.0f, 0.0f));
     return lightProjection * lightView;
 }
 
 void Week09Scene::drawDirectionalShadowCasters(
     GLuint depthShaderProgram,
-    const glm::mat4& lightSpaceMatrix
-)
+    const glm::mat4& lightSpaceMatrix)
 {
-    const GLint modelLocation =
-        glGetUniformLocation(
-            depthShaderProgram,
-            "model"
-        );
-
-    // Outdoor ground
+    (void)lightSpaceMatrix;
+    const GLint modelLocation = uniformLocation(depthShaderProgram, "model");
+    drawCube(cube.VAO, modelLocation, createOutdoorGroundModelMatrix());
     drawCube(
         cube.VAO,
         modelLocation,
-        createOutdoorGroundModelMatrix()
-    );
-
-    // Test cube
-    glm::mat4 cubeModel(1.0f);
-
-    cubeModel = glm::translate(
-        cubeModel,
-        glm::vec3(-0.2f, -0.6f, 0.0f)
-    );
-
-    drawCube(
-        cube.VAO,
-        modelLocation,
-        cubeModel
-    );
-
-    // Sphere
-    glm::mat4 sphereModel(1.0f);
-
-    sphereModel = glm::translate(
-        sphereModel,
-        glm::vec3(0.8f, -0.4f, 0.0f)
-    );
-
+        makeTransform(glm::vec3(-0.2f, -0.6f, 0.0f), glm::vec3(1.0f)));
     drawSphere(
         sphere,
         modelLocation,
-        sphereModel
-    );
+        makeTransform(glm::vec3(0.8f, -0.4f, 0.0f), glm::vec3(1.0f)));
 
-    // Backpack
     if (backpack)
     {
-        const glm::mat4 backpackModel =
-            createBackpackModelMatrix();
-
-        glUniformMatrix4fv(
-            modelLocation,
-            1,
-            GL_FALSE,
-            glm::value_ptr(backpackModel)
-        );
-
-        backpack->draw(
-            depthShaderProgram
-        );
+        setMatrix(modelLocation, createBackpackModelMatrix());
+        backpack->draw(depthShaderProgram);
     }
 
-    // Planet
     if (planet)
     {
-        glm::mat4 planetModel(1.0f);
-
-        planetModel = glm::translate(
-            planetModel,
-            glm::vec3(1.3f, 0.0f, -1.5f)
-        );
-
-        planetModel = glm::scale(
-            planetModel,
-            glm::vec3(0.018f)
-        );
-
-        planetModel = glm::scale(
-            planetModel,
-            glm::vec3(8.0f)
-        );
-
-        glUniformMatrix4fv(
-            modelLocation,
-            1,
-            GL_FALSE,
-            glm::value_ptr(planetModel)
-        );
-
-        planet->draw(
-            depthShaderProgram
-        );
+        const glm::mat4 planetModel = makeTransform(
+            glm::vec3(1.3f, 0.0f, -1.5f),
+            glm::vec3(0.018f * 8.0f));
+        setMatrix(modelLocation, planetModel);
+        planet->draw(depthShaderProgram);
     }
 
-    // Instanced asteroid ring
     if (rock)
     {
-        glUseProgram(
-            instancedDirectionalDepthShaderProgram
-        );
-
-        glUniformMatrix4fv(
-            glGetUniformLocation(
-                instancedDirectionalDepthShaderProgram,
-                "lightSpaceMatrix"
-            ),
-            1,
-            GL_FALSE,
-            glm::value_ptr(
-                createDirectionalLightSpaceMatrix(
-                    glm::vec3(-0.3f, -1.0f, -0.2f)
-                )
-            )
-        );
-
-        const glm::mat4 asteroidSystemModel =
-            createAsteroidSystemModel();
-
-        glUniformMatrix4fv(
-            glGetUniformLocation(
-                instancedDirectionalDepthShaderProgram,
-                "systemModel"
-            ),
-            1,
-            GL_FALSE,
-            glm::value_ptr(asteroidSystemModel)
-        );
-
-        rock->drawInstanced(
-            instancedDirectionalDepthShaderProgram,
-            ASTEROID_COUNT
-        );
-
+        glUseProgram(instancedDirectionalDepthShaderProgram);
+        setMatrix(
+            uniformLocation(instancedDirectionalDepthShaderProgram, "lightSpaceMatrix"),
+            createDirectionalLightSpaceMatrix(sunDirection()));
+        setMatrix(
+            uniformLocation(instancedDirectionalDepthShaderProgram, "systemModel"),
+            createAsteroidSystemModel());
+        rock->drawInstanced(instancedDirectionalDepthShaderProgram, ASTEROID_COUNT);
         glUseProgram(depthShaderProgram);
     }
 }
 
-void Week09Scene::renderDirectionalShadowMap(
-    const glm::mat4& lightSpaceMatrix
-)
+void Week09Scene::renderDirectionalShadowMap(const glm::mat4& lightSpaceMatrix)
 {
-    glViewport(
-        0,
-        0,
-        SHADOW_WIDTH,
-        SHADOW_HEIGHT
-    );
-
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        directionalDepthFBO
-    );
-
+    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+    glBindFramebuffer(GL_FRAMEBUFFER, directionalDepthFBO);
     glClear(GL_DEPTH_BUFFER_BIT);
-
-    glUseProgram(
-        directionalDepthShaderProgram
-    );
-
-    glUniformMatrix4fv(
-        glGetUniformLocation(
-            directionalDepthShaderProgram,
-            "lightSpaceMatrix"
-        ),
-        1,
-        GL_FALSE,
-        glm::value_ptr(lightSpaceMatrix)
-    );
-
+    glUseProgram(directionalDepthShaderProgram);
+    setMatrix(uniformLocation(directionalDepthShaderProgram, "lightSpaceMatrix"), lightSpaceMatrix);
     glCullFace(GL_FRONT);
-
-    drawDirectionalShadowCasters(
-        directionalDepthShaderProgram,
-        lightSpaceMatrix
-    );
-
+    drawDirectionalShadowCasters(directionalDepthShaderProgram, lightSpaceMatrix);
     glCullFace(GL_BACK);
-
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        0
-    );
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 glm::mat4 Week09Scene::createAsteroidSystemModel() const
 {
-    const float orbitAngle =
-        static_cast<float>(glfwGetTime()) *
-        glm::radians(3.0f);
-
-    glm::mat4 systemModel(1.0f);
-
-    systemModel = glm::translate(
-        systemModel,
-        glm::vec3(1.3f, 0.0f, -1.5f)
-    );
-
-    systemModel = glm::rotate(
-        systemModel,
-        orbitAngle,
-        glm::vec3(0.0f, 1.0f, 0.0f)
-    );
-
-    systemModel = glm::scale(
-        systemModel,
-        glm::vec3(0.018f)
-    );
-
-    return systemModel;
+    const float orbitAngle = static_cast<float>(glfwGetTime()) * glm::radians(3.0f);
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(1.3f, 0.0f, -1.5f));
+    model = glm::rotate(model, orbitAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+    return glm::scale(model, glm::vec3(0.018f));
 }
 
 void Week09Scene::createPointShadowMap()
 {
-    glGenFramebuffers(
-        1,
-        &pointDepthFBO
-    );
+    glGenFramebuffers(1, &pointDepthFBO);
+    glGenTextures(1, &pointDepthCubemap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, pointDepthCubemap);
 
-    glGenTextures(
-        1,
-        &pointDepthCubemap
-    );
-
-    glBindTexture(
-        GL_TEXTURE_CUBE_MAP,
-        pointDepthCubemap
-    );
-
-    for (unsigned int face = 0;
-        face < 6;
-        ++face)
+    for (unsigned int face = 0; face < 6; ++face)
     {
         glTexImage2D(
-            GL_TEXTURE_CUBE_MAP_POSITIVE_X +
-            face,
+            GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
             0,
             GL_DEPTH_COMPONENT24,
             POINT_SHADOW_WIDTH,
@@ -2671,752 +1171,169 @@ void Week09Scene::createPointShadowMap()
             0,
             GL_DEPTH_COMPONENT,
             GL_FLOAT,
-            nullptr
-        );
+            nullptr);
     }
 
-    glTexParameteri(
-        GL_TEXTURE_CUBE_MAP,
-        GL_TEXTURE_MIN_FILTER,
-        GL_NEAREST
-    );
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-    glTexParameteri(
-        GL_TEXTURE_CUBE_MAP,
-        GL_TEXTURE_MAG_FILTER,
-        GL_NEAREST
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_CUBE_MAP,
-        GL_TEXTURE_WRAP_S,
-        GL_CLAMP_TO_EDGE
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_CUBE_MAP,
-        GL_TEXTURE_WRAP_T,
-        GL_CLAMP_TO_EDGE
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_CUBE_MAP,
-        GL_TEXTURE_WRAP_R,
-        GL_CLAMP_TO_EDGE
-    );
-
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        pointDepthFBO
-    );
-
-    // Attach the cubemap
-    glFramebufferTexture(
-        GL_FRAMEBUFFER,
-        GL_DEPTH_ATTACHMENT,
-        pointDepthCubemap,
-        0
-    );
-
+    glBindFramebuffer(GL_FRAMEBUFFER, pointDepthFBO);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, pointDepthCubemap, 0);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
-
-    if (
-        glCheckFramebufferStatus(
-            GL_FRAMEBUFFER
-        ) != GL_FRAMEBUFFER_COMPLETE
-        )
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
-        std::cerr
-            << "Point shadow framebuffer incomplete\n";
+        std::cerr << "Point shadow framebuffer incomplete\n";
     }
-
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        0
-    );
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-std::vector<glm::mat4>
-Week09Scene::createPointShadowMatrices(
-    const glm::vec3& lightPosition
-) const
+std::vector<glm::mat4> Week09Scene::createPointShadowMatrices(
+    const glm::vec3& lightPosition) const
 {
-    const float aspect =
-        static_cast<float>(
-            POINT_SHADOW_WIDTH
-            ) /
-        static_cast<float>(
-            POINT_SHADOW_HEIGHT
-            );
+    const float aspect = static_cast<float>(POINT_SHADOW_WIDTH) /
+        static_cast<float>(POINT_SHADOW_HEIGHT);
+    const glm::mat4 projection = glm::perspective(
+        glm::radians(90.0f),
+        aspect,
+        POINT_SHADOW_NEAR_PLANE,
+        POINT_SHADOW_FAR_PLANE);
 
-    const glm::mat4 shadowProjection =
-        glm::perspective(
-            glm::radians(90.0f),
-            aspect,
-            POINT_SHADOW_NEAR_PLANE,
-            POINT_SHADOW_FAR_PLANE
-        );
+    const std::array<glm::vec3, 6> directions = {
+        glm::vec3(1.0f, 0.0f, 0.0f),
+        glm::vec3(-1.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, -1.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f),
+        glm::vec3(0.0f, 0.0f, -1.0f)
+    };
+    const std::array<glm::vec3, 6> upVectors = {
+        glm::vec3(0.0f, -1.0f, 0.0f),
+        glm::vec3(0.0f, -1.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f),
+        glm::vec3(0.0f, 0.0f, -1.0f),
+        glm::vec3(0.0f, -1.0f, 0.0f),
+        glm::vec3(0.0f, -1.0f, 0.0f)
+    };
 
-    std::vector<glm::mat4>
-        shadowMatrices;
-
-    shadowMatrices.reserve(6);
-
-    shadowMatrices.push_back(
-        shadowProjection *
-        glm::lookAt(
+    std::vector<glm::mat4> matrices;
+    matrices.reserve(6);
+    for (std::size_t face = 0; face < directions.size(); ++face)
+    {
+        matrices.push_back(projection * glm::lookAt(
             lightPosition,
-            lightPosition +
-            glm::vec3(1.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, -1.0f, 0.0f)
-        )
-    );
-
-    shadowMatrices.push_back(
-        shadowProjection *
-        glm::lookAt(
-            lightPosition,
-            lightPosition +
-            glm::vec3(-1.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, -1.0f, 0.0f)
-        )
-    );
-
-    shadowMatrices.push_back(
-        shadowProjection *
-        glm::lookAt(
-            lightPosition,
-            lightPosition +
-            glm::vec3(0.0f, 1.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 1.0f)
-        )
-    );
-
-    shadowMatrices.push_back(
-        shadowProjection *
-        glm::lookAt(
-            lightPosition,
-            lightPosition +
-            glm::vec3(0.0f, -1.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, -1.0f)
-        )
-    );
-
-    shadowMatrices.push_back(
-        shadowProjection *
-        glm::lookAt(
-            lightPosition,
-            lightPosition +
-            glm::vec3(0.0f, 0.0f, 1.0f),
-            glm::vec3(0.0f, -1.0f, 0.0f)
-        )
-    );
-
-    shadowMatrices.push_back(
-        shadowProjection *
-        glm::lookAt(
-            lightPosition,
-            lightPosition +
-            glm::vec3(0.0f, 0.0f, -1.0f),
-            glm::vec3(0.0f, -1.0f, 0.0f)
-        )
-    );
-
-    return shadowMatrices;
+            lightPosition + directions[face],
+            upVectors[face]));
+    }
+    return matrices;
 }
 
-void Week09Scene::drawPointShadowCasters(
-    GLuint depthShaderProgram
-)
+void Week09Scene::drawPointShadowCasters(GLuint depthShaderProgram)
 {
-    const GLint modelLocation =
-        glGetUniformLocation(
-            depthShaderProgram,
-            "model"
-        );
-
-    glm::mat4 cubeModel(1.0f);
-
-    cubeModel = glm::translate(
-        cubeModel,
-        glm::vec3(-0.2f, -0.6f, 0.0f)
-    );
-
+    const GLint modelLocation = uniformLocation(depthShaderProgram, "model");
     drawCube(
         cube.VAO,
         modelLocation,
-        cubeModel
-    );
-
-    glm::mat4 sphereModel(1.0f);
-
-    sphereModel = glm::translate(
-        sphereModel,
-        glm::vec3(0.8f, -0.4f, 0.0f)
-    );
-
+        makeTransform(glm::vec3(-0.2f, -0.6f, 0.0f), glm::vec3(1.0f)));
     drawSphere(
         sphere,
         modelLocation,
-        sphereModel
-    );
-    
+        makeTransform(glm::vec3(0.8f, -0.4f, 0.0f), glm::vec3(1.0f)));
+
     if (backpack)
     {
-        const glm::mat4 backpackModel =
-            createBackpackModelMatrix();
-
-        glUniformMatrix4fv(
-            modelLocation,
-            1,
-            GL_FALSE,
-            glm::value_ptr(backpackModel)
-        );
-
-        backpack->draw(
-            depthShaderProgram
-        );
+        setMatrix(modelLocation, createBackpackModelMatrix());
+        backpack->draw(depthShaderProgram);
     }
 
     if (planet)
     {
-        glm::mat4 planetModel(1.0f);
-
-        planetModel = glm::translate(
-            planetModel,
-            glm::vec3(1.3f, 0.0f, -1.5f)
-        );
-
-        planetModel = glm::scale(
-            planetModel,
-            glm::vec3(0.018f)
-        );
-
-        planetModel = glm::scale(
-            planetModel,
-            glm::vec3(8.0f)
-        );
-
-        glUniformMatrix4fv(
+        setMatrix(
             modelLocation,
-            1,
-            GL_FALSE,
-            glm::value_ptr(planetModel)
-        );
-
-        planet->draw(
-            depthShaderProgram
-        );
+            makeTransform(glm::vec3(1.3f, 0.0f, -1.5f), glm::vec3(0.018f * 8.0f)));
+        planet->draw(depthShaderProgram);
     }
 }
 
-void Week09Scene::renderPointShadowMap(
-    const glm::vec3& lightPosition
-)
+void Week09Scene::renderPointShadowMap(const glm::vec3& lightPosition)
 {
-    const std::vector<glm::mat4>
-        shadowMatrices =
-        createPointShadowMatrices(
-            lightPosition
-        );
-
-    glViewport(
-        0,
-        0,
-        POINT_SHADOW_WIDTH,
-        POINT_SHADOW_HEIGHT
-    );
-
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        pointDepthFBO
-    );
-
+    const std::vector<glm::mat4> shadowMatrices = createPointShadowMatrices(lightPosition);
+    glViewport(0, 0, POINT_SHADOW_WIDTH, POINT_SHADOW_HEIGHT);
+    glBindFramebuffer(GL_FRAMEBUFFER, pointDepthFBO);
     glClear(GL_DEPTH_BUFFER_BIT);
+    glUseProgram(pointDepthShaderProgram);
 
-    glUseProgram(
-        pointDepthShaderProgram
-    );
-
-    for (unsigned int face = 0;
-        face < 6;
-        ++face)
+    for (unsigned int face = 0; face < 6; ++face)
     {
-        const std::string uniformName =
-            "shadowMatrices[" +
-            std::to_string(face) +
-            "]";
-
-        glUniformMatrix4fv(
-            glGetUniformLocation(
-                pointDepthShaderProgram,
-                uniformName.c_str()
-            ),
-            1,
-            GL_FALSE,
-            glm::value_ptr(
-                shadowMatrices[face]
-            )
-        );
+        const std::string uniformName = "shadowMatrices[" + std::to_string(face) + "]";
+        setMatrix(uniformLocation(pointDepthShaderProgram, uniformName.c_str()), shadowMatrices[face]);
     }
 
-    glUniform3fv(
-        glGetUniformLocation(
-            pointDepthShaderProgram,
-            "lightPos"
-        ),
-        1,
-        glm::value_ptr(lightPosition)
-    );
+    setVector(uniformLocation(pointDepthShaderProgram, "lightPos"), lightPosition);
+    glUniform1f(uniformLocation(pointDepthShaderProgram, "farPlane"), POINT_SHADOW_FAR_PLANE);
 
-    glUniform1f(
-        glGetUniformLocation(
-            pointDepthShaderProgram,
-            "farPlane"
-        ),
-        POINT_SHADOW_FAR_PLANE
-    );
-
-    const GLboolean cullingWasEnabled =
-        glIsEnabled(GL_CULL_FACE);
-
+    const GLboolean cullingWasEnabled = glIsEnabled(GL_CULL_FACE);
     GLint previousCullFaceMode = GL_BACK;
-
-    glGetIntegerv(
-        GL_CULL_FACE_MODE,
-        &previousCullFaceMode
-    );
-
+    glGetIntegerv(GL_CULL_FACE_MODE, &previousCullFaceMode);
     glEnable(GL_CULL_FACE);
-
-    // Discard front faces and store the deeper back faces to reduce the sphere self-shadowing
     glCullFace(GL_FRONT);
-
-    drawPointShadowCasters(
-        pointDepthShaderProgram
-    );
-
-    glCullFace(
-        static_cast<GLenum>(
-            previousCullFaceMode
-            )
-    );
-
+    drawPointShadowCasters(pointDepthShaderProgram);
+    glCullFace(static_cast<GLenum>(previousCullFaceMode));
     if (!cullingWasEnabled)
     {
         glDisable(GL_CULL_FACE);
     }
-
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        0
-    );
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Week09Scene::configureModelPointShadows()
 {
-    glActiveTexture(GL_TEXTURE4);
-
-    glBindTexture(
-        GL_TEXTURE_CUBE_MAP,
-        pointDepthCubemap
-    );
-
-    glUniform1i(
-        modelUniforms.pointShadowMap,
-        4
-    );
-
-    glUniform1f(
-        modelUniforms.pointShadowFarPlane,
-        POINT_SHADOW_FAR_PLANE
-    );
-
-    glUniform1i(
-        modelUniforms.pointShadowsEnabled,
-        !outdoorModeEnabled &&
-        light1Enabled
-    );
+    bindTexture(GL_TEXTURE4, GL_TEXTURE_CUBE_MAP, pointDepthCubemap);
+    glUniform1i(modelUniforms.pointShadowMap, 4);
+    glUniform1f(modelUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
+    glUniform1i(modelUniforms.pointShadowsEnabled, !outdoorModeEnabled && light1Enabled);
 }
 
 void Week09Scene::createNormalMappedPlane()
 {
+    const glm::vec3 p1(-1.0f, 1.0f, 0.0f);
+    const glm::vec3 p2(1.0f, 1.0f, 0.0f);
+    const glm::vec3 p3(1.0f, -1.0f, 0.0f);
+    const glm::vec3 p4(-1.0f, -1.0f, 0.0f);
+    const glm::vec2 uv1(0.0f, 1.0f);
+    const glm::vec2 uv2(1.0f, 1.0f);
+    const glm::vec2 uv3(1.0f, 0.0f);
+    const glm::vec2 uv4(0.0f, 0.0f);
+    const glm::vec3 normal(0.0f, 0.0f, 1.0f);
+    const TangentBasis first = calculateTangentBasis(p1, p2, p3, uv1, uv2, uv3);
+    const TangentBasis second = calculateTangentBasis(p1, p3, p4, uv1, uv3, uv4);
 
-    const glm::vec3 p1(
-        -1.0f,
-        1.0f,
-        0.0f
-    );
-
-    const glm::vec3 p2(
-        1.0f,
-        1.0f,
-        0.0f
-    );
-
-    const glm::vec3 p3(
-        1.0f,
-        -1.0f,
-        0.0f
-    );
-
-    const glm::vec3 p4(
-        -1.0f,
-        -1.0f,
-        0.0f
-    );
-
-    const glm::vec2 uv1(
-        0.0f,
-        1.0f
-    );
-
-    const glm::vec2 uv2(
-        1.0f,
-        1.0f
-    );
-
-    const glm::vec2 uv3(
-        1.0f,
-        0.0f
-    );
-
-    const glm::vec2 uv4(
-        0.0f,
-        0.0f
-    );
-
-    const glm::vec3 normal(
-        0.0f,
-        0.0f,
-        1.0f
-    );
-
-    const glm::vec3 edge1 =
-        p2 - p1;
-
-    const glm::vec3 edge2 =
-        p3 - p1;
-
-    const glm::vec2 deltaUV1 =
-        uv2 - uv1;
-
-    const glm::vec2 deltaUV2 =
-        uv3 - uv1;
-
-    const float determinant1 =
-        deltaUV1.x *
-        deltaUV2.y -
-        deltaUV2.x *
-        deltaUV1.y;
-
-    const float inverseDeterminant1 =
-        1.0f /
-        determinant1;
-
-    glm::vec3 tangent1;
-
-    tangent1.x =
-        inverseDeterminant1 *
-        (
-            deltaUV2.y *
-            edge1.x -
-            deltaUV1.y *
-            edge2.x
-            );
-
-    tangent1.y =
-        inverseDeterminant1 *
-        (
-            deltaUV2.y *
-            edge1.y -
-            deltaUV1.y *
-            edge2.y
-            );
-
-    tangent1.z =
-        inverseDeterminant1 *
-        (
-            deltaUV2.y *
-            edge1.z -
-            deltaUV1.y *
-            edge2.z
-            );
-
-    tangent1 =
-        glm::normalize(tangent1);
-
-    glm::vec3 bitangent1;
-
-    bitangent1.x =
-        inverseDeterminant1 *
-        (
-            -deltaUV2.x *
-            edge1.x +
-            deltaUV1.x *
-            edge2.x
-            );
-
-    bitangent1.y =
-        inverseDeterminant1 *
-        (
-            -deltaUV2.x *
-            edge1.y +
-            deltaUV1.x *
-            edge2.y
-            );
-
-    bitangent1.z =
-        inverseDeterminant1 *
-        (
-            -deltaUV2.x *
-            edge1.z +
-            deltaUV1.x *
-            edge2.z
-            );
-
-    bitangent1 =
-        glm::normalize(bitangent1);
-
-    const glm::vec3 edge3 =
-        p3 - p1;
-
-    const glm::vec3 edge4 =
-        p4 - p1;
-
-    const glm::vec2 deltaUV3 =
-        uv3 - uv1;
-
-    const glm::vec2 deltaUV4 =
-        uv4 - uv1;
-
-    const float determinant2 =
-        deltaUV3.x *
-        deltaUV4.y -
-        deltaUV4.x *
-        deltaUV3.y;
-
-    const float inverseDeterminant2 =
-        1.0f /
-        determinant2;
-
-    glm::vec3 tangent2;
-
-    tangent2.x =
-        inverseDeterminant2 *
-        (
-            deltaUV4.y *
-            edge3.x -
-            deltaUV3.y *
-            edge4.x
-            );
-
-    tangent2.y =
-        inverseDeterminant2 *
-        (
-            deltaUV4.y *
-            edge3.y -
-            deltaUV3.y *
-            edge4.y
-            );
-
-    tangent2.z =
-        inverseDeterminant2 *
-        (
-            deltaUV4.y *
-            edge3.z -
-            deltaUV3.y *
-            edge4.z
-            );
-
-    tangent2 =
-        glm::normalize(tangent2);
-
-    glm::vec3 bitangent2;
-
-    bitangent2.x =
-        inverseDeterminant2 *
-        (
-            -deltaUV4.x *
-            edge3.x +
-            deltaUV3.x *
-            edge4.x
-            );
-
-    bitangent2.y =
-        inverseDeterminant2 *
-        (
-            -deltaUV4.x *
-            edge3.y +
-            deltaUV3.x *
-            edge4.y
-            );
-
-    bitangent2.z =
-        inverseDeterminant2 *
-        (
-            -deltaUV4.x *
-            edge3.z +
-            deltaUV3.x *
-            edge4.z
-            );
-
-    bitangent2 =
-        glm::normalize(bitangent2);
-
-    /*
-     * position:  3
-     * normal:    3
-     * uv:        2
-     * tangent:   3
-     * bitangent: 3
-     *
-     * Total: 14 floats per vertex.
-     */
-    const float planeVertices[] = {
-        // Triangle 1
-        p1.x, p1.y, p1.z,
-        normal.x, normal.y, normal.z,
-        uv1.x, uv1.y,
-        tangent1.x, tangent1.y, tangent1.z,
-        bitangent1.x, bitangent1.y, bitangent1.z,
-
-        p2.x, p2.y, p2.z,
-        normal.x, normal.y, normal.z,
-        uv2.x, uv2.y,
-        tangent1.x, tangent1.y, tangent1.z,
-        bitangent1.x, bitangent1.y, bitangent1.z,
-
-        p3.x, p3.y, p3.z,
-        normal.x, normal.y, normal.z,
-        uv3.x, uv3.y,
-        tangent1.x, tangent1.y, tangent1.z,
-        bitangent1.x, bitangent1.y, bitangent1.z,
-
-        // Triangle 2
-        p1.x, p1.y, p1.z,
-        normal.x, normal.y, normal.z,
-        uv1.x, uv1.y,
-        tangent2.x, tangent2.y, tangent2.z,
-        bitangent2.x, bitangent2.y, bitangent2.z,
-
-        p3.x, p3.y, p3.z,
-        normal.x, normal.y, normal.z,
-        uv3.x, uv3.y,
-        tangent2.x, tangent2.y, tangent2.z,
-        bitangent2.x, bitangent2.y, bitangent2.z,
-
-        p4.x, p4.y, p4.z,
-        normal.x, normal.y, normal.z,
-        uv4.x, uv4.y,
-        tangent2.x, tangent2.y, tangent2.z,
-        bitangent2.x, bitangent2.y, bitangent2.z
+    const float vertices[] = {
+        p1.x, p1.y, p1.z, normal.x, normal.y, normal.z, uv1.x, uv1.y, first.tangent.x, first.tangent.y, first.tangent.z, first.bitangent.x, first.bitangent.y, first.bitangent.z,
+        p2.x, p2.y, p2.z, normal.x, normal.y, normal.z, uv2.x, uv2.y, first.tangent.x, first.tangent.y, first.tangent.z, first.bitangent.x, first.bitangent.y, first.bitangent.z,
+        p3.x, p3.y, p3.z, normal.x, normal.y, normal.z, uv3.x, uv3.y, first.tangent.x, first.tangent.y, first.tangent.z, first.bitangent.x, first.bitangent.y, first.bitangent.z,
+        p1.x, p1.y, p1.z, normal.x, normal.y, normal.z, uv1.x, uv1.y, second.tangent.x, second.tangent.y, second.tangent.z, second.bitangent.x, second.bitangent.y, second.bitangent.z,
+        p3.x, p3.y, p3.z, normal.x, normal.y, normal.z, uv3.x, uv3.y, second.tangent.x, second.tangent.y, second.tangent.z, second.bitangent.x, second.bitangent.y, second.bitangent.z,
+        p4.x, p4.y, p4.z, normal.x, normal.y, normal.z, uv4.x, uv4.y, second.tangent.x, second.tangent.y, second.tangent.z, second.bitangent.x, second.bitangent.y, second.bitangent.z
     };
 
-    glGenVertexArrays(
-        1,
-        &normalMappedPlaneVAO
-    );
+    glGenVertexArrays(1, &normalMappedPlaneVAO);
+    glGenBuffers(1, &normalMappedPlaneVBO);
+    glBindVertexArray(normalMappedPlaneVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, normalMappedPlaneVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glGenBuffers(
-        1,
-        &normalMappedPlaneVBO
-    );
-
-    glBindVertexArray(
-        normalMappedPlaneVAO
-    );
-
-    glBindBuffer(
-        GL_ARRAY_BUFFER,
-        normalMappedPlaneVBO
-    );
-
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        sizeof(planeVertices),
-        planeVertices,
-        GL_STATIC_DRAW
-    );
-
-    constexpr GLsizei stride =
-        14 *
-        sizeof(float);
-
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(
-        0,
-        3,
-        GL_FLOAT,
-        GL_FALSE,
-        stride,
-        reinterpret_cast<void*>(0)
-    );
-
-    glEnableVertexAttribArray(1);
-
-    glVertexAttribPointer(
-        1,
-        3,
-        GL_FLOAT,
-        GL_FALSE,
-        stride,
-        reinterpret_cast<void*>(
-            3 *
-            sizeof(float)
-            )
-    );
-
-    glEnableVertexAttribArray(2);
-
-    glVertexAttribPointer(
-        2,
-        2,
-        GL_FLOAT,
-        GL_FALSE,
-        stride,
-        reinterpret_cast<void*>(
-            6 *
-            sizeof(float)
-            )
-    );
-
-    glEnableVertexAttribArray(3);
-
-    glVertexAttribPointer(
-        3,
-        3,
-        GL_FLOAT,
-        GL_FALSE,
-        stride,
-        reinterpret_cast<void*>(
-            8 *
-            sizeof(float)
-            )
-    );
-
-    glEnableVertexAttribArray(4);
-
-    glVertexAttribPointer(
-        4,
-        3,
-        GL_FLOAT,
-        GL_FALSE,
-        stride,
-        reinterpret_cast<void*>(
-            11 *
-            sizeof(float)
-            )
-    );
-
+    constexpr GLsizei stride = 14 * sizeof(float);
+    configureVertexAttribute(0, 3, stride, 0);
+    configureVertexAttribute(1, 3, stride, 3 * sizeof(float));
+    configureVertexAttribute(2, 2, stride, 6 * sizeof(float));
+    configureVertexAttribute(3, 3, stride, 8 * sizeof(float));
+    configureVertexAttribute(4, 3, stride, 11 * sizeof(float));
     glBindVertexArray(0);
-
-    glBindBuffer(
-        GL_ARRAY_BUFFER,
-        0
-    );
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void Week09Scene::drawNormalMappedSurface(
@@ -3429,104 +1346,30 @@ void Week09Scene::drawNormalMappedSurface(
     const glm::mat4& projection,
     const glm::vec3& cameraPos,
     const glm::vec3& lightPos,
-    const glm::vec3& lightColor
-)
+    const glm::vec3& lightColor)
 {
-    glUseProgram(
-        normalMappingShaderProgram
-    );
+    glUseProgram(normalMappingShaderProgram);
+    setMatrix(normalMappingUniforms.model, model);
+    setMatrix(normalMappingUniforms.view, view);
+    setMatrix(normalMappingUniforms.projection, projection);
+    setVector(normalMappingUniforms.viewPos, cameraPos);
+    setVector(normalMappingUniforms.lightPos, lightPos);
+    setVector(normalMappingUniforms.lightColor, lightColor);
+    glUniform1i(normalMappingUniforms.lightEnabled, !outdoorModeEnabled && light1Enabled);
+    glUniform2f(normalMappingUniforms.uvScale, uvScale.x, uvScale.y);
+    glUniform1f(normalMappingUniforms.normalStrength, normalStrength);
+    bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, diffuseTexture);
+    bindTexture(GL_TEXTURE1, GL_TEXTURE_2D, normalTexture);
 
-    glUniformMatrix4fv(
-        normalMappingUniforms.model,
-        1,
-        GL_FALSE,
-        glm::value_ptr(model)
-    );
-
-    glUniformMatrix4fv(
-        normalMappingUniforms.view,
-        1,
-        GL_FALSE,
-        glm::value_ptr(view)
-    );
-
-    glUniformMatrix4fv(
-        normalMappingUniforms.projection,
-        1,
-        GL_FALSE,
-        glm::value_ptr(projection)
-    );
-
-    glUniform3fv(
-        normalMappingUniforms.viewPos,
-        1,
-        glm::value_ptr(cameraPos)
-    );
-
-    glUniform3fv(
-        normalMappingUniforms.lightPos,
-        1,
-        glm::value_ptr(lightPos)
-    );
-
-    glUniform3fv(
-        normalMappingUniforms.lightColor,
-        1,
-        glm::value_ptr(lightColor)
-    );
-
-    glUniform1i(
-        normalMappingUniforms.lightEnabled,
-        !outdoorModeEnabled &&
-        light1Enabled
-    );
-
-    glUniform2f(
-        normalMappingUniforms.uvScale,
-        uvScale.x,
-        uvScale.y
-    );
-
-    glUniform1f(
-        normalMappingUniforms.normalStrength,
-        normalStrength
-    );
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(
-        GL_TEXTURE_2D,
-        diffuseTexture
-    );
-
-    glActiveTexture(GL_TEXTURE1);
-
-    glBindTexture(
-        GL_TEXTURE_2D,
-        normalTexture
-    );
-
-    const GLboolean cullingWasEnabled =
-        glIsEnabled(GL_CULL_FACE);
-
+    const GLboolean cullingWasEnabled = glIsEnabled(GL_CULL_FACE);
     glDisable(GL_CULL_FACE);
-
-    glBindVertexArray(
-        normalMappedPlaneVAO
-    );
-
-    glDrawArrays(
-        GL_TRIANGLES,
-        0,
-        6
-    );
-
+    glBindVertexArray(normalMappedPlaneVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
-
     if (cullingWasEnabled)
     {
         glEnable(GL_CULL_FACE);
     }
-
     glActiveTexture(GL_TEXTURE0);
 }
 
@@ -3535,155 +1378,36 @@ void Week09Scene::drawNormalMappedRoomWalls(
     const glm::mat4& projection,
     const glm::vec3& cameraPos,
     const glm::vec3& lightPos,
-    const glm::vec3& lightColor
-)
+    const glm::vec3& lightColor)
 {
+    struct Wall
+    {
+        glm::vec3 position;
+        float rotation;
+    };
+
     constexpr float roomWallPosition = 2.95f;
+    const std::array<Wall, 4> walls = {
+        Wall{ glm::vec3(0.0f, 1.0f, -roomWallPosition), 0.0f },
+        Wall{ glm::vec3(0.0f, 1.0f, roomWallPosition), 180.0f },
+        Wall{ glm::vec3(-roomWallPosition, 1.0f, 0.0f), 90.0f },
+        Wall{ glm::vec3(roomWallPosition, 1.0f, 0.0f), -90.0f }
+    };
 
-    const glm::vec3 wallScale(
-        3.0f,
-        2.0f,
-        1.0f
-    );
-
-    const glm::vec2 brickUVScale(
-        4.0f,
-        3.0f
-    );
-
-    glm::mat4 backWall(1.0f);
-
-    backWall = glm::translate(
-        backWall,
-        glm::vec3(
-            0.0f,
+    for (const Wall& wall : walls)
+    {
+        drawNormalMappedSurface(
+            makeTransform(wall.position, glm::vec3(3.0f, 2.0f, 1.0f), wall.rotation),
+            glm::vec2(4.0f, 3.0f),
+            brickDiffuseTexture,
+            brickNormalTexture,
             1.0f,
-            -roomWallPosition
-        )
-    );
-
-    backWall = glm::scale(
-        backWall,
-        wallScale
-    );
-
-    drawNormalMappedSurface(
-        backWall,
-        brickUVScale,
-        brickDiffuseTexture,
-        brickNormalTexture,
-        1.0f,
-        view,
-        projection,
-        cameraPos,
-        lightPos,
-        lightColor
-    );
-
-    glm::mat4 frontWall(1.0f);
-
-    frontWall = glm::translate(
-        frontWall,
-        glm::vec3(
-            0.0f,
-            1.0f,
-            roomWallPosition
-        )
-    );
-
-    frontWall = glm::rotate(
-        frontWall,
-        glm::radians(180.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f)
-    );
-
-    frontWall = glm::scale(
-        frontWall,
-        wallScale
-    );
-
-    drawNormalMappedSurface(
-        frontWall,
-        brickUVScale,
-        brickDiffuseTexture,
-        brickNormalTexture,
-        1.0f,
-        view,
-        projection,
-        cameraPos,
-        lightPos,
-        lightColor
-    );
-
-    glm::mat4 leftWall(1.0f);
-
-    leftWall = glm::translate(
-        leftWall,
-        glm::vec3(
-            -roomWallPosition,
-            1.0f,
-            0.0f
-        )
-    );
-
-    leftWall = glm::rotate(
-        leftWall,
-        glm::radians(90.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f)
-    );
-
-    leftWall = glm::scale(
-        leftWall,
-        wallScale
-    );
-
-    drawNormalMappedSurface(
-        leftWall,
-        brickUVScale,
-        brickDiffuseTexture,
-        brickNormalTexture,
-        1.0f,
-        view,
-        projection,
-        cameraPos,
-        lightPos,
-        lightColor
-    );
-
-    glm::mat4 rightWall(1.0f);
-
-    rightWall = glm::translate(
-        rightWall,
-        glm::vec3(
-            roomWallPosition,
-            1.0f,
-            0.0f
-        )
-    );
-
-    rightWall = glm::rotate(
-        rightWall,
-        glm::radians(-90.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f)
-    );
-
-    rightWall = glm::scale(
-        rightWall,
-        wallScale
-    );
-
-    drawNormalMappedSurface(
-        rightWall,
-        brickUVScale,
-        brickDiffuseTexture,
-        brickNormalTexture,
-        1.0f,
-        view,
-        projection,
-        cameraPos,
-        lightPos,
-        lightColor
-    );
+            view,
+            projection,
+            cameraPos,
+            lightPos,
+            lightColor);
+    }
 }
 
 void Week09Scene::drawNormalMappedFloorAndCeiling(
@@ -3691,94 +1415,39 @@ void Week09Scene::drawNormalMappedFloorAndCeiling(
     const glm::mat4& projection,
     const glm::vec3& cameraPos,
     const glm::vec3& lightPos,
-    const glm::vec3& lightColor
-)
+    const glm::vec3& lightColor)
 {
-    glm::mat4 floor(1.0f);
+    struct Surface
+    {
+        glm::vec3 position;
+        float rotation;
+        glm::vec2 uvScale;
+        float normalStrength;
+    };
 
-    floor = glm::translate(
-        floor,
-        glm::vec3(
-            0.0f,
-            -0.95f,
-            0.0f
-        )
-    );
+    const std::array<Surface, 2> surfaces = {
+        Surface{ glm::vec3(0.0f, -0.95f, 0.0f), -90.0f, glm::vec2(3.0f), 0.9f },
+        Surface{ glm::vec3(0.0f, 2.95f, 0.0f), 90.0f, glm::vec2(2.0f), 0.3f }
+    };
 
-    floor = glm::rotate(
-        floor,
-        glm::radians(-90.0f),
-        glm::vec3(
-            1.0f,
-            0.0f,
-            0.0f
-        )
-    );
-
-    floor = glm::scale(
-        floor,
-        glm::vec3(
-            3.0f,
-            3.0f,
-            1.0f
-        )
-    );
-
-    drawNormalMappedSurface(
-        floor,
-        glm::vec2(3.0f, 3.0f),
-        brickDiffuseTexture,
-        brickNormalTexture,
-        0.9f,
-        view,
-        projection,
-        cameraPos,
-        lightPos,
-        lightColor
-    );
-
-    glm::mat4 ceiling(1.0f);
-
-    ceiling = glm::translate(
-        ceiling,
-        glm::vec3(
-            0.0f,
-            2.95f,
-            0.0f
-        )
-    );
-
-    ceiling = glm::rotate(
-        ceiling,
-        glm::radians(90.0f),
-        glm::vec3(
-            1.0f,
-            0.0f,
-            0.0f
-        )
-    );
-
-    ceiling = glm::scale(
-        ceiling,
-        glm::vec3(
-            3.0f,
-            3.0f,
-            1.0f
-        )
-    );
-
-    drawNormalMappedSurface(
-        ceiling,
-        glm::vec2(2.0f, 2.0f),
-        brickDiffuseTexture,
-        brickNormalTexture,
-        0.3f,
-        view,
-        projection,
-        cameraPos,
-        lightPos,
-        lightColor
-    );
+    for (const Surface& surface : surfaces)
+    {
+        drawNormalMappedSurface(
+            makeTransform(
+                surface.position,
+                glm::vec3(3.0f, 3.0f, 1.0f),
+                surface.rotation,
+                glm::vec3(1.0f, 0.0f, 0.0f)),
+            surface.uvScale,
+            brickDiffuseTexture,
+            brickNormalTexture,
+            surface.normalStrength,
+            view,
+            projection,
+            cameraPos,
+            lightPos,
+            lightColor);
+    }
 }
 
 void Week09Scene::cleanup()
@@ -3786,77 +1455,66 @@ void Week09Scene::cleanup()
     deleteCubeMesh(cube);
     deleteSphereMesh(sphere);
 
-    glDeleteTextures(1, &containerTexture);
-    glDeleteTextures(1, &containerSpecularTexture);
+    const GLuint textures[] = {
+        containerTexture,
+        containerSpecularTexture,
+        glassTexture,
+        framebufferTexture,
+        multisampleColorTexture,
+        directionalDepthMap,
+        pointDepthCubemap,
+        brickDiffuseTexture,
+        brickNormalTexture,
+        floorDiffuseTexture,
+        floorNormalTexture,
+        ceilingDiffuseTexture,
+        ceilingNormalTexture
+    };
+    glDeleteTextures(static_cast<GLsizei>(sizeof(textures) / sizeof(textures[0])), textures);
 
-    glDeleteProgram(shaderProgram);
-    glDeleteProgram(lampShaderProgram);
-    glDeleteProgram(normalDebugShaderProgram);
-    glDeleteProgram(modelNormalDebugShaderProgram);
-    glDeleteProgram(modelShaderProgram);
-    glDeleteProgram(depthDebugShaderProgram);
-    glDeleteProgram(modelDepthDebugShaderProgram);
-    glDeleteProgram(modelOutlineShaderProgram);
-    glDeleteProgram(glassShaderProgram);
-    glDeleteProgram(instancedDirectionalDepthShaderProgram);
-
-    glDeleteTextures(1, &glassTexture);
-    glDeleteVertexArrays(1, &glassVAO);
-    glDeleteBuffers(1, &glassVBO);
-
-    glDeleteFramebuffers(1, &framebuffer);
-    glDeleteTextures(1, &framebufferTexture);
-
-    glDeleteFramebuffers(1, &multisampleFramebuffer);
-    glDeleteTextures(1, &multisampleColorTexture);
-    glDeleteRenderbuffers(1, &multisampleRBO);
-
-    glDeleteVertexArrays(1, &screenQuadVAO);
-    glDeleteBuffers(1, &screenQuadVBO);
-
-    glDeleteBuffers(1, &asteroidInstanceVBO);
-    glDeleteProgram(instancedModelShaderProgram);
-
-    glDeleteProgram(screenShaderProgram);
-
-    glDeleteProgram(directionalDepthShaderProgram);
-
-    glDeleteFramebuffers(1, &directionalDepthFBO);
-    glDeleteTextures(1, &directionalDepthMap);
-
-    glDeleteProgram(
+    const GLuint programs[] = {
+        shaderProgram,
+        lampShaderProgram,
+        normalDebugShaderProgram,
+        modelShaderProgram,
+        modelNormalDebugShaderProgram,
+        depthDebugShaderProgram,
+        modelDepthDebugShaderProgram,
+        modelOutlineShaderProgram,
+        glassShaderProgram,
+        screenShaderProgram,
+        instancedModelShaderProgram,
+        directionalDepthShaderProgram,
+        instancedDirectionalDepthShaderProgram,
+        pointDepthShaderProgram,
         normalMappingShaderProgram
-    );
+    };
+    for (GLuint program : programs)
+    {
+        glDeleteProgram(program);
+    }
 
-    glDeleteVertexArrays(
-        1,
-        &normalMappedPlaneVAO
-    );
+    const GLuint framebuffers[] = {
+        framebuffer,
+        multisampleFramebuffer,
+        directionalDepthFBO,
+        pointDepthFBO
+    };
+    glDeleteFramebuffers(static_cast<GLsizei>(sizeof(framebuffers) / sizeof(framebuffers[0])), framebuffers);
 
-    glDeleteBuffers(
-        1,
-        &normalMappedPlaneVBO
-    );
+    const GLuint vertexArrays[] = { glassVAO, screenQuadVAO, normalMappedPlaneVAO };
+    glDeleteVertexArrays(static_cast<GLsizei>(sizeof(vertexArrays) / sizeof(vertexArrays[0])), vertexArrays);
 
-    glDeleteTextures(
-        1,
-        &brickDiffuseTexture
-    );
-
-    glDeleteTextures(
-        1,
-        &brickNormalTexture
-    );
+    const GLuint buffers[] = { glassVBO, screenQuadVBO, asteroidInstanceVBO, normalMappedPlaneVBO };
+    glDeleteBuffers(static_cast<GLsizei>(sizeof(buffers) / sizeof(buffers[0])), buffers);
+    glDeleteRenderbuffers(1, &multisampleRBO);
 
     delete backpack;
     backpack = nullptr;
-
     delete skybox;
     skybox = nullptr;
-
     delete planet;
     planet = nullptr;
-
     delete rock;
     rock = nullptr;
 }
