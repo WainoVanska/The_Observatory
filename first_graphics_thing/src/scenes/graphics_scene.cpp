@@ -253,10 +253,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     instancedModelShaderProgram = createShaderProgram("src/week09/instanced_model_vertex.glsl", "src/week09/instanced_rock_fragment.glsl");
     directionalDepthShaderProgram = createShaderProgram("src/week09/directional_depth_vertex.glsl", "src/week09/directional_depth_fragment.glsl");
     instancedDirectionalDepthShaderProgram = createShaderProgram("src/week09/instanced_directional_depth_vertex.glsl", "src/week09/directional_depth_fragment.glsl");
-    pointDepthShaderProgram = createShaderProgram(
-        "src/week09/point_depth_vertex.glsl",
-        "src/week09/point_depth_geometry.glsl",
-        "src/week09/point_depth_fragment.glsl");
+    pointDepthShaderProgram = createShaderProgram("src/week09/point_depth_vertex.glsl", "src/week09/point_depth_geometry.glsl", "src/week09/point_depth_fragment.glsl");
     normalMappingShaderProgram = createShaderProgram("src/week09/normal_mapping_vertex.glsl", "src/week09/normal_mapping_fragment.glsl");
 
     containerTexture = loadTexture("assets/textures/container.png", true);
@@ -265,6 +262,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     ceilingDiffuseTexture = loadTexture("assets/textures/plaster_color.jpg", true);
     containerSpecularTexture = loadTexture("assets/textures/container_specular.png", false);
     brickNormalTexture = loadTexture("assets/textures/brickwall_normal.jpg", false);
+    brickDepthTexture = loadTexture("assets/textures/brickwall_disp.jpg", false);
     floorNormalTexture = loadTexture("assets/textures/wood_floor_normal.jpg", false);
     ceilingNormalTexture = loadTexture("assets/textures/plaster_normal.jpg", false);
     glassTexture = loadTransparentTexture("assets/textures/window.png", true);
@@ -400,6 +398,8 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     normalMappingUniforms.lightEnabled = location(normalMappingShaderProgram, "lightEnabled");
     normalMappingUniforms.diffuseMap = location(normalMappingShaderProgram, "diffuseMap");
     normalMappingUniforms.normalMap = location(normalMappingShaderProgram, "normalMap");
+    normalMappingUniforms.depthMap = location(normalMappingShaderProgram, "depthMap");
+    normalMappingUniforms.heightScale = location(normalMappingShaderProgram, "heightScale");
     normalMappingUniforms.uvScale = location(normalMappingShaderProgram, "uvScale");
     normalMappingUniforms.normalStrength = location(normalMappingShaderProgram, "normalStrength");
     normalMappingUniforms.pointShadowMap = location(normalMappingShaderProgram, "pointShadowMap");
@@ -421,6 +421,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     glUniform1i(normalMappingUniforms.pointShadowsEnabled, !outdoorModeEnabled && light1Enabled);
     glUniform1i(normalMappingUniforms.diffuseMap, 0);
     glUniform1i(normalMappingUniforms.normalMap, 1);
+    glUniform1i(normalMappingUniforms.depthMap, 2);
     glUniform1i(normalMappingUniforms.pointShadowMap, 4);
 
     glUseProgram(glassShaderProgram);
@@ -446,6 +447,15 @@ void Week09Scene::handleInput(GLFWwindow* window)
     if (toggleOnKeyPress(window, GLFW_KEY_V, keyVWasPressed, depthDebugEnabled) && depthDebugEnabled)
     {
         normalDebugEnabled = false;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    {
+        parallaxHeightScale = glm::max(0.0f, parallaxHeightScale - 0.0005f);
+    }
+    else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    {
+        parallaxHeightScale = glm::min(0.1f, parallaxHeightScale + 0.0005f);
     }
 
     toggleOnKeyPress(window, GLFW_KEY_P, keyPWasPressed, outlineEnabled);
@@ -1341,7 +1351,9 @@ void Week09Scene::drawNormalMappedSurface(
     const glm::vec2& uvScale,
     GLuint diffuseTexture,
     GLuint normalTexture,
+    GLuint depthTexture,
     float normalStrength,
+    float heightScale,
     const glm::mat4& view,
     const glm::mat4& projection,
     const glm::vec3& cameraPos,
@@ -1358,8 +1370,10 @@ void Week09Scene::drawNormalMappedSurface(
     glUniform1i(normalMappingUniforms.lightEnabled, !outdoorModeEnabled && light1Enabled);
     glUniform2f(normalMappingUniforms.uvScale, uvScale.x, uvScale.y);
     glUniform1f(normalMappingUniforms.normalStrength, normalStrength);
+    glUniform1f(normalMappingUniforms.heightScale,heightScale);
     bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, diffuseTexture);
     bindTexture(GL_TEXTURE1, GL_TEXTURE_2D, normalTexture);
+    bindTexture(GL_TEXTURE2, GL_TEXTURE_2D, depthTexture);
 
     const GLboolean cullingWasEnabled = glIsEnabled(GL_CULL_FACE);
     glDisable(GL_CULL_FACE);
@@ -1397,16 +1411,23 @@ void Week09Scene::drawNormalMappedRoomWalls(
     for (const Wall& wall : walls)
     {
         drawNormalMappedSurface(
-            makeTransform(wall.position, glm::vec3(3.0f, 2.0f, 1.0f), wall.rotation),
+            makeTransform(
+                wall.position,
+                glm::vec3(3.0f, 2.0f, 1.0f),
+                wall.rotation
+            ),
             glm::vec2(4.0f, 3.0f),
             brickDiffuseTexture,
             brickNormalTexture,
+            brickDepthTexture,
             1.0f,
+            parallaxHeightScale,
             view,
             projection,
             cameraPos,
             lightPos,
-            lightColor);
+            lightColor
+        );
     }
 }
 
@@ -1437,16 +1458,20 @@ void Week09Scene::drawNormalMappedFloorAndCeiling(
                 surface.position,
                 glm::vec3(3.0f, 3.0f, 1.0f),
                 surface.rotation,
-                glm::vec3(1.0f, 0.0f, 0.0f)),
+                glm::vec3(1.0f, 0.0f, 0.0f)
+            ),
             surface.uvScale,
             brickDiffuseTexture,
             brickNormalTexture,
+            brickDepthTexture,
             surface.normalStrength,
+            parallaxHeightScale,
             view,
             projection,
             cameraPos,
             lightPos,
-            lightColor);
+            lightColor
+        );
     }
 }
 
@@ -1465,6 +1490,7 @@ void Week09Scene::cleanup()
         pointDepthCubemap,
         brickDiffuseTexture,
         brickNormalTexture,
+        brickDepthTexture,
         floorDiffuseTexture,
         floorNormalTexture,
         ceilingDiffuseTexture,

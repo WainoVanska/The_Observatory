@@ -13,14 +13,24 @@
 | Main scene length | 3862 lines | 1520 lines | 
 | Project organization | Everything mixed under `src/common` and `src/week09` | Code is separated into `src/app`, `src/engine` and `src/scenes` |
 | Shader organization | Shader files stored with C++ files | 25 shader files are `assets/shaders/scene` and `assets/shaders/skybox` |
-| Uniform calls | Many repeated `glUniform` calls | Shared helper functions used for matrices, vectors, textures and lighting values |
-| Repeated rendering code | Input handling, transformations, model setup, room rendering and tangent calculations with repeated code | Reusable helpers, shared configuration functions and rendering loops
+| Uniform calls | Many repeated `glUniform` calls | Shared helper functions for matrices, vectors, textures and lighting values |
+| Repeated rendering code | Input handling, transformations, model setup, room rendering and tangent calculations with repeated code | Reusable helpers, configuration functions and rendering loops
+
+- about parallax mapping. At least for my scene the effect had to be subtle (meaning low displacement values) in order to still look good. However this effect was a nice addition to the depth of the brickwall, I played around with the displacement values by having Q and E keys tweak the values up and down to find the best result without ruining the texture quality too much. The result depends quite a bit on how far you look at the brickwall from and from what angle you're looking at it.
+
+*sliding my displacement value from high to low to see difference between parallax + normal mapping vs. only normal mapping*
+
+<img src="../learning_log_images//parallax_mapping.gif" width="700" alt="Parallax mapping">
 
 ## I struggled:
 
 - with getting the previous features like debuggers to work with the new features. I should decide on what I want my end product to look like, since now I'm increasingly wasting time on constant and repetitious tweaks on the old feature compabilities. Although I think the refactoring helps on this issue a bit.
 
+- understanding the implementation of parallax occlusion mapping. Even after reading the LearnOpenGL chapter on [Parallax Mapping](https://learnopengl.com/Advanced-Lighting/Parallax-Mapping) I can't say I understand the vector math or the details of the implementation. Even though I used AI to help guide me through the implementation, I think it was worth it because playing around with the displacement values helped conceptualize the difference that parallax mapping compared to normal mapping.
+
 ## Thoughts:
 
 - The refactoring was long overdue and needed to continue learning further with the current scene. From now on I won't have to repeat so much of the same code and can focus more on the new implementations versus looking for small syntax errors from a code mess.
     - Refactoring is still not perfect, with more effort the amount of files could be reduced since the shaders still have repetitive elements (some shaders are close to identical so there's probably a better way). However I think for now this will do, more thorough refactoring could be implemented when I have a final version of all the functions in this repository.
+
+- Parallax mapping in my scene makes the brickwall texture lose some of its dark features in between the bricks which I don't like that much. In this case we're looking at tradeoffs, I wonder if a different texture would prevent the problem.

@@ -166,8 +166,11 @@ private:
 
         GLuint diffuseMap;
         GLuint normalMap;
+        GLuint depthMap;
+
         GLuint uvScale;
         GLuint normalStrength;
+        GLuint heightScale;
 
         GLuint pointShadowMap;
         GLuint pointShadowFarPlane;
@@ -272,7 +275,9 @@ private:
         const glm::vec2& uvScale,
         GLuint diffuseTexture,
         GLuint normalTexture,
+        GLuint depthTexture,
         float normalStrength,
+        float heightScale,
         const glm::mat4& view,
         const glm::mat4& projection,
         const glm::vec3& cameraPos,
@@ -365,6 +370,9 @@ private:
 
     GLuint brickDiffuseTexture = 0;
     GLuint brickNormalTexture = 0;
+    GLuint brickDepthTexture = 0;
+
+    float parallaxHeightScale = 0.025f;
 
     GLuint floorDiffuseTexture = 0;
     GLuint floorNormalTexture = 0;
