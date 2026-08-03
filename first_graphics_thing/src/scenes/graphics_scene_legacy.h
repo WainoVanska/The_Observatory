@@ -372,7 +372,7 @@ private:
     GLuint brickNormalTexture = 0;
     GLuint brickDepthTexture = 0;
 
-    float parallaxHeightScale = 0.025f;
+    float parallaxHeightScale = 0.017f;
 
     GLuint floorDiffuseTexture = 0;
     GLuint floorNormalTexture = 0;

@@ -118,8 +118,8 @@ vec2 parallaxOcclusionMapping(vec2 texCoords, vec3 tangentViewDir)
         return texCoords;
     }
 
-    const float minLayers = 8.0;
-    const float maxLayers = 32.0;
+    const float minLayers = 16.0;
+    const float maxLayers = 64.0;
 
     float viewAlignment = clamp(tangentViewDir.z, 0.0, 1.0);
     float numLayers = mix(maxLayers, minLayers, viewAlignment);
