@@ -26,6 +26,10 @@ uniform vec3 lightPos;
 uniform vec3 lightColor;
 uniform vec3 viewPos;
 
+uniform vec3 wallLightPos;
+uniform vec3 wallLightColor;
+uniform bool wallLightEnabled;
+
 uniform bool lightEnabled;
 
 const vec3 pointShadowSampleOffsets[20] = vec3[]
@@ -209,6 +213,46 @@ tiledTexCoords =
         );
 
         result += attenuation * (1.0 - shadow) * (diffuse + specular);
+    }
+
+    if (wallLightEnabled)
+    {
+        vec3 lightDir =
+            normalize(wallLightPos - fs_in.FragPos);
+
+        vec3 halfwayDir =
+            normalize(lightDir + worldViewDir);
+
+        float diffuseStrength =
+            max(dot(mappedNormal, lightDir), 0.0);
+
+        vec3 diffuse =
+            diffuseStrength *
+            wallLightColor *
+            baseColor;
+
+        float specularStrength = pow(
+            max(dot(mappedNormal, halfwayDir), 0.0),
+            32.0
+        );
+
+        vec3 specular =
+            0.15 *
+            specularStrength *
+            wallLightColor;
+
+        float distanceToLight =
+            length(wallLightPos - fs_in.FragPos);
+
+        float attenuation = 1.0 / (
+            1.0 +
+            0.14 * distanceToLight +
+            0.07 * distanceToLight * distanceToLight
+        );
+
+        result +=
+            attenuation *
+            (diffuse + specular);
     }
 
     FragColor = vec4(result, 1.0);

@@ -63,6 +63,10 @@ private:
         GLuint pointShadowMap;
         GLuint pointShadowFarPlane;
         GLuint pointShadowsEnabled;
+
+        GLuint wallLightPos;
+        GLuint wallLightColor;
+        GLuint wallLightEnabled;
     };
 
     struct LampShaderUniforms
@@ -136,6 +140,10 @@ private:
 
         GLuint skybox;
         GLuint glassBackpackEnabled;
+
+        GLuint wallLightPos;
+        GLuint wallLightColor;
+        GLuint wallLightEnabled;
     };
 
     struct ModelOutlineShaderUniforms
@@ -175,13 +183,17 @@ private:
         GLuint pointShadowMap;
         GLuint pointShadowFarPlane;
         GLuint pointShadowsEnabled;
+
+        GLuint wallLightPos;
+        GLuint wallLightColor;
+        GLuint wallLightEnabled;
     };
 
     void drawLitObjects();
     void drawNormalDebugObjects();
     glm::mat4 createBackpackModelMatrix() const;
     glm::mat4 createOutdoorGroundModelMatrix() const;
-    void drawLampMarker(const glm::vec3& position, const glm::vec3& color);
+    glm::mat4 createWallLampModelMatrix() const;
     void drawBackpack(
         const glm::mat4& view,
         const glm::mat4& projection,
@@ -301,6 +313,12 @@ private:
         const glm::vec3& lightColor
     );
 
+    void drawLampMarker(
+        const glm::vec3& position,
+        const glm::vec3& color,
+        float scale = 0.15f
+    );
+
     GLuint shaderProgram = 0;
     GLuint lampShaderProgram = 0;
     GLuint normalDebugShaderProgram = 0;
@@ -318,6 +336,7 @@ private:
     SkyBox* skybox = nullptr;
     Model* planet = nullptr;
     Model* rock = nullptr;
+    Model* wallLamp = nullptr;
 
     GLuint containerTexture = 0;
     GLuint containerSpecularTexture = 0;
@@ -375,7 +394,7 @@ private:
     float parallaxHeightScale = 0.017f;
 
     GLuint floorDiffuseTexture = 0;
-    GLuint floorNormalTexture = 0;
+    GLuint floorNormalTexture = 0; 
 
     GLuint ceilingDiffuseTexture = 0;
     GLuint ceilingNormalTexture = 0;

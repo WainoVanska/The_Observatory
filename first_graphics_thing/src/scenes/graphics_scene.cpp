@@ -66,6 +66,24 @@ namespace
         return glm::vec3(1.0f, 0.95f, 0.80f);
     }
 
+    const glm::vec3 WALL_LAMP_POSITION(
+        0.0f,
+        1.15f,
+        -2.86f
+    );
+
+    const glm::vec3 WALL_LIGHT_POSITION(
+        0.0f,
+        1.30f,
+        -2.60f
+    );
+
+    const glm::vec3 WALL_LIGHT_COLOR(
+        0.70f,
+        0.63f,
+        0.50f
+    );
+
     bool toggleOnKeyPress(GLFWwindow* window, int key, bool& wasPressed, bool& value)
     {
         const bool isPressed = glfwGetKey(window, key) == GLFW_PRESS;
@@ -270,6 +288,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     backpack = new Model("assets/models/backpack/backpack.obj");
     planet = new Model("assets/models/planet/planet.obj");
     rock = new Model("assets/models/rock/rock.obj");
+    wallLamp = new Model("assets/models/industrial_wall_lamp/industrial_wall_lamp_1k.gltf");
     cube = createCubeMesh();
     sphere = createSphereMesh();
 
@@ -334,6 +353,9 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     lightingUniforms.pointShadowMap = location(shaderProgram, "pointShadowMap");
     lightingUniforms.pointShadowFarPlane = location(shaderProgram, "pointShadowFarPlane");
     lightingUniforms.pointShadowsEnabled = location(shaderProgram, "pointShadowsEnabled");
+    lightingUniforms.wallLightPos = location(shaderProgram, "wallLightPos");
+    lightingUniforms.wallLightColor = location(shaderProgram, "wallLightColor");
+    lightingUniforms.wallLightEnabled = location(shaderProgram, "wallLightEnabled");
 
     lampUniforms.model = location(lampShaderProgram, "model");
     lampUniforms.view = location(lampShaderProgram, "view");
@@ -381,6 +403,9 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     modelUniforms.flashlightOuterCutOff = location(modelShaderProgram, "flashlightOuterCutOff");
     modelUniforms.skybox = location(modelShaderProgram, "skybox");
     modelUniforms.glassBackpackEnabled = location(modelShaderProgram, "glassBackpackEnabled");
+    modelUniforms.wallLightPos = location(modelShaderProgram, "wallLightPos");
+    modelUniforms.wallLightColor = location(modelShaderProgram, "wallLightColor");
+    modelUniforms.wallLightEnabled = location(modelShaderProgram, "wallLightEnabled");
 
     modelOutlineUniforms.model = location(modelOutlineShaderProgram, "model");
     modelOutlineUniforms.view = location(modelOutlineShaderProgram, "view");
@@ -405,6 +430,9 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     normalMappingUniforms.pointShadowMap = location(normalMappingShaderProgram, "pointShadowMap");
     normalMappingUniforms.pointShadowFarPlane = location(normalMappingShaderProgram, "pointShadowFarPlane");
     normalMappingUniforms.pointShadowsEnabled = location(normalMappingShaderProgram, "pointShadowsEnabled");
+    normalMappingUniforms.wallLightPos = location(normalMappingShaderProgram, "wallLightPos");
+    normalMappingUniforms.wallLightColor = location(normalMappingShaderProgram, "wallLightColor");
+    normalMappingUniforms.wallLightEnabled = location(normalMappingShaderProgram, "wallLightEnabled");
 
     glUseProgram(shaderProgram);
     glUniform1i(lightingUniforms.directionalShadowMap, 3);
@@ -476,6 +504,7 @@ void Week09Scene::draw(
     const glm::vec3 lightColor(0.70f, 0.63f, 0.50f);
     const glm::vec3 secondLightPos(-2.0f, 2.2f, -2.0f);
     const glm::vec3 secondLightColor(0.3f, 0.5f, 1.0f);
+    const bool wallLightEnabled = !outdoorModeEnabled && light1Enabled;
     glm::mat4 lightSpaceMatrix(1.0f);
 
     glEnable(GL_DEPTH_TEST);
@@ -536,17 +565,36 @@ void Week09Scene::draw(
     setVector(lightingUniforms.lightColor, lightColor);
     setVector(lightingUniforms.secondLightPos, secondLightPos);
     setVector(lightingUniforms.secondLightColor, secondLightColor);
+
+    setVector(lightingUniforms.wallLightPos, WALL_LIGHT_POSITION);
+    setVector(lightingUniforms.wallLightColor, WALL_LIGHT_COLOR);
+    glUniform1i(lightingUniforms.wallLightEnabled, wallLightEnabled);
+
     setVector(lightingUniforms.flashlightPos, cameraPos);
     setVector(lightingUniforms.flashlightDir, cameraFront);
     glUniform1i(lightingUniforms.flashlightEnabled, flashlightEnabled);
     glUniform1f(lightingUniforms.flashlightCutOff, glm::cos(glm::radians(FLASHLIGHT_INNER_ANGLE)));
     glUniform1f(lightingUniforms.flashlightOuterCutOff, glm::cos(glm::radians(FLASHLIGHT_OUTER_ANGLE)));
 
+    glUseProgram(modelShaderProgram);
+
+    setVector(modelUniforms.wallLightPos, WALL_LIGHT_POSITION);
+    setVector(modelUniforms.wallLightColor, WALL_LIGHT_COLOR);
+    glUniform1i(modelUniforms.wallLightEnabled, wallLightEnabled);
+
+    glUseProgram(shaderProgram);
+
     glStencilMask(0x00);
     drawLitObjects();
 
     if (!outdoorModeEnabled)
     {
+        glUseProgram(normalMappingShaderProgram);
+
+        setVector(normalMappingUniforms.wallLightPos, WALL_LIGHT_POSITION);
+        setVector(normalMappingUniforms.wallLightColor, WALL_LIGHT_COLOR);
+        glUniform1i(normalMappingUniforms.wallLightEnabled, wallLightEnabled);
+
         drawNormalMappedRoomWalls(view, projection, cameraPos, lightPos, lightColor);
         drawNormalMappedFloorAndCeiling(view, projection, cameraPos, lightPos, lightColor);
     }
@@ -580,6 +628,57 @@ void Week09Scene::draw(
         glStencilMask(0xFF);
     }
 
+    if (wallLamp && !outdoorModeEnabled)
+    {
+        glUseProgram(modelShaderProgram);
+
+        configureModelPointShadows();
+
+        glUniform1i(
+            modelUniforms.glassBackpackEnabled,
+            false
+        );
+
+        configureModelLighting(
+            modelUniforms,
+            view,
+            projection,
+            cameraPos,
+            cameraFront,
+            lightPos,
+            lightColor,
+            secondLightPos,
+            secondLightColor,
+            !outdoorModeEnabled && light1Enabled,
+            !outdoorModeEnabled && light2Enabled,
+            outdoorModeEnabled,
+            flashlightEnabled
+        );
+
+        setVector(
+            modelUniforms.wallLightPos,
+            WALL_LIGHT_POSITION
+        );
+        setVector(
+            modelUniforms.wallLightColor,
+            WALL_LIGHT_COLOR
+        );
+        glUniform1i(
+            modelUniforms.wallLightEnabled,
+            wallLightEnabled
+        );
+
+        setMatrix(
+            modelUniforms.model,
+            createWallLampModelMatrix()
+        );
+
+        wallLamp->draw(modelShaderProgram);
+    }
+
+    glStencilMask(0x00);
+    glUseProgram(lampShaderProgram);
+
     glStencilMask(0x00);
     glUseProgram(lampShaderProgram);
     setMatrix(lampUniforms.view, view);
@@ -589,7 +688,16 @@ void Week09Scene::draw(
     {
         if (light1Enabled)
         {
-            drawLampMarker(lightPos, glm::vec3(1.0f, 1.0f, 0.3f));
+            drawLampMarker(
+                lightPos,
+                glm::vec3(1.0f, 1.0f, 0.3f)
+            );
+
+            drawLampMarker(
+                WALL_LIGHT_POSITION,
+                glm::vec3(1.0f, 0.75f, 0.25f),
+                0.075f
+            );
         }
         if (light2Enabled)
         {
@@ -666,13 +774,17 @@ void Week09Scene::drawDepthDebugObjects()
     drawDebugPrimitives(cube, sphere, depthDebugUniforms.model, containerTexture);
 }
 
-void Week09Scene::drawLampMarker(const glm::vec3& position, const glm::vec3& color)
+void Week09Scene::drawLampMarker(
+    const glm::vec3& position,
+    const glm::vec3& color,
+    float scale)
 {
     setVector(lampUniforms.color, color);
+
     drawCube(
         cube.VAO,
         lampUniforms.model,
-        makeTransform(position, glm::vec3(0.15f)));
+        makeTransform(position, glm::vec3(scale)));
 }
 
 void Week09Scene::drawBackpack(
@@ -1368,6 +1480,9 @@ void Week09Scene::drawNormalMappedSurface(
     setVector(normalMappingUniforms.lightPos, lightPos);
     setVector(normalMappingUniforms.lightColor, lightColor);
     glUniform1i(normalMappingUniforms.lightEnabled, !outdoorModeEnabled && light1Enabled);
+    setVector(normalMappingUniforms.wallLightPos,WALL_LIGHT_POSITION);
+    setVector(normalMappingUniforms.wallLightColor, WALL_LIGHT_COLOR);
+    glUniform1i(normalMappingUniforms.wallLightEnabled, !outdoorModeEnabled && light1Enabled);
     glUniform2f(normalMappingUniforms.uvScale, uvScale.x, uvScale.y);
     glUniform1f(normalMappingUniforms.normalStrength, normalStrength);
     glUniform1f(normalMappingUniforms.heightScale,heightScale);
@@ -1475,6 +1590,16 @@ void Week09Scene::drawNormalMappedFloorAndCeiling(
     }
 }
 
+glm::mat4 Week09Scene::createWallLampModelMatrix() const
+{
+    return makeTransform(
+        WALL_LAMP_POSITION,
+        glm::vec3(1.0f),
+        180.0f,
+        glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+}
+
 void Week09Scene::cleanup()
 {
     deleteCubeMesh(cube);
@@ -1543,4 +1668,6 @@ void Week09Scene::cleanup()
     planet = nullptr;
     delete rock;
     rock = nullptr;
+    delete wallLamp;
+    wallLamp = nullptr;
 }
