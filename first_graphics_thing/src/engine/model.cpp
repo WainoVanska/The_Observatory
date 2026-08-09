@@ -1,5 +1,7 @@
 #include "model.h"
 
+#include <assimp/material.h>
+
 #include <iostream>
 
 #include "texture.h"
@@ -83,6 +85,9 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
     std::vector<unsigned int> indices;
     std::vector<MeshTexture> textures;
 
+    bool isTransparent = false;
+    float opacity = 1.0f;
+
     for (unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
         Vertex vertex{};
@@ -135,6 +140,20 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
     {
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
+        ai_real transmissionFactor = 0.0f;
+
+        if (
+            material->Get(
+                AI_MATKEY_TRANSMISSION_FACTOR,
+                transmissionFactor
+            ) == AI_SUCCESS &&
+            transmissionFactor > 0.0f
+            )
+        {
+            isTransparent = true;
+            opacity = 0.35f;
+        }
+
         std::vector<MeshTexture> diffuseMaps = loadMaterialTextures(
             material,
             aiTextureType_DIFFUSE,
@@ -172,7 +191,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
         );
     }
 
-    return Mesh(vertices, indices, textures);
+    return Mesh(vertices, indices, textures, isTransparent, opacity);
 }
 
 std::vector<MeshTexture> Model::loadMaterialTextures(

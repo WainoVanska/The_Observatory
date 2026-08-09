@@ -74,6 +74,7 @@ struct Material
     bool hasEmissiveMap;
 
     float shininess;
+    float opacity;
 };
 
 uniform Material material;
@@ -401,5 +402,5 @@ void main()
     result += getEmissiveColor();
 
 
-    FragColor = vec4(result, 1.0);
+    FragColor = vec4(result, material.opacity);
 }

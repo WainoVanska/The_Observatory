@@ -69,13 +69,13 @@ namespace
     const glm::vec3 WALL_LAMP_POSITION(
         0.0f,
         1.15f,
-        -2.95f
+        -2.90f
     );
 
     const glm::vec3 WALL_LIGHT_POSITION(
         0.0f,
         1.15f,
-        -2.90f
+        -2.30f
     );
 
     const glm::vec3 WALL_LIGHT_COLOR(

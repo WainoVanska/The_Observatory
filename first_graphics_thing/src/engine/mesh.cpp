@@ -5,12 +5,16 @@
 Mesh::Mesh(
     const std::vector<Vertex>& vertices,
     const std::vector<unsigned int>& indices,
-    const std::vector<MeshTexture>& textures
+    const std::vector<MeshTexture>& textures,
+    bool isTransparent,
+    float opacity
 )
 {
     this->vertices = vertices;
     this->indices = indices;
     this->textures = textures;
+    this->isTransparent = isTransparent;
+    this->opacity = opacity;
 
     setupMesh();
 }
@@ -179,6 +183,36 @@ void Mesh::draw(GLuint shaderProgram) const
         hasEmissiveMap
     );
 
+    glUniform1f(
+        glGetUniformLocation(
+            shaderProgram,
+            "material.opacity"
+        ),
+        opacity
+    );
+
+    const GLboolean blendingWasEnabled =
+        glIsEnabled(GL_BLEND);
+
+    GLboolean depthWritingWasEnabled = GL_TRUE;
+
+    glGetBooleanv(
+        GL_DEPTH_WRITEMASK,
+        &depthWritingWasEnabled
+    );
+
+    if (isTransparent)
+    {
+        glEnable(GL_BLEND);
+
+        glBlendFunc(
+            GL_SRC_ALPHA,
+            GL_ONE_MINUS_SRC_ALPHA
+        );
+
+        glDepthMask(GL_FALSE);
+    }
+
     glBindVertexArray(VAO);
     glDrawElements(
         GL_TRIANGLES,
@@ -186,7 +220,18 @@ void Mesh::draw(GLuint shaderProgram) const
         GL_UNSIGNED_INT,
         0
     );
+
     glBindVertexArray(0);
+
+    if (isTransparent)
+    {
+        glDepthMask(depthWritingWasEnabled);
+
+        if (!blendingWasEnabled)
+        {
+            glDisable(GL_BLEND);
+        }
+    }
 
     glActiveTexture(GL_TEXTURE0);
 }
@@ -266,6 +311,14 @@ void Mesh::drawInstanced(
             "material.hasEmissiveMap"
         ),
         hasEmissiveMap
+    );
+
+    glUniform1f(
+        glGetUniformLocation(
+            shaderProgram,
+            "material.opacity"
+        ),
+        opacity
     );
 
     glBindVertexArray(VAO);

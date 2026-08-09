@@ -31,7 +31,9 @@ public:
     Mesh(
         const std::vector<Vertex>& vertices,
         const std::vector<unsigned int>& indices,
-        const std::vector<MeshTexture>& textures
+        const std::vector<MeshTexture>& textures,
+        bool isTransparent = false,
+        float opacity = 1.0f
     );
 
     void draw(GLuint shaderProgram) const;
@@ -43,6 +45,9 @@ private:
     GLuint VAO = 0;
     GLuint VBO = 0;
     GLuint EBO = 0;
+
+    bool isTransparent = false;
+    float opacity = 1.0f;
 
     void setupMesh();
 };
