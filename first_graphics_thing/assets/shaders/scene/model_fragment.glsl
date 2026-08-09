@@ -33,6 +33,10 @@ uniform samplerCube pointShadowMap;
 uniform float pointShadowFarPlane;
 uniform bool pointShadowsEnabled;
 
+uniform vec3 wallLightPos;
+uniform vec3 wallLightColor;
+uniform bool wallLightEnabled;
+
 const vec3 pointShadowSampleOffsets[20] = vec3[]
 (
     vec3( 1.0,  1.0,  1.0),
@@ -352,6 +356,17 @@ void main()
             viewDir
         );
     }
+
+    if (wallLightEnabled)
+{
+    result += calculatePointLight(
+        wallLightPos,
+        wallLightColor,
+        norm,
+        viewDir,
+        false
+    );
+}
 
     if (flashlightEnabled)
     {

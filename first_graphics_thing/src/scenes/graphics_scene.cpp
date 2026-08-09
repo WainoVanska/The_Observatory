@@ -69,13 +69,13 @@ namespace
     const glm::vec3 WALL_LAMP_POSITION(
         0.0f,
         1.15f,
-        -2.86f
+        -2.95f
     );
 
     const glm::vec3 WALL_LIGHT_POSITION(
         0.0f,
-        1.30f,
-        -2.60f
+        1.15f,
+        -2.90f
     );
 
     const glm::vec3 WALL_LIGHT_COLOR(
@@ -696,7 +696,7 @@ void Week09Scene::draw(
             drawLampMarker(
                 WALL_LIGHT_POSITION,
                 glm::vec3(1.0f, 0.75f, 0.25f),
-                0.075f
+                0.045f
             );
         }
         if (light2Enabled)
@@ -1594,9 +1594,7 @@ glm::mat4 Week09Scene::createWallLampModelMatrix() const
 {
     return makeTransform(
         WALL_LAMP_POSITION,
-        glm::vec3(1.0f),
-        180.0f,
-        glm::vec3(0.0f, 1.0f, 0.0f)
+        glm::vec3(1.0f)
     );
 }
 
