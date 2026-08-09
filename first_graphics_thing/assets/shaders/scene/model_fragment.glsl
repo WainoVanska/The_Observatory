@@ -105,12 +105,22 @@ vec3 getEmissiveColor()
         return vec3(0.0);
     }
 
-    const float emissiveStrength = 5.0;
-
-    return texture(
+    vec3 emissiveMask = texture(
         material.texture_emissive1,
         TexCoords
-    ).rgb * emissiveStrength;
+    ).rgb;
+
+    const vec3 warmColor = vec3(
+        1.0,
+        0.35,
+        0.08
+    );
+
+    const float emissiveStrength = 1.0;
+
+    return emissiveMask *
+        warmColor *
+        emissiveStrength;
 }
 
 float calculatePointShadow(

@@ -151,7 +151,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
             )
         {
             isTransparent = true;
-            opacity = 0.35f;
+            opacity = 0.45f;
         }
 
         std::vector<MeshTexture> diffuseMaps = loadMaterialTextures(
