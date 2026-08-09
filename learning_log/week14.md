@@ -4,9 +4,6 @@
 
 - reviewed parallax mapping chapter and code from last time. Now I think I have a more clear understanding on what happens with parallax mapping: texture coordinates (UVs) are pushed back according to the depth map through the displacement method. The fragment positions of the wall themselves don't change. The data for the displacement is derived from the view direction that has been converted to tangent space since texture UVs axes live in that space. Basically normal mapping and parallax mapping compliment each other in a nice way since they focus on separate things (normal mapping focuses on the depth that comes from lighting).
 
-<img src="../learning_log_images/normal_mapped_shadows.png" alt="-" width="500">
-
-
 ## I struggled:
 
 

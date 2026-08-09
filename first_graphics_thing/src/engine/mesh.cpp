@@ -109,9 +109,11 @@ void Mesh::draw(GLuint shaderProgram) const
 {
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
+    unsigned int emissiveNr = 1;
 
     bool hasDiffuseMap = false;
     bool hasSpecularMap = false;
+    bool hasEmissiveMap = false;
 
     for (unsigned int i = 0; i < textures.size(); i++)
     {
@@ -129,6 +131,11 @@ void Mesh::draw(GLuint shaderProgram) const
         {
             number = std::to_string(specularNr++);
             hasSpecularMap = true;
+        }
+        else if (name == "texture_emissive")
+        {
+            number = std::to_string(emissiveNr++);
+            hasEmissiveMap = true;
         }
 
         std::string uniformName =
@@ -164,6 +171,14 @@ void Mesh::draw(GLuint shaderProgram) const
         hasSpecularMap
     );
 
+    glUniform1i(
+        glGetUniformLocation(
+            shaderProgram,
+            "material.hasEmissiveMap"
+        ),
+        hasEmissiveMap
+    );
+
     glBindVertexArray(VAO);
     glDrawElements(
         GL_TRIANGLES,
@@ -183,9 +198,11 @@ void Mesh::drawInstanced(
 {
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
+    unsigned int emissiveNr = 1;
 
     bool hasDiffuseMap = false;
     bool hasSpecularMap = false;
+    bool hasEmissiveMap = false;
 
     for (unsigned int i = 0; i < textures.size(); i++)
     {
@@ -203,6 +220,11 @@ void Mesh::drawInstanced(
         {
             number = std::to_string(specularNr++);
             hasSpecularMap = true;
+        }
+        else if (name == "texture_emissive")
+        {
+            number = std::to_string(emissiveNr++);
+            hasEmissiveMap = true;
         }
 
         const std::string uniformName =
@@ -236,6 +258,14 @@ void Mesh::drawInstanced(
             "material.hasSpecularMap"
         ),
         hasSpecularMap
+    );
+
+    glUniform1i(
+        glGetUniformLocation(
+            shaderProgram,
+            "material.hasEmissiveMap"
+        ),
+        hasEmissiveMap
     );
 
     glBindVertexArray(VAO);

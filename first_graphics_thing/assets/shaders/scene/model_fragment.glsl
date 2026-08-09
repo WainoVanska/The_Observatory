@@ -69,6 +69,10 @@ struct Material
 {
     sampler2D texture_diffuse1;
     sampler2D texture_specular1;
+    sampler2D texture_emissive1;
+
+    bool hasEmissiveMap;
+
     float shininess;
 };
 
@@ -88,6 +92,24 @@ vec3 getSpecularColor()
         material.texture_specular1,
         TexCoords
     ).rgb;
+}
+
+vec3 getEmissiveColor()
+{
+    if (
+        !material.hasEmissiveMap ||
+        !wallLightEnabled
+    )
+    {
+        return vec3(0.0);
+    }
+
+    const float emissiveStrength = 5.0;
+
+    return texture(
+        material.texture_emissive1,
+        TexCoords
+    ).rgb * emissiveStrength;
 }
 
 float calculatePointShadow(
@@ -358,15 +380,15 @@ void main()
     }
 
     if (wallLightEnabled)
-{
-    result += calculatePointLight(
-        wallLightPos,
-        wallLightColor,
-        norm,
-        viewDir,
-        false
-    );
-}
+    {
+        result += calculatePointLight(
+            wallLightPos,
+            wallLightColor,
+            norm,
+            viewDir,
+            false
+        );
+    }
 
     if (flashlightEnabled)
     {
@@ -375,6 +397,9 @@ void main()
             viewDir
         );
     }
+
+    result += getEmissiveColor();
+
 
     FragColor = vec4(result, 1.0);
 }

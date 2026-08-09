@@ -158,6 +158,18 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
             specularMaps.begin(),
             specularMaps.end()
         );
+
+        std::vector<MeshTexture> emissiveMaps = loadMaterialTextures(
+            material,
+            aiTextureType_EMISSIVE,
+            "texture_emissive"
+        );
+
+        textures.insert(
+            textures.end(),
+            emissiveMaps.begin(),
+            emissiveMaps.end()
+        );
     }
 
     return Mesh(vertices, indices, textures);
@@ -198,10 +210,11 @@ std::vector<MeshTexture> Model::loadMaterialTextures(
                 directory + "/" + pathString;
 
 
-            // Diffuse maps contain surface colors that are in sRGB space, while spec. maps remain in linear space
+            // Diffuse and emissive maps contain surface colors that are in sRGB space, while spec. maps remain in linear space
 
             const bool useSRGB =
-                type == aiTextureType_DIFFUSE;
+                type == aiTextureType_DIFFUSE ||
+                type == aiTextureType_EMISSIVE;
 
             texture.id = loadTexture(
                 fullPath,
