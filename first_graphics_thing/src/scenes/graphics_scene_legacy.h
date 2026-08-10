@@ -440,7 +440,17 @@ private:
     GlassShaderUniforms glassUniforms{};
     NormalMappingShaderUniforms normalMappingUniforms{};
 
-    std::vector<glm::vec3> glassPanePositions{};
+    struct GlassSurface
+    {
+        glm::vec3 position;
+        glm::vec3 scale;
+        float yRotation;
+        bool optional;
+        GLuint texture;
+    };
+
+    std::vector<GlassSurface> glassSurfaces{};
+
     std::vector<glm::mat4> asteroidMatrices;
 
     bool light1Enabled = false;

@@ -20,6 +20,16 @@ namespace
     constexpr float FLASHLIGHT_INNER_ANGLE = 10.0f;
     constexpr float FLASHLIGHT_OUTER_ANGLE = 28.0f;
 
+    const glm::vec3 DISTANT_PLANET_POSITION(
+        0.0f,
+        6.0f,
+        -80.0f
+    );
+
+    constexpr float DISTANT_PLANET_SCALE = 12.0f;
+
+    constexpr float DISTANT_ASTEROID_SYSTEM_SCALE = 0.40f;
+
     GLint uniformLocation(GLuint program, const char* name)
     {
         return glGetUniformLocation(program, name);
@@ -67,15 +77,15 @@ namespace
     }
 
     const glm::vec3 WALL_LAMP_POSITION(
-        0.0f,
+        2.86f,
         1.15f,
-        -2.90f
+        0.0f
     );
 
     const glm::vec3 WALL_LIGHT_POSITION(
-        0.0f,
-        1.15f,
-        -2.345f
+        2.60f,
+        1.30f,
+        0.0f
     );
 
     const glm::vec3 WALL_LIGHT_COLOR(
@@ -285,7 +295,8 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     brickDepthTexture = loadTexture("assets/textures/brickwall_disp.jpg", false);
     floorNormalTexture = loadTexture("assets/textures/wood_floor_normal.jpg", false);
     ceilingNormalTexture = loadTexture("assets/textures/plaster_normal.jpg", false);
-    glassTexture = loadTransparentTexture("assets/textures/window.png", true);
+    glassTexture = loadTransparentTexture("assets/textures/observatory_window.png", true);
+
 
     backpack = new Model("assets/models/backpack/backpack.obj");
     planet = new Model("assets/models/planet/planet.obj");
@@ -304,12 +315,13 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     createPointShadowMap();
     createNormalMappedPlane();
 
-    glassPanePositions = {
-        glm::vec3(-1.8f, 0.0f, -1.8f),
-        glm::vec3(0.0f, 0.0f, -1.8f),
-        glm::vec3(1.8f, 0.0f, -1.8f),
-        glm::vec3(-1.2f, 0.0f, 0.8f),
-        glm::vec3(1.2f, 0.0f, 0.8f)
+    glassSurfaces = {
+        { glm::vec3(0.0f, 1.0f, 2.94f), glm::vec3(6.0f, 4.0f, 1.0f), 180.0f, false },   //glass wall
+        { glm::vec3(-1.8f, 0.0f, -1.8f), glm::vec3(1.0f, 1.4f, 1.0f), 0.0f, true },
+        { glm::vec3(0.0f, 0.0f, -1.8f),  glm::vec3(1.0f, 1.4f, 1.0f), 0.0f, true },
+        { glm::vec3(1.8f, 0.0f, -1.8f),  glm::vec3(1.0f, 1.4f, 1.0f), 0.0f, true },
+        { glm::vec3(-1.2f, 0.0f, 0.8f),  glm::vec3(1.0f, 1.4f, 1.0f), 0.0f, true },
+        { glm::vec3(1.2f, 0.0f, 0.8f),   glm::vec3(1.0f, 1.4f, 1.0f), 0.0f, true }
     };
 
     outdoorGroundMaterial.diffuseColor = glm::vec3(0.18f, 0.42f, 0.16f);
@@ -721,10 +733,7 @@ void Week09Scene::draw(
     }
 
     glStencilMask(0xFF);
-    if (glassEnabled)
-    {
-        drawGlassPanes(view, projection, cameraPos);
-    }
+
     if (skybox)
     {
         skybox->Render(projection);
@@ -927,36 +936,53 @@ void Week09Scene::drawGlassPanes(
     const glm::mat4& projection,
     const glm::vec3& cameraPos)
 {
-    std::map<float, glm::vec3> sorted;
-    for (const glm::vec3& position : glassPanePositions)
+    std::multimap<float, const GlassSurface*> sorted;
+
+    for (const GlassSurface& surface : glassSurfaces)
     {
-        float distance = glm::length(cameraPos - position);
-        while (sorted.find(distance) != sorted.end())
+        if (surface.optional && !glassEnabled)
         {
-            distance += 0.0001f;
+            continue;
         }
-        sorted[distance] = position;
+
+        const float distance = glm::length(cameraPos - surface.position);
+        sorted.emplace(distance, &surface);
     }
 
     glUseProgram(glassShaderProgram);
     setMatrix(glassUniforms.view, view);
     setMatrix(glassUniforms.projection, projection);
     bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, glassTexture);
+
+    const GLboolean cullingWasEnabled = glIsEnabled(GL_CULL_FACE);
+    glDisable(GL_CULL_FACE);
+
     glBindVertexArray(glassVAO);
     glDepthMask(GL_FALSE);
     glStencilMask(0x00);
 
-    for (std::map<float, glm::vec3>::const_reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
+    for (auto it = sorted.rbegin(); it != sorted.rend(); ++it)
     {
+        const GlassSurface& surface = *it->second;
+
         setMatrix(
             glassUniforms.model,
-            makeTransform(it->second, glm::vec3(1.0f, 1.4f, 1.0f)));
+            makeTransform(surface.position, surface.scale, surface.yRotation)
+        );
+
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
 
     glBindVertexArray(0);
     glDepthMask(GL_TRUE);
     glStencilMask(0xFF);
+
+    if (cullingWasEnabled)
+    {
+        glEnable(GL_CULL_FACE);
+    }
+
+    glActiveTexture(GL_TEXTURE0);
 }
 
 void Week09Scene::createFramebuffer(int width, int height)
@@ -1420,10 +1446,10 @@ void Week09Scene::drawMiniPlanetSystem(
     }
 
     const glm::vec3 mainLightColor(1.25f);
-    const glm::mat4 planetSystemModel = makeTransform(
-        glm::vec3(1.3f, 0.0f, -1.5f),
-        glm::vec3(0.018f));
-    const glm::mat4 planetModel = glm::scale(planetSystemModel, glm::vec3(8.0f));
+    const glm::mat4 planetModel = makeTransform(
+        DISTANT_PLANET_POSITION,
+        glm::vec3(DISTANT_PLANET_SCALE)
+    );
     const glm::mat4 asteroidSystemModel = createAsteroidSystemModel();
 
     glUseProgram(modelShaderProgram);
@@ -1438,10 +1464,12 @@ void Week09Scene::drawMiniPlanetSystem(
         mainLightColor,
         secondLightPos,
         secondLightColor,
-        !outdoorModeEnabled && light1Enabled,
-        !outdoorModeEnabled && light2Enabled,
-        outdoorModeEnabled,
-        flashlightEnabled);
+        false,
+        false,
+        true,
+        false
+    );
+    glUniform1i(modelUniforms.pointShadowsEnabled, false);
     glUniform1i(modelUniforms.glassBackpackEnabled, false);
     glUniform1f(uniformLocation(modelShaderProgram, "material.shininess"), 16.0f);
     setMatrix(modelUniforms.model, planetModel);
@@ -1584,10 +1612,24 @@ void Week09Scene::renderDirectionalShadowMap(const glm::mat4& lightSpaceMatrix)
 
 glm::mat4 Week09Scene::createAsteroidSystemModel() const
 {
-    const float orbitAngle = static_cast<float>(glfwGetTime()) * glm::radians(3.0f);
-    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(1.3f, 0.0f, -1.5f));
-    model = glm::rotate(model, orbitAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-    return glm::scale(model, glm::vec3(0.018f));
+    const float orbitAngle =
+        static_cast<float>(glfwGetTime()) * glm::radians(3.0f);
+
+    glm::mat4 model = glm::translate(
+        glm::mat4(1.0f),
+        DISTANT_PLANET_POSITION
+    );
+
+    model = glm::rotate(
+        model,
+        orbitAngle,
+        glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+
+    return glm::scale(
+        model,
+        glm::vec3(DISTANT_ASTEROID_SYSTEM_SCALE)
+    );
 }
 
 void Week09Scene::createPointShadowMap()
@@ -1830,8 +1872,8 @@ void Week09Scene::drawNormalMappedRoomWalls(
     };
 
     constexpr float roomWallPosition = 2.95f;
-    const std::array<Wall, 4> walls = {
-        Wall{ glm::vec3(0.0f, 1.0f, -roomWallPosition), 0.0f },
+
+    const std::array<Wall, 3> walls = {
         Wall{ glm::vec3(0.0f, 1.0f, roomWallPosition), 180.0f },
         Wall{ glm::vec3(-roomWallPosition, 1.0f, 0.0f), 90.0f },
         Wall{ glm::vec3(roomWallPosition, 1.0f, 0.0f), -90.0f }
@@ -1908,7 +1950,9 @@ glm::mat4 Week09Scene::createWallLampModelMatrix() const
 {
     return makeTransform(
         WALL_LAMP_POSITION,
-        glm::vec3(1.0f)
+        glm::vec3(1.0f),
+        -90.0f,
+        glm::vec3(0.0f, 1.0f, 0.0f)
     );
 }
 

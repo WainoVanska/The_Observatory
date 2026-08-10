@@ -62,9 +62,11 @@ int main()
 
     const glm::mat4 projection = glm::perspective(
         glm::radians(70.0f),
-        static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT),
+        static_cast<float>(WINDOW_WIDTH) /
+        static_cast<float>(WINDOW_HEIGHT),
         0.1f,
-        100.0f);
+        250.0f
+    );
 
     FreeCamera camera;
     LightController lightController;
