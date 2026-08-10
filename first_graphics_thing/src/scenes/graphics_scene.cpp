@@ -28,7 +28,7 @@ namespace
 
     constexpr float DISTANT_PLANET_SCALE = 12.0f;
 
-    constexpr float DISTANT_ASTEROID_SYSTEM_SCALE = 0.40f;
+    constexpr float DISTANT_ASTEROID_SYSTEM_SCALE = 1.20f;
 
     GLint uniformLocation(GLuint program, const char* name)
     {
@@ -73,7 +73,7 @@ namespace
 
     glm::vec3 sunColor()
     {
-        return glm::vec3(1.0f, 0.95f, 0.80f);
+        return glm::vec3(0.45f, 0.43f, 0.36f);
     }
 
     const glm::vec3 WALL_LAMP_POSITION(
@@ -1400,7 +1400,7 @@ void Week09Scene::createAsteroidInstances()
     asteroidMatrices.resize(ASTEROID_COUNT);
     std::mt19937 randomEngine(1337);
     std::uniform_real_distribution<float> displacement(-8.0f, 8.0f);
-    std::uniform_real_distribution<float> scaleDistribution(0.10f, 0.28f);
+    std::uniform_real_distribution<float> scaleDistribution(0.05f, 0.12f);
     std::uniform_real_distribution<float> rotationDistribution(0.0f, glm::two_pi<float>());
     const glm::vec3 rotationAxis = glm::normalize(glm::vec3(0.4f, 0.6f, 0.8f));
     constexpr float radius = 50.0f;
@@ -1491,10 +1491,10 @@ void Week09Scene::drawMiniPlanetSystem(
         mainLightColor,
         secondLightPos,
         secondLightColor,
-        !outdoorModeEnabled && light1Enabled,
-        !outdoorModeEnabled && light2Enabled,
-        outdoorModeEnabled,
-        flashlightEnabled);
+        false,
+        false,
+        true,
+        false);
 
     setVector(uniformLocation(instancedModelShaderProgram, "objectColor"), glm::vec3(0.55f, 0.45f, 0.34f));
     setVector(uniformLocation(instancedModelShaderProgram, "objectSpecularColor"), glm::vec3(0.08f));
@@ -1613,11 +1613,18 @@ void Week09Scene::renderDirectionalShadowMap(const glm::mat4& lightSpaceMatrix)
 glm::mat4 Week09Scene::createAsteroidSystemModel() const
 {
     const float orbitAngle =
-        static_cast<float>(glfwGetTime()) * glm::radians(3.0f);
+        static_cast<float>(glfwGetTime()) *
+        glm::radians(3.0f);
 
     glm::mat4 model = glm::translate(
         glm::mat4(1.0f),
         DISTANT_PLANET_POSITION
+    );
+
+    model = glm::rotate(
+        model,
+        glm::radians(0.0f),
+        glm::vec3(1.0f, 0.0f, 0.0f)
     );
 
     model = glm::rotate(

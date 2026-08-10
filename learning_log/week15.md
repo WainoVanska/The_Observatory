@@ -8,6 +8,10 @@
 
 <img src="../learning_log_images/bloom.png" alt="-" width="500">
 
+- started implementing the observatory by using a space skybox and scaling the planet and asteroids up.
+
+<img src="../learning_log_images/space_and_asteroids.png" alt="-" width="500">
+
 ## I struggled:
 
 ## Thoughts:
