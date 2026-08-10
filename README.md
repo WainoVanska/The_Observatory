@@ -12,3 +12,10 @@
 | [CMU Computer Graphics Lectures](https://youtube.com/playlist?list=PL9_jI1bdZmz2emSh0UQ5iOdT2xRHFHL7E&si=knAZi4WGLnnt8G_z) | 🟢 |
 | [LearnOpenGL](https://learnopengl.com/) | 🟡 |
 | [OGLdev](https://ogldev.org/index.html) | 🔴 |
+
+## Topics in need of review
+
+- Geometry shader
+- Instancing
+- Gamma correction
+- Bloom

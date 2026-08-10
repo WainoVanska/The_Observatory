@@ -324,7 +324,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
 
     skybox = new SkyBox(camera);
     if (!skybox->Init(
-        "assets/textures/skybox1",
+        "assets/textures/space",
         "px.png", "nx.png", "py.png", "ny.png", "pz.png", "nz.png"))
     {
         std::cout << "Skybox failed to load\n";
@@ -450,7 +450,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     glUseProgram(normalMappingShaderProgram);
     bindTexture(GL_TEXTURE4, GL_TEXTURE_CUBE_MAP, pointDepthCubemap);
     glUniform1f(normalMappingUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
-    glUniform1i(normalMappingUniforms.pointShadowsEnabled, !outdoorModeEnabled && light1Enabled);
+    glUniform1i(normalMappingUniforms.pointShadowsEnabled, !outdoorModeEnabled && !light1Enabled);
     glUniform1i(normalMappingUniforms.diffuseMap, 0);
     glUniform1i(normalMappingUniforms.normalMap, 1);
     glUniform1i(normalMappingUniforms.depthMap, 2);
@@ -725,7 +725,7 @@ void Week09Scene::draw(
     {
         drawGlassPanes(view, projection, cameraPos);
     }
-    if (outdoorModeEnabled && skybox)
+    if (skybox)
     {
         skybox->Render(projection);
     }

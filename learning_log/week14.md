@@ -8,7 +8,7 @@
 
 ## I struggled:
 
-- with making the wall lamp model emit light through semi-transparent glass. 
+- with making the wall lamp model emit light through semi-transparent glass. I chose a bit of a difficult model to create the lighting on, but since I was already halfway, I stuck with the original one. Also certain surfaces of the model (back wall inside the lamp) don't look as intended.
 
 <img src="../learning_log_images/wall_lamp.png" alt="-" width="500">
 
@@ -16,3 +16,5 @@
 ## Thoughts:
 
 - I could write down somewhere a "weaknesses chart" where I could add concepts that I'm still not that comfortable with after going through the last LearnOpenGL chapters. This could also be useful revision for those concepts.
+
+- Decided that my direction for the project will be creating an observatory room out of my main scene. This concept fits to my project well as I can make the planet/asteroid thing way bigger and then replace one (or all) of the room walls with glass through which you can see to the space. The models I already have implemented in the room could be some kind of artifacts on display underneath the wall lamps.
