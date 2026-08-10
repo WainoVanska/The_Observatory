@@ -234,6 +234,15 @@ private:
     void createScreenQuad();
     void drawScreenQuad();
 
+    void createBloomFramebuffer(int width, int height);
+    void extractBrightAreas();
+
+    void createPingPongFramebuffers(
+        int width,
+        int height
+    );
+    void blurBrightAreas();
+
     void createAsteroidInstances();
 
     glm::mat4 createAsteroidSystemModel() const;
@@ -349,6 +358,15 @@ private:
     GLuint framebufferTexture = 0;
     GLuint framebufferRBO = 0;
 
+    GLuint brightPassFBO = 0;
+    GLuint brightTexture = 0;
+    GLuint brightPassShaderProgram = 0;
+
+    GLuint pingPongFBO[2] = {0,0};
+    GLuint pingPongTextures[2] = {0,0};
+    GLuint gaussianBlurShaderProgram = 0;
+    GLuint blurredBloomTexture = 0;
+
     static constexpr int MSAA_SAMPLES = 4;
     static constexpr unsigned int ASTEROID_COUNT = 10000;
 
@@ -381,6 +399,9 @@ private:
 
     GLuint screenShaderProgram = 0;
     GLuint screenTextureUniform = 0;
+
+    bool bloomEnabled = true;
+    float bloomStrength = 0.55f;
 
     GLuint normalMappingShaderProgram = 0;
 
@@ -422,7 +443,7 @@ private:
     std::vector<glm::vec3> glassPanePositions{};
     std::vector<glm::mat4> asteroidMatrices;
 
-    bool light1Enabled = true;
+    bool light1Enabled = false;
     bool light2Enabled = false;
     bool normalDebugEnabled = false;
     bool depthDebugEnabled = false;

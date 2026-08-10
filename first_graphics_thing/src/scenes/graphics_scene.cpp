@@ -75,7 +75,7 @@ namespace
     const glm::vec3 WALL_LIGHT_POSITION(
         0.0f,
         1.15f,
-        -2.30f
+        -2.345f
     );
 
     const glm::vec3 WALL_LIGHT_COLOR(
@@ -268,6 +268,8 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     modelOutlineShaderProgram = createShaderProgram("src/week09/model_vertex.glsl", "src/week09/single_color_fragment.glsl");
     glassShaderProgram = createShaderProgram("src/week09/glass_vertex.glsl", "src/week09/glass_fragment.glsl");
     screenShaderProgram = createShaderProgram("src/week09/screen_vertex.glsl", "src/week09/screen_fragment.glsl");
+    brightPassShaderProgram = createShaderProgram("src/week09/screen_vertex.glsl", "src/week09/bright_pass_fragment.glsl");
+    gaussianBlurShaderProgram = createShaderProgram("src/week09/screen_vertex.glsl","src/week09/gaussian_blur_fragment.glsl");
     instancedModelShaderProgram = createShaderProgram("src/week09/instanced_model_vertex.glsl", "src/week09/instanced_rock_fragment.glsl");
     directionalDepthShaderProgram = createShaderProgram("src/week09/directional_depth_vertex.glsl", "src/week09/directional_depth_fragment.glsl");
     instancedDirectionalDepthShaderProgram = createShaderProgram("src/week09/instanced_directional_depth_vertex.glsl", "src/week09/directional_depth_fragment.glsl");
@@ -295,6 +297,8 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     createAsteroidInstances();
     createGlassPaneMesh();
     createFramebuffer(width, height);
+    createBloomFramebuffer(width, height);
+    createPingPongFramebuffers(width,height);
     createScreenQuad();
     createDirectionalShadowMap();
     createPointShadowMap();
@@ -458,6 +462,14 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     glUseProgram(screenShaderProgram);
     screenTextureUniform = location(screenShaderProgram, "screenTexture");
     glUniform1i(screenTextureUniform, 0);
+
+    glUniform1i(uniformLocation(screenShaderProgram,"bloomTexture"),1);
+
+    glUseProgram(brightPassShaderProgram);
+    glUniform1i(uniformLocation(brightPassShaderProgram, "sceneTexture"), 0);
+
+    glUseProgram(gaussianBlurShaderProgram);
+    glUniform1i(uniformLocation(gaussianBlurShaderProgram,"image"),0);
 }
 
 void Week09Scene::handleInput(GLFWwindow* window)
@@ -504,7 +516,7 @@ void Week09Scene::draw(
     const glm::vec3 lightColor(0.70f, 0.63f, 0.50f);
     const glm::vec3 secondLightPos(-2.0f, 2.2f, -2.0f);
     const glm::vec3 secondLightColor(0.3f, 0.5f, 1.0f);
-    const bool wallLightEnabled = !outdoorModeEnabled && light1Enabled;
+    const bool wallLightEnabled = !outdoorModeEnabled && !light1Enabled;
     glm::mat4 lightSpaceMatrix(1.0f);
 
     glEnable(GL_DEPTH_TEST);
@@ -692,7 +704,10 @@ void Week09Scene::draw(
                 lightPos,
                 glm::vec3(1.0f, 1.0f, 0.3f)
             );
+        }
 
+        if (wallLightEnabled)
+        {
             drawLampMarker(
                 WALL_LIGHT_POSITION,
                 glm::vec3(1.0f, 0.75f, 0.25f),
@@ -722,6 +737,8 @@ void Week09Scene::draw(
         0, 0, framebufferWidth, framebufferHeight,
         GL_COLOR_BUFFER_BIT,
         GL_NEAREST);
+    extractBrightAreas();
+    blurBrightAreas();
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDisable(GL_DEPTH_TEST);
@@ -1016,6 +1033,295 @@ void Week09Scene::createFramebuffer(int width, int height)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void Week09Scene::createBloomFramebuffer(
+    int width,
+    int height
+)
+{
+    glGenFramebuffers(1, &brightPassFBO);
+    glBindFramebuffer(
+        GL_FRAMEBUFFER,
+        brightPassFBO
+    );
+
+    glGenTextures(1, &brightTexture);
+    glBindTexture(
+        GL_TEXTURE_2D,
+        brightTexture
+    );
+
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGB16F,
+        width,
+        height,
+        0,
+        GL_RGB,
+        GL_FLOAT,
+        nullptr
+    );
+
+    glTexParameteri(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_MIN_FILTER,
+        GL_LINEAR
+    );
+
+    glTexParameteri(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_MAG_FILTER,
+        GL_LINEAR
+    );
+
+    glTexParameteri(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_WRAP_S,
+        GL_CLAMP_TO_EDGE
+    );
+
+    glTexParameteri(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_WRAP_T,
+        GL_CLAMP_TO_EDGE
+    );
+
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER,
+        GL_COLOR_ATTACHMENT0,
+        GL_TEXTURE_2D,
+        brightTexture,
+        0
+    );
+
+    if (
+        glCheckFramebufferStatus(GL_FRAMEBUFFER) !=
+        GL_FRAMEBUFFER_COMPLETE
+        )
+    {
+        std::cout
+            << "ERROR::FRAMEBUFFER:: Bright-pass "
+            << "framebuffer is not complete!"
+            << std::endl;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Week09Scene::createPingPongFramebuffers(
+    int width,
+    int height
+)
+{
+    glGenFramebuffers(
+        2,
+        pingPongFBO
+    );
+
+    glGenTextures(
+        2,
+        pingPongTextures
+    );
+
+    for (unsigned int i = 0; i < 2; i++)
+    {
+        glBindFramebuffer(
+            GL_FRAMEBUFFER,
+            pingPongFBO[i]
+        );
+
+        glBindTexture(
+            GL_TEXTURE_2D,
+            pingPongTextures[i]
+        );
+
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RGB16F,
+            width,
+            height,
+            0,
+            GL_RGB,
+            GL_FLOAT,
+            nullptr
+        );
+
+        glTexParameteri(
+            GL_TEXTURE_2D,
+            GL_TEXTURE_MIN_FILTER,
+            GL_LINEAR
+        );
+
+        glTexParameteri(
+            GL_TEXTURE_2D,
+            GL_TEXTURE_MAG_FILTER,
+            GL_LINEAR
+        );
+
+        glTexParameteri(
+            GL_TEXTURE_2D,
+            GL_TEXTURE_WRAP_S,
+            GL_CLAMP_TO_EDGE
+        );
+
+        glTexParameteri(
+            GL_TEXTURE_2D,
+            GL_TEXTURE_WRAP_T,
+            GL_CLAMP_TO_EDGE
+        );
+
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER,
+            GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D,
+            pingPongTextures[i],
+            0
+        );
+
+        if (
+            glCheckFramebufferStatus(
+                GL_FRAMEBUFFER
+            ) != GL_FRAMEBUFFER_COMPLETE
+            )
+        {
+            std::cout
+                << "ERROR::FRAMEBUFFER:: Ping-pong "
+                << i
+                << " framebuffer is not complete!"
+                << std::endl;
+        }
+    }
+
+    glBindFramebuffer(
+        GL_FRAMEBUFFER,
+        0
+    );
+}
+
+void Week09Scene::extractBrightAreas()
+{
+    glBindFramebuffer(
+        GL_FRAMEBUFFER,
+        brightPassFBO
+    );
+
+    glViewport(
+        0,
+        0,
+        framebufferWidth,
+        framebufferHeight
+    );
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_STENCIL_TEST);
+    glDisable(GL_CULL_FACE);
+
+    glClearColor(
+        0.0f,
+        0.0f,
+        0.0f,
+        1.0f
+    );
+
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glUseProgram(brightPassShaderProgram);
+
+    glUniform1f(
+        uniformLocation(
+            brightPassShaderProgram,
+            "brightnessThreshold"
+        ),
+        1.0f
+    );
+
+    bindTexture(
+        GL_TEXTURE0,
+        GL_TEXTURE_2D,
+        framebufferTexture
+    );
+
+    glBindVertexArray(screenQuadVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+}
+
+void Week09Scene::blurBrightAreas()
+{
+    constexpr unsigned int blurPassCount = 10;
+
+    bool horizontal = true;
+    bool firstPass = true;
+
+    glUseProgram(
+        gaussianBlurShaderProgram
+    );
+
+    glBindVertexArray(
+        screenQuadVAO
+    );
+
+    for (
+        unsigned int pass = 0;
+        pass < blurPassCount;
+        pass++
+        )
+    {
+        glBindFramebuffer(
+            GL_FRAMEBUFFER,
+            pingPongFBO[horizontal]
+        );
+
+        glUniform1i(
+            uniformLocation(
+                gaussianBlurShaderProgram,
+                "horizontal"
+            ),
+            horizontal
+        );
+
+        GLuint inputTexture;
+
+        if (firstPass)
+        {
+            inputTexture = brightTexture;
+        }
+        else
+        {
+            inputTexture =
+                pingPongTextures[!horizontal];
+        }
+
+        bindTexture(
+            GL_TEXTURE0,
+            GL_TEXTURE_2D,
+            inputTexture
+        );
+
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glDrawArrays(
+            GL_TRIANGLES,
+            0,
+            6
+        );
+
+        horizontal = !horizontal;
+        firstPass = false;
+    }
+
+    glBindVertexArray(0);
+
+    blurredBloomTexture =
+        pingPongTextures[!horizontal];
+
+    glBindFramebuffer(
+        GL_FRAMEBUFFER,
+        0
+    );
+}
+
 void Week09Scene::createScreenQuad()
 {
     const float vertices[] = {
@@ -1040,14 +1346,22 @@ void Week09Scene::createScreenQuad()
 void Week09Scene::drawScreenQuad()
 {
     glUseProgram(screenShaderProgram);
+
     glUniform1i(uniformLocation(screenShaderProgram, "blurEnabled"), blurEnabled);
     glUniform1i(uniformLocation(screenShaderProgram, "gammaCorrectionEnabled"), true);
     glUniform1i(uniformLocation(screenShaderProgram, "hdrEnabled"), true);
     glUniform1f(uniformLocation(screenShaderProgram, "exposure"), 1.2f);
+    glUniform1i(uniformLocation(screenShaderProgram, "bloomEnabled"), bloomEnabled);
+    glUniform1f(uniformLocation(screenShaderProgram, "bloomStrength"), bloomStrength);
+
     bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, framebufferTexture);
+    bindTexture(GL_TEXTURE1, GL_TEXTURE_2D, blurredBloomTexture);
+
     glBindVertexArray(screenQuadVAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
+
+    glActiveTexture(GL_TEXTURE0);
 }
 
 void Week09Scene::createAsteroidInstances()
@@ -1617,7 +1931,9 @@ void Week09Scene::cleanup()
         floorDiffuseTexture,
         floorNormalTexture,
         ceilingDiffuseTexture,
-        ceilingNormalTexture
+        ceilingNormalTexture,
+        pingPongTextures[0],
+        pingPongTextures[1]
     };
     glDeleteTextures(static_cast<GLsizei>(sizeof(textures) / sizeof(textures[0])), textures);
 
@@ -1636,7 +1952,8 @@ void Week09Scene::cleanup()
         directionalDepthShaderProgram,
         instancedDirectionalDepthShaderProgram,
         pointDepthShaderProgram,
-        normalMappingShaderProgram
+        normalMappingShaderProgram,
+        gaussianBlurShaderProgram
     };
     for (GLuint program : programs)
     {
@@ -1647,7 +1964,9 @@ void Week09Scene::cleanup()
         framebuffer,
         multisampleFramebuffer,
         directionalDepthFBO,
-        pointDepthFBO
+        pointDepthFBO,
+        pingPongFBO[0],
+        pingPongFBO[1]
     };
     glDeleteFramebuffers(static_cast<GLsizei>(sizeof(framebuffers) / sizeof(framebuffers[0])), framebuffers);
 

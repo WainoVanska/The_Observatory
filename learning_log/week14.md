@@ -1,4 +1,4 @@
-# Week 13 (3.8-9.8.2026)
+# Week 14 (3.8-9.8.2026)
 
 ## I learned:
 
@@ -8,8 +8,9 @@
 
 ## I struggled:
 
-- with making the wall lamp model emit light through semi-transparent glass.
+- with making the wall lamp model emit light through semi-transparent glass. 
 
+<img src="../learning_log_images/wall_lamp.png" alt="-" width="500">
 
 
 ## Thoughts:

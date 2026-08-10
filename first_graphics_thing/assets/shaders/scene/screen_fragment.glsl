@@ -5,6 +5,9 @@ out vec4 FragColor;
 in vec2 TexCoords;
 
 uniform sampler2D screenTexture;
+uniform sampler2D bloomTexture;
+uniform bool bloomEnabled;
+uniform float bloomStrength;
 uniform bool blurEnabled;
 uniform bool gammaCorrectionEnabled;
 uniform bool hdrEnabled;
@@ -52,6 +55,16 @@ void main()
                 TexCoords + offsets[i]
             ).rgb * kernel[i];
         }
+    }
+
+    if (bloomEnabled)
+    {
+        vec3 bloomColor = texture(
+            bloomTexture,
+            TexCoords
+        ).rgb;
+
+        color += bloomColor * bloomStrength;
     }
 
     if (hdrEnabled)
