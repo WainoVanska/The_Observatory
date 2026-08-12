@@ -12,6 +12,12 @@
 
 <img src="../learning_log_images/space_and_asteroids.png" alt="-" width="500">
 
+- read about deferred shading. However in my scene however deferred shading is probably going to cause unnecessary complexity without decent trade-off (since I would have to route every aspect of the scene through the G-Buffer instead), so I'm probably going to skip its implementation.
+
+- SSAO (continue later)
+
 ## I struggled:
+
+- with getting the wall lamp to look as I envisioned. I've tried to debug the lamp a bit now but it seems that it's too much work to actually get it look like it self-illuminates light from the bulb through the glass and would look like the lamp is also lit. I think it might be better to find another simpler model that gets the job done.
 
 ## Thoughts:
