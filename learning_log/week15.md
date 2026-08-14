@@ -12,9 +12,11 @@
 
 <img src="../learning_log_images/space_and_asteroids.png" alt="-" width="500">
 
-- read about deferred shading. However in my scene however deferred shading is probably going to cause unnecessary complexity without decent trade-off (since I would have to route every aspect of the scene through the G-Buffer instead), so I'm probably going to skip its implementation.
+- read about deferred shading. However in my scene deferred shading is probably going to cause unnecessary complexity without decent trade-offs (since I would have to route every aspect of the scene through the G-Buffer instead), so I'm going to skip its implementation for now.
 
 - SSAO (continue later)
+
+- read about PBR theory. "The reflectance equation is based around irradiance" continue reading from here https://learnopengl.com/PBR/Theory
 
 ## I struggled:
 
