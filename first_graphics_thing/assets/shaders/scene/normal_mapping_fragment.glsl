@@ -32,6 +32,17 @@ uniform bool wallLightEnabled;
 
 uniform bool lightEnabled;
 
+const int POINT_LIGHT_COUNT = 4;
+
+struct PointLight
+{
+    vec3 position;
+    vec3 color;
+    bool enabled;
+};
+
+uniform PointLight pointLights[POINT_LIGHT_COUNT];
+
 const vec3 pointShadowSampleOffsets[20] = vec3[]
 (
     vec3( 1.0,  1.0,  1.0),
@@ -161,6 +172,79 @@ vec2 parallaxOcclusionMapping(vec2 texCoords, vec3 tangentViewDir)
     return mix(currentTexCoords, previousTexCoords, weight);
 }
 
+vec3 calculateRoomPointLight(
+    PointLight pointLight,
+    int lightIndex,
+    vec3 mappedNormal,
+    vec3 geometricNormal,
+    vec3 viewDirection,
+    vec3 baseColor)
+{
+    vec3 lightDir = normalize(
+        pointLight.position -
+        fs_in.FragPos
+    );
+
+    vec3 halfwayDir = normalize(
+        lightDir +
+        viewDirection
+    );
+
+    float diffuseStrength = max(
+        dot(mappedNormal, lightDir),
+        0.0
+    );
+
+    vec3 diffuse =
+        diffuseStrength *
+        pointLight.color *
+        baseColor;
+
+    float specularStrength = pow(
+        max(
+            dot(mappedNormal, halfwayDir),
+            0.0
+        ),
+        32.0
+    );
+
+    vec3 specular =
+        0.15 *
+        specularStrength *
+        pointLight.color;
+
+    float distanceToLight = length(
+        pointLight.position -
+        fs_in.FragPos
+    );
+
+    float attenuation = 1.0 / (
+        1.0 +
+        0.14 * distanceToLight +
+        0.07 *
+        distanceToLight *
+        distanceToLight
+    );
+
+    float shadow = 0.0;
+
+    if (
+        pointShadowsEnabled &&
+        lightIndex == 0
+    )
+    {
+        shadow = calculatePointShadow(
+            fs_in.FragPos,
+            pointLight.position,
+            geometricNormal
+        );
+    }
+
+    return attenuation *
+        (1.0 - shadow) *
+        (diffuse + specular);
+}
+
 void main()
 {
     vec2 tiledTexCoords = fs_in.TexCoords * uvScale;
@@ -186,74 +270,24 @@ tiledTexCoords =
 
     vec3 result = 0.015 * baseColor;
 
-    if (lightEnabled)
+    for (int i = 0; i < POINT_LIGHT_COUNT; ++i)
     {
-        vec3 lightDir = normalize(lightPos - fs_in.FragPos);
-        vec3 viewDir = worldViewDir;
-        vec3 halfwayDir = normalize(lightDir + viewDir);
+        if (!pointLights[i].enabled)
+        {
+            continue;
+        }
 
-        float diffuseStrength = max(dot(mappedNormal, lightDir), 0.0);
-        vec3 diffuse = diffuseStrength * lightColor * baseColor;
-
-        float specularStrength = pow(max(dot(mappedNormal, halfwayDir), 0.0), 32.0);
-        vec3 specular = 0.15 * specularStrength * lightColor;
-
-        float distanceToLight = length(lightPos - fs_in.FragPos);
-
-        float attenuation = 1.0 / (
-            1.0 +
-            0.14 * distanceToLight +
-            0.07 * distanceToLight * distanceToLight
+        result += calculateRoomPointLight(
+            pointLights[i],
+            i,
+            mappedNormal,
+            geometricNormal,
+            worldViewDir,
+            baseColor
         );
-
-        float shadow = calculatePointShadow(
-            fs_in.FragPos,
-            lightPos,
-            geometricNormal
-        );
-
-        result += attenuation * (1.0 - shadow) * (diffuse + specular);
     }
 
-    if (wallLightEnabled)
-    {
-        vec3 lightDir =
-            normalize(wallLightPos - fs_in.FragPos);
-
-        vec3 halfwayDir =
-            normalize(lightDir + worldViewDir);
-
-        float diffuseStrength =
-            max(dot(mappedNormal, lightDir), 0.0);
-
-        vec3 diffuse =
-            diffuseStrength *
-            wallLightColor *
-            baseColor;
-
-        float specularStrength = pow(
-            max(dot(mappedNormal, halfwayDir), 0.0),
-            32.0
-        );
-
-        vec3 specular =
-            0.15 *
-            specularStrength *
-            wallLightColor;
-
-        float distanceToLight =
-            length(wallLightPos - fs_in.FragPos);
-
-        float attenuation = 1.0 / (
-            1.0 +
-            0.14 * distanceToLight +
-            0.07 * distanceToLight * distanceToLight
-        );
-
-        result +=
-            attenuation *
-            (diffuse + specular);
-    }
+    FragColor = vec4(result, 1.0);
 
     FragColor = vec4(result, 1.0);
 }

@@ -82,17 +82,120 @@ namespace
         0.0f
     );
 
-    const glm::vec3 WALL_LIGHT_POSITION(
-        2.60f,
-        1.30f,
-        0.0f
+    constexpr std::size_t ROOM_POINT_LIGHT_COUNT = 4;
+
+    const std::array<glm::vec3, ROOM_POINT_LIGHT_COUNT>
+        ROOM_POINT_LIGHT_POSITIONS = {
+
+        // Left wall
+        glm::vec3(-2.60f, 1.30f, -1.35f),
+        glm::vec3(-2.60f, 1.30f,  1.35f),
+
+        // Right wall
+        glm::vec3(2.60f, 1.30f, -1.35f),
+        glm::vec3(2.60f, 1.30f,  1.35f)
+    };
+
+    const glm::vec3 FIXED_ROOM_LIGHT_COLOR(
+        0.18f,
+        0.16f,
+        0.12f
     );
 
-    const glm::vec3 WALL_LIGHT_COLOR(
+    const glm::vec3 MOVABLE_LIGHT_COLOR(
         0.70f,
         0.63f,
         0.50f
     );
+
+    // Temporary fix for lights
+    const glm::vec3 WALL_LIGHT_POSITION =
+        ROOM_POINT_LIGHT_POSITIONS[0];
+
+    const glm::vec3 WALL_LIGHT_COLOR =
+        FIXED_ROOM_LIGHT_COLOR;
+
+    template <typename Uniforms>
+    void cacheRoomPointLightUniforms(
+        GLuint program,
+        Uniforms& uniforms)
+    {
+        for (std::size_t i = 0;
+            i < ROOM_POINT_LIGHT_COUNT;
+            ++i)
+        {
+            const std::string prefix =
+                "pointLights[" +
+                std::to_string(i) +
+                "].";
+
+            uniforms.pointLightPositions[i] =
+                uniformLocation(
+                    program,
+                    (prefix + "position").c_str()
+                );
+
+            uniforms.pointLightColors[i] =
+                uniformLocation(
+                    program,
+                    (prefix + "color").c_str()
+                );
+
+            uniforms.pointLightEnabled[i] =
+                uniformLocation(
+                    program,
+                    (prefix + "enabled").c_str()
+                );
+        }
+    }
+
+    template <typename Uniforms>
+    void uploadRoomPointLights(
+        const Uniforms& uniforms,
+        const glm::vec3& movableLightPosition,
+        bool movableModeEnabled,
+        bool outdoorModeEnabled)
+    {
+        for (std::size_t i = 0;
+            i < ROOM_POINT_LIGHT_COUNT;
+            ++i)
+        {
+            const bool enabled =
+                !outdoorModeEnabled &&
+                (
+                    !movableModeEnabled ||
+                    i == 0
+                    );
+
+            glm::vec3 position =
+                ROOM_POINT_LIGHT_POSITIONS[i];
+
+            if (movableModeEnabled && i == 0)
+            {
+                position = movableLightPosition;
+            }
+
+            setVector(
+                uniforms.pointLightPositions[i],
+                position
+            );
+
+            const glm::vec3 color =
+                movableModeEnabled && i == 0
+                ? MOVABLE_LIGHT_COLOR
+                : FIXED_ROOM_LIGHT_COLOR;
+
+            setVector(
+                uniforms.pointLightColors[i],
+                color
+            );
+
+            glUniform1i(
+                uniforms.pointLightEnabled[i],
+                enabled
+            );
+        }
+    }
 
     bool toggleOnKeyPress(GLFWwindow* window, int key, bool& wasPressed, bool& value)
     {
@@ -450,6 +553,10 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     normalMappingUniforms.wallLightColor = location(normalMappingShaderProgram, "wallLightColor");
     normalMappingUniforms.wallLightEnabled = location(normalMappingShaderProgram, "wallLightEnabled");
 
+    cacheRoomPointLightUniforms(shaderProgram, lightingUniforms);
+    cacheRoomPointLightUniforms(modelShaderProgram, modelUniforms);
+    cacheRoomPointLightUniforms(normalMappingShaderProgram, normalMappingUniforms);
+
     glUseProgram(shaderProgram);
     glUniform1i(lightingUniforms.directionalShadowMap, 3);
     glUniform1i(lightingUniforms.pointShadowMap, 4);
@@ -462,7 +569,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     glUseProgram(normalMappingShaderProgram);
     bindTexture(GL_TEXTURE4, GL_TEXTURE_CUBE_MAP, pointDepthCubemap);
     glUniform1f(normalMappingUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
-    glUniform1i(normalMappingUniforms.pointShadowsEnabled, !outdoorModeEnabled && !light1Enabled);
+    glUniform1i(normalMappingUniforms.pointShadowsEnabled, !outdoorModeEnabled && !movableLightModeEnabled);
     glUniform1i(normalMappingUniforms.diffuseMap, 0);
     glUniform1i(normalMappingUniforms.normalMap, 1);
     glUniform1i(normalMappingUniforms.depthMap, 2);
@@ -486,7 +593,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
 
 void Week09Scene::handleInput(GLFWwindow* window)
 {
-    toggleOnKeyPress(window, GLFW_KEY_1, key1WasPressed, light1Enabled);
+    toggleOnKeyPress(window, GLFW_KEY_1, key1WasPressed, movableLightModeEnabled);
     toggleOnKeyPress(window, GLFW_KEY_2, key2WasPressed, light2Enabled);
 
     if (toggleOnKeyPress(window, GLFW_KEY_N, keyNWasPressed, normalDebugEnabled) && normalDebugEnabled)
@@ -528,7 +635,7 @@ void Week09Scene::draw(
     const glm::vec3 lightColor(0.70f, 0.63f, 0.50f);
     const glm::vec3 secondLightPos(-2.0f, 2.2f, -2.0f);
     const glm::vec3 secondLightColor(0.3f, 0.5f, 1.0f);
-    const bool wallLightEnabled = !outdoorModeEnabled && !light1Enabled;
+    const bool wallLightEnabled = !outdoorModeEnabled && !movableLightModeEnabled;
     glm::mat4 lightSpaceMatrix(1.0f);
 
     glEnable(GL_DEPTH_TEST);
@@ -539,7 +646,7 @@ void Week09Scene::draw(
         lightSpaceMatrix = createDirectionalLightSpaceMatrix(sunDirection());
         renderDirectionalShadowMap(lightSpaceMatrix);
     }
-    else if (light1Enabled)
+    else if (movableLightModeEnabled)
     {
         renderPointShadowMap(lightPos);
     }
@@ -576,8 +683,8 @@ void Week09Scene::draw(
     bindTexture(GL_TEXTURE3, GL_TEXTURE_2D, directionalDepthMap);
     bindTexture(GL_TEXTURE4, GL_TEXTURE_CUBE_MAP, pointDepthCubemap);
     glUniform1f(lightingUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
-    glUniform1i(lightingUniforms.pointShadowsEnabled, !outdoorModeEnabled && light1Enabled);
-    glUniform1i(lightingUniforms.light1Enabled, !outdoorModeEnabled && light1Enabled);
+    glUniform1i(lightingUniforms.pointShadowsEnabled, !outdoorModeEnabled && movableLightModeEnabled);
+    glUniform1i(lightingUniforms.light1Enabled, !outdoorModeEnabled && movableLightModeEnabled);
     glUniform1i(lightingUniforms.light2Enabled, !outdoorModeEnabled && light2Enabled);
     glUniform1i(lightingUniforms.directionalLightEnabled, outdoorModeEnabled);
     setVector(lightingUniforms.directionalLightDirection, sunDirection());
@@ -587,6 +694,7 @@ void Week09Scene::draw(
     setVector(lightingUniforms.viewPos, cameraPos);
     setVector(lightingUniforms.lightPos, lightPos);
     setVector(lightingUniforms.lightColor, lightColor);
+    uploadRoomPointLights(lightingUniforms, lightPos, movableLightModeEnabled, outdoorModeEnabled);
     setVector(lightingUniforms.secondLightPos, secondLightPos);
     setVector(lightingUniforms.secondLightColor, secondLightColor);
 
@@ -673,7 +781,7 @@ void Week09Scene::draw(
             lightColor,
             secondLightPos,
             secondLightColor,
-            !outdoorModeEnabled && light1Enabled,
+            !outdoorModeEnabled && movableLightModeEnabled,
             !outdoorModeEnabled && light2Enabled,
             outdoorModeEnabled,
             flashlightEnabled
@@ -710,21 +818,23 @@ void Week09Scene::draw(
 
     if (!outdoorModeEnabled)
     {
-        if (light1Enabled)
+        if (movableLightModeEnabled)
         {
             drawLampMarker(
                 lightPos,
                 glm::vec3(1.0f, 1.0f, 0.3f)
             );
         }
-
-        if (wallLightEnabled)
+        else
         {
-            drawLampMarker(
-                WALL_LIGHT_POSITION,
-                glm::vec3(1.0f, 0.75f, 0.25f),
-                0.045f
-            );
+            for (const glm::vec3& fixedLightPosition :
+                ROOM_POINT_LIGHT_POSITIONS)
+            {
+                drawLampMarker(
+                    fixedLightPosition,
+                    glm::vec3(1.0f, 1.0f, 0.3f)
+                );
+            }
         }
         if (light2Enabled)
         {
@@ -828,6 +938,7 @@ void Week09Scene::drawBackpack(
     }
 
     glUseProgram(modelShaderProgram);
+    uploadRoomPointLights(modelUniforms, lightPos, movableLightModeEnabled, outdoorModeEnabled);
     configureModelPointShadows();
     glUniform1i(modelUniforms.glassBackpackEnabled, glassBackpackEnabled);
     if (skybox)
@@ -845,7 +956,7 @@ void Week09Scene::drawBackpack(
         glm::vec3(1.0f),
         secondLightPos,
         secondLightColor,
-        !outdoorModeEnabled && light1Enabled,
+        !outdoorModeEnabled && movableLightModeEnabled,
         !outdoorModeEnabled && light2Enabled,
         outdoorModeEnabled,
         flashlightEnabled);
@@ -1453,6 +1564,7 @@ void Week09Scene::drawMiniPlanetSystem(
     const glm::mat4 asteroidSystemModel = createAsteroidSystemModel();
 
     glUseProgram(modelShaderProgram);
+    uploadRoomPointLights(modelUniforms, lightPos, movableLightModeEnabled, true);
     configureModelPointShadows();
     configureModelLighting(
         modelUniforms,
@@ -1572,15 +1684,6 @@ void Week09Scene::drawDirectionalShadowCasters(
     {
         setMatrix(modelLocation, createBackpackModelMatrix());
         backpack->draw(depthShaderProgram);
-    }
-
-    if (planet)
-    {
-        const glm::mat4 planetModel = makeTransform(
-            glm::vec3(1.3f, 0.0f, -1.5f),
-            glm::vec3(0.018f * 8.0f));
-        setMatrix(modelLocation, planetModel);
-        planet->draw(depthShaderProgram);
     }
 
     if (rock)
@@ -1733,14 +1836,6 @@ void Week09Scene::drawPointShadowCasters(GLuint depthShaderProgram)
         setMatrix(modelLocation, createBackpackModelMatrix());
         backpack->draw(depthShaderProgram);
     }
-
-    if (planet)
-    {
-        setMatrix(
-            modelLocation,
-            makeTransform(glm::vec3(1.3f, 0.0f, -1.5f), glm::vec3(0.018f * 8.0f)));
-        planet->draw(depthShaderProgram);
-    }
 }
 
 void Week09Scene::renderPointShadowMap(const glm::vec3& lightPosition)
@@ -1779,7 +1874,7 @@ void Week09Scene::configureModelPointShadows()
     bindTexture(GL_TEXTURE4, GL_TEXTURE_CUBE_MAP, pointDepthCubemap);
     glUniform1i(modelUniforms.pointShadowMap, 4);
     glUniform1f(modelUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
-    glUniform1i(modelUniforms.pointShadowsEnabled, !outdoorModeEnabled && light1Enabled);
+    glUniform1i(modelUniforms.pointShadowsEnabled, !outdoorModeEnabled && movableLightModeEnabled);
 }
 
 void Week09Scene::createNormalMappedPlane()
@@ -1836,16 +1931,19 @@ void Week09Scene::drawNormalMappedSurface(
     const glm::vec3& lightColor)
 {
     glUseProgram(normalMappingShaderProgram);
+
+    uploadRoomPointLights(normalMappingUniforms, lightPos, movableLightModeEnabled, outdoorModeEnabled);
+    glUniform1i(normalMappingUniforms.pointShadowsEnabled, !outdoorModeEnabled && movableLightModeEnabled);
     setMatrix(normalMappingUniforms.model, model);
     setMatrix(normalMappingUniforms.view, view);
     setMatrix(normalMappingUniforms.projection, projection);
     setVector(normalMappingUniforms.viewPos, cameraPos);
     setVector(normalMappingUniforms.lightPos, lightPos);
     setVector(normalMappingUniforms.lightColor, lightColor);
-    glUniform1i(normalMappingUniforms.lightEnabled, !outdoorModeEnabled && light1Enabled);
+    glUniform1i(normalMappingUniforms.lightEnabled, !outdoorModeEnabled && movableLightModeEnabled);
     setVector(normalMappingUniforms.wallLightPos,WALL_LIGHT_POSITION);
     setVector(normalMappingUniforms.wallLightColor, WALL_LIGHT_COLOR);
-    glUniform1i(normalMappingUniforms.wallLightEnabled, !outdoorModeEnabled && light1Enabled);
+    glUniform1i(normalMappingUniforms.wallLightEnabled, !outdoorModeEnabled && !movableLightModeEnabled);
     glUniform2f(normalMappingUniforms.uvScale, uvScale.x, uvScale.y);
     glUniform1f(normalMappingUniforms.normalStrength, normalStrength);
     glUniform1f(normalMappingUniforms.heightScale,heightScale);

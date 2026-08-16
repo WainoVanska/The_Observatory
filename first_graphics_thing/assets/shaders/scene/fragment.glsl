@@ -25,6 +25,17 @@ uniform float flashlightOuterCutOff;
 uniform bool light1Enabled;
 uniform bool light2Enabled;
 
+const int POINT_LIGHT_COUNT = 4;
+
+struct PointLight
+{
+    vec3 position;
+    vec3 color;
+    bool enabled;
+};
+
+uniform PointLight pointLights[POINT_LIGHT_COUNT];
+
 uniform bool directionalLightEnabled;
 uniform vec3 directionalLightDirection;
 uniform vec3 directionalLightColor;
@@ -417,19 +428,28 @@ void main()
 
     vec3 result = vec3(0.0);
 
-    // first point light
-    if (light1Enabled)
+    // wall lights
+    for (int i = 0; i < POINT_LIGHT_COUNT; ++i)
     {
+        if (!pointLights[i].enabled)
+        {
+            continue;
+        }
+
+        bool castsShadow =
+            pointShadowsEnabled &&
+            i == 0;
+
         result += calculatePointLight(
-            lightPos,
-            lightColor,
+            pointLights[i].position,
+            pointLights[i].color,
             norm,
             viewDir,
-            true
+            castsShadow
         );
     }
 
-    // second point light
+    // blue point light
     if (light2Enabled)
     {
         result += calculatePointLight(

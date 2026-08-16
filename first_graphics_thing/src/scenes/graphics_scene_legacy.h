@@ -5,6 +5,7 @@
 
 #include <glm/glm.hpp>
 #include <vector>
+#include <array>
 
 #include "../common/cube.h"
 #include "../common/sphere.h"
@@ -67,6 +68,10 @@ private:
         GLuint wallLightPos;
         GLuint wallLightColor;
         GLuint wallLightEnabled;
+
+        std::array<GLuint, 4> pointLightPositions{};
+        std::array<GLuint, 4> pointLightColors{};
+        std::array<GLuint, 4> pointLightEnabled{};
     };
 
     struct LampShaderUniforms
@@ -144,6 +149,10 @@ private:
         GLuint wallLightPos;
         GLuint wallLightColor;
         GLuint wallLightEnabled;
+
+        std::array<GLuint, 4> pointLightPositions{};
+        std::array<GLuint, 4> pointLightColors{};
+        std::array<GLuint, 4> pointLightEnabled{};
     };
 
     struct ModelOutlineShaderUniforms
@@ -187,6 +196,10 @@ private:
         GLuint wallLightPos;
         GLuint wallLightColor;
         GLuint wallLightEnabled;
+
+        std::array<GLuint, 4> pointLightPositions{};
+        std::array<GLuint, 4> pointLightColors{};
+        std::array<GLuint, 4> pointLightEnabled{};
     };
 
     void drawLitObjects();
@@ -453,7 +466,7 @@ private:
 
     std::vector<glm::mat4> asteroidMatrices;
 
-    bool light1Enabled = false;
+    bool movableLightModeEnabled = false;
     bool light2Enabled = false;
     bool normalDebugEnabled = false;
     bool depthDebugEnabled = false;

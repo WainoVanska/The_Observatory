@@ -1,6 +1,6 @@
 # Observatory Scene
 
-<img src="../learning_log_images/space_and_asteroids.png" alt="-" width="1000">
+<img src="learning_log_images/space_and_asteroids.png" alt="-" width="1000">
 
 ## Weekly progress
 
