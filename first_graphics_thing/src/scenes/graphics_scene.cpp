@@ -279,7 +279,6 @@ namespace
             modelLocation,
             makeTransform(glm::vec3(0.8f, -0.4f, 0.0f), glm::vec3(1.0f)));
 
-        drawClosedRoom(cube.VAO, modelLocation, texture);
     }
 
     template <typename Uniforms>
@@ -590,6 +589,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     normalMappingUniforms.flashlightEnabled = location(normalMappingShaderProgram, "flashlightEnabled");
     normalMappingUniforms.flashlightCutOff = location(normalMappingShaderProgram, "flashlightCutOff");
     normalMappingUniforms.flashlightOuterCutOff = location(normalMappingShaderProgram, "flashlightOuterCutOff");
+    normalMappingUniforms.normalDebugEnabled = location(normalMappingShaderProgram,"normalDebugEnabled");
 
     cacheRoomPointLightUniforms(shaderProgram, lightingUniforms);
     cacheRoomPointLightUniforms(modelShaderProgram, modelUniforms);
@@ -609,6 +609,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     glUniform1i(modelUniforms.skybox, 2);
 
     glUseProgram(normalMappingShaderProgram);
+    glUniform1i(normalMappingUniforms.normalDebugEnabled,normalDebugEnabled);
     bindPointShadowMaps(normalMappingUniforms, pointDepthCubemaps);
     glUniform1f(normalMappingUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
     glUniform1i(normalMappingUniforms.pointShadowsEnabled, false);
@@ -2091,6 +2092,8 @@ void Week09Scene::drawNormalMappedSurface(
     const glm::vec3& lightColor)
 {
     glUseProgram(normalMappingShaderProgram);
+
+    glUniform1i(normalMappingUniforms.normalDebugEnabled, normalDebugEnabled ? GL_TRUE : GL_FALSE);
 
     bindPointShadowMaps(normalMappingUniforms, pointDepthCubemaps);
     glUniform1f(normalMappingUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);

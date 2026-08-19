@@ -35,6 +35,8 @@ uniform bool flashlightEnabled;
 uniform float flashlightCutOff;
 uniform float flashlightOuterCutOff;
 
+uniform bool normalDebugEnabled;
+
 uniform vec3 wallLightPos;
 uniform vec3 wallLightColor;
 uniform bool wallLightEnabled;
@@ -393,6 +395,19 @@ void main()
 
     vec3 mappedNormal = normalize(fs_in.TBN * tangentNormal);
     vec3 geometricNormal = normalize(fs_in.GeometricNormal);
+
+    if (normalDebugEnabled)
+    {
+        vec3 normalColor =
+            mappedNormal * 0.5 + 0.5;
+
+        FragColor = vec4(
+            normalColor,
+            1.0
+        );
+
+        return;
+    }
 
     vec3 result = 0.015 * baseColor;
 

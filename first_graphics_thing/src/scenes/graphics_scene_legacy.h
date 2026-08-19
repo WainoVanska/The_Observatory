@@ -203,6 +203,8 @@ private:
         GLuint flashlightCutOff;
         GLuint flashlightOuterCutOff;
 
+        GLuint normalDebugEnabled;
+
         std::array<GLuint, 4> pointLightPositions{};
         std::array<GLuint, 4> pointLightColors{};
         std::array<GLuint, 4> pointLightEnabled{};

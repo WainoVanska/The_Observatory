@@ -14,9 +14,7 @@
 
 - read about deferred shading (a scalable way to have many light sources in a scene at the same time). However in my scene deferred shading is probably going to cause unnecessary complexity without decent trade-offs (since I would have to route every aspect of the scene through the G-Buffer instead), so I'm going to skip its implementation for now.
 
-- SSAO (continue later)
-
-- read about PBR theory. "There are a few subtleties involved with the Fresnel equation" continue reading from here https://learnopengl.com/PBR/Theory
+- read about PBR theory.
 
 ## I struggled:
 
