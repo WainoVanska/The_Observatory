@@ -16,7 +16,7 @@
 
 - SSAO (continue later)
 
-- read about PBR theory. "The reflectance equation is based around irradiance" continue reading from here https://learnopengl.com/PBR/Theory
+- read about PBR theory. "There are a few subtleties involved with the Fresnel equation" continue reading from here https://learnopengl.com/PBR/Theory
 
 ## I struggled:
 

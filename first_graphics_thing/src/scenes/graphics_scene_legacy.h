@@ -197,6 +197,12 @@ private:
         GLuint wallLightColor;
         GLuint wallLightEnabled;
 
+        GLuint flashlightPos;
+        GLuint flashlightDir;
+        GLuint flashlightEnabled;
+        GLuint flashlightCutOff;
+        GLuint flashlightOuterCutOff;
+
         std::array<GLuint, 4> pointLightPositions{};
         std::array<GLuint, 4> pointLightColors{};
         std::array<GLuint, 4> pointLightEnabled{};

@@ -552,6 +552,11 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     normalMappingUniforms.wallLightPos = location(normalMappingShaderProgram, "wallLightPos");
     normalMappingUniforms.wallLightColor = location(normalMappingShaderProgram, "wallLightColor");
     normalMappingUniforms.wallLightEnabled = location(normalMappingShaderProgram, "wallLightEnabled");
+    normalMappingUniforms.flashlightPos = location(normalMappingShaderProgram, "flashlightPos");
+    normalMappingUniforms.flashlightDir = location(normalMappingShaderProgram, "flashlightDir");
+    normalMappingUniforms.flashlightEnabled = location(normalMappingShaderProgram, "flashlightEnabled");
+    normalMappingUniforms.flashlightCutOff = location(normalMappingShaderProgram, "flashlightCutOff");
+    normalMappingUniforms.flashlightOuterCutOff = location(normalMappingShaderProgram, "flashlightOuterCutOff");
 
     cacheRoomPointLightUniforms(shaderProgram, lightingUniforms);
     cacheRoomPointLightUniforms(modelShaderProgram, modelUniforms);
@@ -723,9 +728,11 @@ void Week09Scene::draw(
     {
         glUseProgram(normalMappingShaderProgram);
 
-        setVector(normalMappingUniforms.wallLightPos, WALL_LIGHT_POSITION);
-        setVector(normalMappingUniforms.wallLightColor, WALL_LIGHT_COLOR);
-        glUniform1i(normalMappingUniforms.wallLightEnabled, wallLightEnabled);
+        setVector(normalMappingUniforms.flashlightPos, cameraPos);
+        setVector(normalMappingUniforms.flashlightDir, cameraFront);
+        glUniform1i(normalMappingUniforms.flashlightEnabled, flashlightEnabled);
+        glUniform1f(normalMappingUniforms.flashlightCutOff, glm::cos(glm::radians(FLASHLIGHT_INNER_ANGLE)));
+        glUniform1f(normalMappingUniforms.flashlightOuterCutOff, glm::cos(glm::radians(FLASHLIGHT_OUTER_ANGLE)));
 
         drawNormalMappedRoomWalls(view, projection, cameraPos, lightPos, lightColor);
         drawNormalMappedFloorAndCeiling(view, projection, cameraPos, lightPos, lightColor);

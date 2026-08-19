@@ -26,6 +26,12 @@ uniform vec3 lightPos;
 uniform vec3 lightColor;
 uniform vec3 viewPos;
 
+uniform vec3 flashlightPos;
+uniform vec3 flashlightDir;
+uniform bool flashlightEnabled;
+uniform float flashlightCutOff;
+uniform float flashlightOuterCutOff;
+
 uniform vec3 wallLightPos;
 uniform vec3 wallLightColor;
 uniform bool wallLightEnabled;
@@ -245,6 +251,85 @@ vec3 calculateRoomPointLight(
         (diffuse + specular);
 }
 
+vec3 calculateFlashlight(
+    vec3 mappedNormal,
+    vec3 viewDirection,
+    vec3 baseColor
+)
+{
+    vec3 lightDir = normalize(
+        flashlightPos - fs_in.FragPos
+    );
+
+    float theta = dot(
+        lightDir,
+        normalize(-flashlightDir)
+    );
+
+    float epsilon = max(
+        flashlightCutOff - flashlightOuterCutOff,
+        0.0001
+    );
+
+    float rawIntensity = clamp(
+        (theta - flashlightOuterCutOff) / epsilon,
+        0.0,
+        1.0
+    );
+
+    float intensity = smoothstep(
+        0.0,
+        1.0,
+        rawIntensity
+    );
+
+    float diffuseStrength = max(
+        dot(mappedNormal, lightDir),
+        0.0
+    );
+
+    vec3 flashlightColor = vec3(
+        2.5,
+        2.3,
+        2.0
+    );
+
+    vec3 diffuse =
+        diffuseStrength *
+        flashlightColor *
+        baseColor;
+
+    vec3 halfwayDir = normalize(
+        lightDir + viewDirection
+    );
+
+    float specularStrength = pow(
+        max(dot(mappedNormal, halfwayDir), 0.0),
+        32.0
+    );
+
+    vec3 specular =
+        0.15 *
+        specularStrength *
+        flashlightColor;
+
+    float distanceToLight = length(
+        flashlightPos - fs_in.FragPos
+    );
+
+    float attenuation = 1.0 / (
+        1.0 +
+        0.25 * distanceToLight +
+        0.20 *
+        distanceToLight *
+        distanceToLight
+    );
+
+    return attenuation *
+        intensity *
+        (diffuse + specular);
+}
+
 void main()
 {
     vec2 tiledTexCoords = fs_in.TexCoords * uvScale;
@@ -252,11 +337,11 @@ void main()
     vec3 worldViewDir = normalize(viewPos - fs_in.FragPos);
     vec3 tangentViewDir = normalize(transpose(fs_in.TBN) * worldViewDir);
 
-tiledTexCoords =
-    parallaxOcclusionMapping(
-        tiledTexCoords,
-        tangentViewDir
-    );
+    tiledTexCoords =
+        parallaxOcclusionMapping(
+            tiledTexCoords,
+            tangentViewDir
+        );
 
     vec3 baseColor = texture(diffuseMap, tiledTexCoords).rgb;
     vec3 tangentNormal = texture(normalMap, tiledTexCoords).rgb;
@@ -287,7 +372,14 @@ tiledTexCoords =
         );
     }
 
-    FragColor = vec4(result, 1.0);
+    if (flashlightEnabled)
+    {
+        result += calculateFlashlight(
+            mappedNormal,
+            worldViewDir,
+            baseColor
+        );
+    }
 
     FragColor = vec4(result, 1.0);
 }
