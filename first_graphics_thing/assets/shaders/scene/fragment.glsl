@@ -40,7 +40,10 @@ uniform bool directionalLightEnabled;
 uniform vec3 directionalLightDirection;
 uniform vec3 directionalLightColor;
 
-uniform samplerCube pointShadowMap;
+uniform samplerCube pointShadowMap0;
+uniform samplerCube pointShadowMap1;
+uniform samplerCube pointShadowMap2;
+uniform samplerCube pointShadowMap3;
 uniform float pointShadowFarPlane;
 uniform bool pointShadowsEnabled;
 
@@ -71,6 +74,41 @@ const vec3 pointShadowSampleOffsets[20] = vec3[]
     vec3( 0.0, -1.0, -1.0),
     vec3( 0.0,  1.0, -1.0)
 );
+
+float samplePointShadowMap(
+    int lightIndex,
+    vec3 sampleDirection
+)
+{
+    if (lightIndex == 0)
+    {
+        return texture(
+            pointShadowMap0,
+            sampleDirection
+        ).r;
+    }
+
+    if (lightIndex == 1)
+    {
+        return texture(
+            pointShadowMap1,
+            sampleDirection
+        ).r;
+    }
+
+    if (lightIndex == 2)
+    {
+        return texture(
+            pointShadowMap2,
+            sampleDirection
+        ).r;
+    }
+
+    return texture(
+        pointShadowMap3,
+        sampleDirection
+    ).r;
+}
 
 uniform sampler2D directionalShadowMap;
 
@@ -113,7 +151,8 @@ vec3 getSpecularColor()
 float calculatePointShadow(
     vec3 fragmentPosition,
     vec3 pointLightPosition,
-    vec3 norm
+    vec3 norm,
+    int lightIndex
 )
 {
     if (!pointShadowsEnabled)
@@ -163,14 +202,14 @@ float calculatePointShadow(
          ++sampleIndex)
     {
         float closestDepth =
-            texture(
-                pointShadowMap,
+            samplePointShadowMap(
+                lightIndex,
                 fragToLight +
                 pointShadowSampleOffsets[
                     sampleIndex
                 ] *
                 diskRadius
-            ).r;
+            );
 
         closestDepth *=
             pointShadowFarPlane;
@@ -193,7 +232,8 @@ vec3 calculatePointLight(
     vec3 currentLightColor,
     vec3 norm,
     vec3 viewDir,
-    bool castsShadow
+    bool castsShadow,
+    int shadowMapIndex
 )
 {
     vec3 baseColor = getBaseColor();
@@ -232,12 +272,12 @@ vec3 calculatePointLight(
 
     if (castsShadow)
     {
-        shadow =
-            calculatePointShadow(
-                FragPos,
-                currentLightPos,
-                norm
-            );
+        shadow = calculatePointShadow(
+            FragPos,
+            currentLightPos,
+            norm,
+            shadowMapIndex
+        );
     }
 
     return attenuation *
@@ -428,7 +468,7 @@ void main()
 
     vec3 result = vec3(0.0);
 
-    // wall lights
+    // Four room lights
     for (int i = 0; i < POINT_LIGHT_COUNT; ++i)
     {
         if (!pointLights[i].enabled)
@@ -436,20 +476,17 @@ void main()
             continue;
         }
 
-        bool castsShadow =
-            pointShadowsEnabled &&
-            i == 0;
-
         result += calculatePointLight(
             pointLights[i].position,
             pointLights[i].color,
             norm,
             viewDir,
-            castsShadow
+            pointShadowsEnabled,
+            i
         );
     }
 
-    // blue point light
+    // Blue point light does not use a shadow cubemap
     if (light2Enabled)
     {
         result += calculatePointLight(
@@ -457,7 +494,8 @@ void main()
             secondLightColor,
             norm,
             viewDir,
-            false
+            false,
+            0
         );
     }
 

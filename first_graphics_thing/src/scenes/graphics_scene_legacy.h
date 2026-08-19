@@ -61,7 +61,7 @@ private:
         GLuint lightSpaceMatrix;
         GLuint directionalShadowMap;
 
-        GLuint pointShadowMap;
+        std::array<GLuint, 4> pointShadowMaps{};
         GLuint pointShadowFarPlane;
         GLuint pointShadowsEnabled;
 
@@ -129,7 +129,7 @@ private:
         GLuint light1Enabled;
         GLuint light2Enabled;
 
-        GLuint pointShadowMap;
+        std::array<GLuint, 4> pointShadowMaps{};
         GLuint pointShadowFarPlane;
         GLuint pointShadowsEnabled;
 
@@ -189,7 +189,7 @@ private:
         GLuint normalStrength;
         GLuint heightScale;
 
-        GLuint pointShadowMap;
+        std::array<GLuint, 4> pointShadowMaps{};
         GLuint pointShadowFarPlane;
         GLuint pointShadowsEnabled;
 
@@ -212,7 +212,6 @@ private:
     void drawNormalDebugObjects();
     glm::mat4 createBackpackModelMatrix() const;
     glm::mat4 createOutdoorGroundModelMatrix() const;
-    glm::mat4 createWallLampModelMatrix() const;
     void drawBackpack(
         const glm::mat4& view,
         const glm::mat4& projection,
@@ -291,7 +290,7 @@ private:
         const glm::mat4& lightSpaceMatrix
     );
 
-    void createPointShadowMap();
+    void createPointShadowMaps();
 
     std::vector<glm::mat4>
         createPointShadowMatrices(
@@ -299,7 +298,8 @@ private:
         ) const;
 
     void renderPointShadowMap(
-        const glm::vec3& lightPosition
+        const glm::vec3& lightPosition,
+        GLuint targetCubemap
     );
 
     void drawPointShadowCasters(
@@ -392,13 +392,16 @@ private:
     static constexpr unsigned int SHADOW_WIDTH = 2048;
     static constexpr unsigned int SHADOW_HEIGHT = 2048;
 
-    static constexpr unsigned int POINT_SHADOW_WIDTH = 2048;
-    static constexpr unsigned int POINT_SHADOW_HEIGHT = 2048;
+    static constexpr unsigned int POINT_SHADOW_WIDTH = 1024;
+    static constexpr unsigned int POINT_SHADOW_HEIGHT = 1024;
     static constexpr float POINT_SHADOW_NEAR_PLANE = 0.1f;
     static constexpr float POINT_SHADOW_FAR_PLANE = 15.0f;
 
     GLuint pointDepthFBO = 0;
-    GLuint pointDepthCubemap = 0;
+
+    std::array<GLuint, 4> pointDepthCubemaps{};
+    std::array<bool, 4> fixedPointShadowMapsValid{};
+
     GLuint pointDepthShaderProgram = 0;
 
     GLuint directionalDepthFBO = 0;

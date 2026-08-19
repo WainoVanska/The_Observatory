@@ -76,12 +76,6 @@ namespace
         return glm::vec3(0.45f, 0.43f, 0.36f);
     }
 
-    const glm::vec3 WALL_LAMP_POSITION(
-        2.86f,
-        1.15f,
-        0.0f
-    );
-
     constexpr std::size_t ROOM_POINT_LIGHT_COUNT = 4;
 
     const std::array<glm::vec3, ROOM_POINT_LIGHT_COUNT>
@@ -107,13 +101,6 @@ namespace
         0.63f,
         0.50f
     );
-
-    // Temporary fix for lights
-    const glm::vec3 WALL_LIGHT_POSITION =
-        ROOM_POINT_LIGHT_POSITIONS[0];
-
-    const glm::vec3 WALL_LIGHT_COLOR =
-        FIXED_ROOM_LIGHT_COLOR;
 
     template <typename Uniforms>
     void cacheRoomPointLightUniforms(
@@ -146,6 +133,56 @@ namespace
                     program,
                     (prefix + "enabled").c_str()
                 );
+        }
+    }
+
+    template <typename Uniforms>
+    void cachePointShadowMapUniforms(
+        GLuint program,
+        Uniforms& uniforms)
+    {
+        for (std::size_t i = 0;
+            i < ROOM_POINT_LIGHT_COUNT;
+            ++i)
+        {
+            const std::string uniformName =
+                "pointShadowMap" +
+                std::to_string(i);
+
+            uniforms.pointShadowMaps[i] =
+                uniformLocation(
+                    program,
+                    uniformName.c_str()
+                );
+        }
+    }
+
+    template <typename Uniforms>
+    void bindPointShadowMaps(
+        const Uniforms& uniforms,
+        const std::array<
+        GLuint,
+        ROOM_POINT_LIGHT_COUNT
+        >& cubemaps)
+    {
+        for (std::size_t i = 0;
+            i < ROOM_POINT_LIGHT_COUNT;
+            ++i)
+        {
+            const GLenum textureUnit =
+                GL_TEXTURE4 +
+                static_cast<GLenum>(i);
+
+            bindTexture(
+                textureUnit,
+                GL_TEXTURE_CUBE_MAP,
+                cubemaps[i]
+            );
+
+            glUniform1i(
+                uniforms.pointShadowMaps[i],
+                4 + static_cast<GLint>(i)
+            );
         }
     }
 
@@ -404,7 +441,6 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     backpack = new Model("assets/models/backpack/backpack.obj");
     planet = new Model("assets/models/planet/planet.obj");
     rock = new Model("assets/models/rock/rock.obj");
-    wallLamp = new Model("assets/models/industrial_wall_lamp/industrial_wall_lamp_1k.gltf");
     cube = createCubeMesh();
     sphere = createSphereMesh();
 
@@ -415,7 +451,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     createPingPongFramebuffers(width,height);
     createScreenQuad();
     createDirectionalShadowMap();
-    createPointShadowMap();
+    createPointShadowMaps();
     createNormalMappedPlane();
 
     glassSurfaces = {
@@ -469,7 +505,6 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     lightingUniforms.directionalLightColor = location(shaderProgram, "directionalLightColor");
     lightingUniforms.lightSpaceMatrix = location(shaderProgram, "lightSpaceMatrix");
     lightingUniforms.directionalShadowMap = location(shaderProgram, "directionalShadowMap");
-    lightingUniforms.pointShadowMap = location(shaderProgram, "pointShadowMap");
     lightingUniforms.pointShadowFarPlane = location(shaderProgram, "pointShadowFarPlane");
     lightingUniforms.pointShadowsEnabled = location(shaderProgram, "pointShadowsEnabled");
     lightingUniforms.wallLightPos = location(shaderProgram, "wallLightPos");
@@ -509,7 +544,6 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     modelUniforms.secondLightColor = location(modelShaderProgram, "secondLightColor");
     modelUniforms.light1Enabled = location(modelShaderProgram, "light1Enabled");
     modelUniforms.light2Enabled = location(modelShaderProgram, "light2Enabled");
-    modelUniforms.pointShadowMap = location(modelShaderProgram, "pointShadowMap");
     modelUniforms.pointShadowFarPlane = location(modelShaderProgram, "pointShadowFarPlane");
     modelUniforms.pointShadowsEnabled = location(modelShaderProgram, "pointShadowsEnabled");
     modelUniforms.directionalLightEnabled = location(modelShaderProgram, "directionalLightEnabled");
@@ -546,7 +580,6 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     normalMappingUniforms.heightScale = location(normalMappingShaderProgram, "heightScale");
     normalMappingUniforms.uvScale = location(normalMappingShaderProgram, "uvScale");
     normalMappingUniforms.normalStrength = location(normalMappingShaderProgram, "normalStrength");
-    normalMappingUniforms.pointShadowMap = location(normalMappingShaderProgram, "pointShadowMap");
     normalMappingUniforms.pointShadowFarPlane = location(normalMappingShaderProgram, "pointShadowFarPlane");
     normalMappingUniforms.pointShadowsEnabled = location(normalMappingShaderProgram, "pointShadowsEnabled");
     normalMappingUniforms.wallLightPos = location(normalMappingShaderProgram, "wallLightPos");
@@ -562,23 +595,26 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     cacheRoomPointLightUniforms(modelShaderProgram, modelUniforms);
     cacheRoomPointLightUniforms(normalMappingShaderProgram, normalMappingUniforms);
 
+    cachePointShadowMapUniforms(shaderProgram, lightingUniforms);
+    cachePointShadowMapUniforms(modelShaderProgram, modelUniforms);
+    cachePointShadowMapUniforms(normalMappingShaderProgram, normalMappingUniforms);
+
     glUseProgram(shaderProgram);
     glUniform1i(lightingUniforms.directionalShadowMap, 3);
-    glUniform1i(lightingUniforms.pointShadowMap, 4);
+    bindPointShadowMaps(lightingUniforms, pointDepthCubemaps);
 
     glUseProgram(modelShaderProgram);
     glUniform1f(uniformLocation(modelShaderProgram, "material.shininess"), 32.0f);
-    glUniform1i(modelUniforms.pointShadowMap, 4);
+    bindPointShadowMaps(modelUniforms, pointDepthCubemaps);
     glUniform1i(modelUniforms.skybox, 2);
 
     glUseProgram(normalMappingShaderProgram);
-    bindTexture(GL_TEXTURE4, GL_TEXTURE_CUBE_MAP, pointDepthCubemap);
+    bindPointShadowMaps(normalMappingUniforms, pointDepthCubemaps);
     glUniform1f(normalMappingUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
-    glUniform1i(normalMappingUniforms.pointShadowsEnabled, !outdoorModeEnabled && !movableLightModeEnabled);
+    glUniform1i(normalMappingUniforms.pointShadowsEnabled, false);
     glUniform1i(normalMappingUniforms.diffuseMap, 0);
     glUniform1i(normalMappingUniforms.normalMap, 1);
     glUniform1i(normalMappingUniforms.depthMap, 2);
-    glUniform1i(normalMappingUniforms.pointShadowMap, 4);
 
     glUseProgram(glassShaderProgram);
     glUniform1i(uniformLocation(glassShaderProgram, "glassTexture"), 0);
@@ -640,7 +676,6 @@ void Week09Scene::draw(
     const glm::vec3 lightColor(0.70f, 0.63f, 0.50f);
     const glm::vec3 secondLightPos(-2.0f, 2.2f, -2.0f);
     const glm::vec3 secondLightColor(0.3f, 0.5f, 1.0f);
-    const bool wallLightEnabled = !outdoorModeEnabled && !movableLightModeEnabled;
     glm::mat4 lightSpaceMatrix(1.0f);
 
     glEnable(GL_DEPTH_TEST);
@@ -648,12 +683,42 @@ void Week09Scene::draw(
 
     if (outdoorModeEnabled)
     {
-        lightSpaceMatrix = createDirectionalLightSpaceMatrix(sunDirection());
-        renderDirectionalShadowMap(lightSpaceMatrix);
+        lightSpaceMatrix =
+            createDirectionalLightSpaceMatrix(
+                sunDirection()
+            );
+
+        renderDirectionalShadowMap(
+            lightSpaceMatrix
+        );
     }
     else if (movableLightModeEnabled)
     {
-        renderPointShadowMap(lightPos);
+        renderPointShadowMap(
+            lightPos,
+            pointDepthCubemaps[0]
+        );
+
+        fixedPointShadowMapsValid[0] = false;
+    }
+    else
+    {
+        for (std::size_t i = 0;
+            i < ROOM_POINT_LIGHT_COUNT;
+            ++i)
+        {
+            if (fixedPointShadowMapsValid[i])
+            {
+                continue;
+            }
+
+            renderPointShadowMap(
+                ROOM_POINT_LIGHT_POSITIONS[i],
+                pointDepthCubemaps[i]
+            );
+
+            fixedPointShadowMapsValid[i] = true;
+        }
     }
 
     glViewport(0, 0, framebufferWidth, framebufferHeight);
@@ -686,9 +751,9 @@ void Week09Scene::draw(
     glUseProgram(shaderProgram);
     setMatrix(lightingUniforms.lightSpaceMatrix, lightSpaceMatrix);
     bindTexture(GL_TEXTURE3, GL_TEXTURE_2D, directionalDepthMap);
-    bindTexture(GL_TEXTURE4, GL_TEXTURE_CUBE_MAP, pointDepthCubemap);
+    bindPointShadowMaps(lightingUniforms, pointDepthCubemaps);
     glUniform1f(lightingUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
-    glUniform1i(lightingUniforms.pointShadowsEnabled, !outdoorModeEnabled && movableLightModeEnabled);
+    glUniform1i(lightingUniforms.pointShadowsEnabled,!outdoorModeEnabled);
     glUniform1i(lightingUniforms.light1Enabled, !outdoorModeEnabled && movableLightModeEnabled);
     glUniform1i(lightingUniforms.light2Enabled, !outdoorModeEnabled && light2Enabled);
     glUniform1i(lightingUniforms.directionalLightEnabled, outdoorModeEnabled);
@@ -703,10 +768,6 @@ void Week09Scene::draw(
     setVector(lightingUniforms.secondLightPos, secondLightPos);
     setVector(lightingUniforms.secondLightColor, secondLightColor);
 
-    setVector(lightingUniforms.wallLightPos, WALL_LIGHT_POSITION);
-    setVector(lightingUniforms.wallLightColor, WALL_LIGHT_COLOR);
-    glUniform1i(lightingUniforms.wallLightEnabled, wallLightEnabled);
-
     setVector(lightingUniforms.flashlightPos, cameraPos);
     setVector(lightingUniforms.flashlightDir, cameraFront);
     glUniform1i(lightingUniforms.flashlightEnabled, flashlightEnabled);
@@ -714,10 +775,6 @@ void Week09Scene::draw(
     glUniform1f(lightingUniforms.flashlightOuterCutOff, glm::cos(glm::radians(FLASHLIGHT_OUTER_ANGLE)));
 
     glUseProgram(modelShaderProgram);
-
-    setVector(modelUniforms.wallLightPos, WALL_LIGHT_POSITION);
-    setVector(modelUniforms.wallLightColor, WALL_LIGHT_COLOR);
-    glUniform1i(modelUniforms.wallLightEnabled, wallLightEnabled);
 
     glUseProgram(shaderProgram);
 
@@ -765,54 +822,6 @@ void Week09Scene::draw(
         glStencilMask(0x00);
         drawBackpack(view, projection, cameraPos, cameraFront, lightPos, secondLightPos, secondLightColor);
         glStencilMask(0xFF);
-    }
-
-    if (wallLamp && !outdoorModeEnabled)
-    {
-        glUseProgram(modelShaderProgram);
-
-        configureModelPointShadows();
-
-        glUniform1i(
-            modelUniforms.glassBackpackEnabled,
-            false
-        );
-
-        configureModelLighting(
-            modelUniforms,
-            view,
-            projection,
-            cameraPos,
-            cameraFront,
-            lightPos,
-            lightColor,
-            secondLightPos,
-            secondLightColor,
-            !outdoorModeEnabled && movableLightModeEnabled,
-            !outdoorModeEnabled && light2Enabled,
-            outdoorModeEnabled,
-            flashlightEnabled
-        );
-
-        setVector(
-            modelUniforms.wallLightPos,
-            WALL_LIGHT_POSITION
-        );
-        setVector(
-            modelUniforms.wallLightColor,
-            WALL_LIGHT_COLOR
-        );
-        glUniform1i(
-            modelUniforms.wallLightEnabled,
-            wallLightEnabled
-        );
-
-        setMatrix(
-            modelUniforms.model,
-            createWallLampModelMatrix()
-        );
-
-        wallLamp->draw(modelShaderProgram);
     }
 
     glStencilMask(0x00);
@@ -1749,41 +1758,105 @@ glm::mat4 Week09Scene::createAsteroidSystemModel() const
     );
 }
 
-void Week09Scene::createPointShadowMap()
+void Week09Scene::createPointShadowMaps()
 {
-    glGenFramebuffers(1, &pointDepthFBO);
-    glGenTextures(1, &pointDepthCubemap);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, pointDepthCubemap);
+    glGenFramebuffers(
+        1,
+        &pointDepthFBO
+    );
 
-    for (unsigned int face = 0; face < 6; ++face)
+    glGenTextures(
+        static_cast<GLsizei>(
+            pointDepthCubemaps.size()
+            ),
+        pointDepthCubemaps.data()
+    );
+
+    for (GLuint cubemap : pointDepthCubemaps)
     {
-        glTexImage2D(
-            GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
-            0,
-            GL_DEPTH_COMPONENT24,
-            POINT_SHADOW_WIDTH,
-            POINT_SHADOW_HEIGHT,
-            0,
-            GL_DEPTH_COMPONENT,
-            GL_FLOAT,
-            nullptr);
+        glBindTexture(
+            GL_TEXTURE_CUBE_MAP,
+            cubemap
+        );
+
+        for (unsigned int face = 0;
+            face < 6;
+            ++face)
+        {
+            glTexImage2D(
+                GL_TEXTURE_CUBE_MAP_POSITIVE_X +
+                face,
+                0,
+                GL_DEPTH_COMPONENT24,
+                POINT_SHADOW_WIDTH,
+                POINT_SHADOW_HEIGHT,
+                0,
+                GL_DEPTH_COMPONENT,
+                GL_FLOAT,
+                nullptr
+            );
+        }
+
+        glTexParameteri(
+            GL_TEXTURE_CUBE_MAP,
+            GL_TEXTURE_MIN_FILTER,
+            GL_NEAREST
+        );
+
+        glTexParameteri(
+            GL_TEXTURE_CUBE_MAP,
+            GL_TEXTURE_MAG_FILTER,
+            GL_NEAREST
+        );
+
+        glTexParameteri(
+            GL_TEXTURE_CUBE_MAP,
+            GL_TEXTURE_WRAP_S,
+            GL_CLAMP_TO_EDGE
+        );
+
+        glTexParameteri(
+            GL_TEXTURE_CUBE_MAP,
+            GL_TEXTURE_WRAP_T,
+            GL_CLAMP_TO_EDGE
+        );
+
+        glTexParameteri(
+            GL_TEXTURE_CUBE_MAP,
+            GL_TEXTURE_WRAP_R,
+            GL_CLAMP_TO_EDGE
+        );
     }
 
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glBindFramebuffer(
+        GL_FRAMEBUFFER,
+        pointDepthFBO
+    );
 
-    glBindFramebuffer(GL_FRAMEBUFFER, pointDepthFBO);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, pointDepthCubemap, 0);
+    glFramebufferTexture(
+        GL_FRAMEBUFFER,
+        GL_DEPTH_ATTACHMENT,
+        pointDepthCubemaps[0],
+        0
+    );
+
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+
+    if (
+        glCheckFramebufferStatus(
+            GL_FRAMEBUFFER
+        ) != GL_FRAMEBUFFER_COMPLETE
+        )
     {
-        std::cerr << "Point shadow framebuffer incomplete\n";
+        std::cerr
+            << "Point shadow framebuffer incomplete\n";
     }
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+    fixedPointShadowMapsValid.fill(false);
 }
 
 std::vector<glm::mat4> Week09Scene::createPointShadowMatrices(
@@ -1845,43 +1918,123 @@ void Week09Scene::drawPointShadowCasters(GLuint depthShaderProgram)
     }
 }
 
-void Week09Scene::renderPointShadowMap(const glm::vec3& lightPosition)
+void Week09Scene::renderPointShadowMap(
+    const glm::vec3& lightPosition,
+    GLuint targetCubemap)
 {
-    const std::vector<glm::mat4> shadowMatrices = createPointShadowMatrices(lightPosition);
-    glViewport(0, 0, POINT_SHADOW_WIDTH, POINT_SHADOW_HEIGHT);
-    glBindFramebuffer(GL_FRAMEBUFFER, pointDepthFBO);
+    const std::vector<glm::mat4>
+        shadowMatrices =
+        createPointShadowMatrices(
+            lightPosition
+        );
+
+    glViewport(
+        0,
+        0,
+        POINT_SHADOW_WIDTH,
+        POINT_SHADOW_HEIGHT
+    );
+
+    glBindFramebuffer(
+        GL_FRAMEBUFFER,
+        pointDepthFBO
+    );
+
+    glFramebufferTexture(
+        GL_FRAMEBUFFER,
+        GL_DEPTH_ATTACHMENT,
+        targetCubemap,
+        0
+    );
+
     glClear(GL_DEPTH_BUFFER_BIT);
+
     glUseProgram(pointDepthShaderProgram);
 
-    for (unsigned int face = 0; face < 6; ++face)
+    for (unsigned int face = 0;
+        face < 6;
+        ++face)
     {
-        const std::string uniformName = "shadowMatrices[" + std::to_string(face) + "]";
-        setMatrix(uniformLocation(pointDepthShaderProgram, uniformName.c_str()), shadowMatrices[face]);
+        const std::string uniformName =
+            "shadowMatrices[" +
+            std::to_string(face) +
+            "]";
+
+        setMatrix(
+            uniformLocation(
+                pointDepthShaderProgram,
+                uniformName.c_str()
+            ),
+            shadowMatrices[face]
+        );
     }
 
-    setVector(uniformLocation(pointDepthShaderProgram, "lightPos"), lightPosition);
-    glUniform1f(uniformLocation(pointDepthShaderProgram, "farPlane"), POINT_SHADOW_FAR_PLANE);
+    setVector(
+        uniformLocation(
+            pointDepthShaderProgram,
+            "lightPos"
+        ),
+        lightPosition
+    );
 
-    const GLboolean cullingWasEnabled = glIsEnabled(GL_CULL_FACE);
+    glUniform1f(
+        uniformLocation(
+            pointDepthShaderProgram,
+            "farPlane"
+        ),
+        POINT_SHADOW_FAR_PLANE
+    );
+
+    const GLboolean cullingWasEnabled =
+        glIsEnabled(GL_CULL_FACE);
+
     GLint previousCullFaceMode = GL_BACK;
-    glGetIntegerv(GL_CULL_FACE_MODE, &previousCullFaceMode);
+
+    glGetIntegerv(
+        GL_CULL_FACE_MODE,
+        &previousCullFaceMode
+    );
+
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
-    drawPointShadowCasters(pointDepthShaderProgram);
-    glCullFace(static_cast<GLenum>(previousCullFaceMode));
+
+    drawPointShadowCasters(
+        pointDepthShaderProgram
+    );
+
+    glCullFace(
+        static_cast<GLenum>(
+            previousCullFaceMode
+            )
+    );
+
     if (!cullingWasEnabled)
     {
         glDisable(GL_CULL_FACE);
     }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glBindFramebuffer(
+        GL_FRAMEBUFFER,
+        0
+    );
 }
 
 void Week09Scene::configureModelPointShadows()
 {
-    bindTexture(GL_TEXTURE4, GL_TEXTURE_CUBE_MAP, pointDepthCubemap);
-    glUniform1i(modelUniforms.pointShadowMap, 4);
-    glUniform1f(modelUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
-    glUniform1i(modelUniforms.pointShadowsEnabled, !outdoorModeEnabled && movableLightModeEnabled);
+    bindPointShadowMaps(
+        modelUniforms,
+        pointDepthCubemaps
+    );
+
+    glUniform1f(
+        modelUniforms.pointShadowFarPlane,
+        POINT_SHADOW_FAR_PLANE
+    );
+
+    glUniform1i(
+        modelUniforms.pointShadowsEnabled,
+        !outdoorModeEnabled
+    );
 }
 
 void Week09Scene::createNormalMappedPlane()
@@ -1939,8 +2092,10 @@ void Week09Scene::drawNormalMappedSurface(
 {
     glUseProgram(normalMappingShaderProgram);
 
-    uploadRoomPointLights(normalMappingUniforms, lightPos, movableLightModeEnabled, outdoorModeEnabled);
-    glUniform1i(normalMappingUniforms.pointShadowsEnabled, !outdoorModeEnabled && movableLightModeEnabled);
+    bindPointShadowMaps(normalMappingUniforms, pointDepthCubemaps);
+    glUniform1f(normalMappingUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
+    glUniform1i(normalMappingUniforms.pointShadowsEnabled, !outdoorModeEnabled);
+    uploadRoomPointLights(normalMappingUniforms,lightPos, movableLightModeEnabled, outdoorModeEnabled);
     setMatrix(normalMappingUniforms.model, model);
     setMatrix(normalMappingUniforms.view, view);
     setMatrix(normalMappingUniforms.projection, projection);
@@ -1948,8 +2103,6 @@ void Week09Scene::drawNormalMappedSurface(
     setVector(normalMappingUniforms.lightPos, lightPos);
     setVector(normalMappingUniforms.lightColor, lightColor);
     glUniform1i(normalMappingUniforms.lightEnabled, !outdoorModeEnabled && movableLightModeEnabled);
-    setVector(normalMappingUniforms.wallLightPos,WALL_LIGHT_POSITION);
-    setVector(normalMappingUniforms.wallLightColor, WALL_LIGHT_COLOR);
     glUniform1i(normalMappingUniforms.wallLightEnabled, !outdoorModeEnabled && !movableLightModeEnabled);
     glUniform2f(normalMappingUniforms.uvScale, uvScale.x, uvScale.y);
     glUniform1f(normalMappingUniforms.normalStrength, normalStrength);
@@ -2058,16 +2211,6 @@ void Week09Scene::drawNormalMappedFloorAndCeiling(
     }
 }
 
-glm::mat4 Week09Scene::createWallLampModelMatrix() const
-{
-    return makeTransform(
-        WALL_LAMP_POSITION,
-        glm::vec3(1.0f),
-        -90.0f,
-        glm::vec3(0.0f, 1.0f, 0.0f)
-    );
-}
-
 void Week09Scene::cleanup()
 {
     deleteCubeMesh(cube);
@@ -2080,7 +2223,6 @@ void Week09Scene::cleanup()
         framebufferTexture,
         multisampleColorTexture,
         directionalDepthMap,
-        pointDepthCubemap,
         brickDiffuseTexture,
         brickNormalTexture,
         brickDepthTexture,
@@ -2092,6 +2234,7 @@ void Week09Scene::cleanup()
         pingPongTextures[1]
     };
     glDeleteTextures(static_cast<GLsizei>(sizeof(textures) / sizeof(textures[0])), textures);
+    glDeleteTextures(static_cast<GLsizei>(pointDepthCubemaps.size()), pointDepthCubemaps.data());
 
     const GLuint programs[] = {
         shaderProgram,
@@ -2141,6 +2284,4 @@ void Week09Scene::cleanup()
     planet = nullptr;
     delete rock;
     rock = nullptr;
-    delete wallLamp;
-    wallLamp = nullptr;
 }

@@ -18,7 +18,10 @@ uniform vec2 uvScale;
 uniform float normalStrength;
 uniform float heightScale;
 
-uniform samplerCube pointShadowMap;
+uniform samplerCube pointShadowMap0;
+uniform samplerCube pointShadowMap1;
+uniform samplerCube pointShadowMap2;
+uniform samplerCube pointShadowMap3;
 uniform float pointShadowFarPlane;
 uniform bool pointShadowsEnabled;
 
@@ -77,10 +80,46 @@ const vec3 pointShadowSampleOffsets[20] = vec3[]
     vec3( 0.0,  1.0, -1.0)
 );
 
+float samplePointShadowMap(
+    int lightIndex,
+    vec3 sampleDirection
+)
+{
+    if (lightIndex == 0)
+    {
+        return texture(
+            pointShadowMap0,
+            sampleDirection
+        ).r;
+    }
+
+    if (lightIndex == 1)
+    {
+        return texture(
+            pointShadowMap1,
+            sampleDirection
+        ).r;
+    }
+
+    if (lightIndex == 2)
+    {
+        return texture(
+            pointShadowMap2,
+            sampleDirection
+        ).r;
+    }
+
+    return texture(
+        pointShadowMap3,
+        sampleDirection
+    ).r;
+}
+
 float calculatePointShadow(
     vec3 fragmentPosition,
     vec3 pointLightPosition,
-    vec3 geometricNormal
+    vec3 geometricNormal,
+    int lightIndex
 )
 {
     if (!pointShadowsEnabled)
@@ -115,7 +154,11 @@ float calculatePointShadow(
             fragToLight +
             pointShadowSampleOffsets[sampleIndex] * diskRadius;
 
-        float closestDepth = texture(pointShadowMap, sampleDirection).r;
+        float closestDepth =
+            samplePointShadowMap(
+                lightIndex,
+                sampleDirection
+            );
         closestDepth *= pointShadowFarPlane;
 
         if (currentDepth - bias > closestDepth)
@@ -234,15 +277,13 @@ vec3 calculateRoomPointLight(
 
     float shadow = 0.0;
 
-    if (
-        pointShadowsEnabled &&
-        lightIndex == 0
-    )
+    if (pointShadowsEnabled)
     {
         shadow = calculatePointShadow(
             fs_in.FragPos,
             pointLight.position,
-            geometricNormal
+            geometricNormal,
+            lightIndex
         );
     }
 
