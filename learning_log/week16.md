@@ -2,8 +2,27 @@
 
 ## I learned:
 
-<img src="../learning_log_images/bloom.png" alt="-" width="500">
+<table>
+  <tr>
+    <td align="center">
+      <img src="../learning_log_images/normal_debug_before.png"
+           alt="Normal debugger with z-fighting and overlapping"
+           width="100%">
+      <br>
+      <em>Before</em>
+    </td>
+    <td align="center">
+      <img src="../learning_log_images/normal_debug_after.png"
+           alt="Normal debugger fixed"
+           width="100%">
+      <br>
+      <em>After</em>
+    </td>
+  </tr>
+</table>
 
 ## I struggled:
 
 ## Thoughts:
+
+- This week has been mostly putting the observatory scene together by fixing remaining bugs and inconsistancies in the code.
