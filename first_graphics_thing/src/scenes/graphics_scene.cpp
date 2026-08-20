@@ -623,6 +623,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     glUseProgram(screenShaderProgram);
     screenTextureUniform = location(screenShaderProgram, "screenTexture");
     glUniform1i(screenTextureUniform, 0);
+    glUniform1i(uniformLocation(screenShaderProgram, "depthTexture"), 2);
 
     glUniform1i(uniformLocation(screenShaderProgram,"bloomTexture"),1);
 
@@ -737,16 +738,6 @@ void Week09Scene::draw(
         setMatrix(normalDebugUniforms.projection, projection);
         drawNormalDebugObjects();
         drawBackpackNormalDebug(view, projection);
-    }
-    else if (depthDebugEnabled)
-    {
-        glUseProgram(depthDebugShaderProgram);
-        setMatrix(depthDebugUniforms.view, view);
-        setMatrix(depthDebugUniforms.projection, projection);
-        glUniform1f(depthDebugUniforms.nearPlane, 0.1f);
-        glUniform1f(depthDebugUniforms.farPlane, 100.0f);
-        drawDepthDebugObjects();
-        drawBackpackDepthDebug(view, projection);
     }
 
     glUseProgram(shaderProgram);
@@ -869,10 +860,16 @@ void Week09Scene::draw(
     glBindFramebuffer(GL_READ_FRAMEBUFFER, multisampleFramebuffer);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
     glBlitFramebuffer(
-        0, 0, framebufferWidth, framebufferHeight,
-        0, 0, framebufferWidth, framebufferHeight,
-        GL_COLOR_BUFFER_BIT,
-        GL_NEAREST);
+        0, 0,
+        framebufferWidth,
+        framebufferHeight,
+        0, 0,
+        framebufferWidth,
+        framebufferHeight,
+        GL_COLOR_BUFFER_BIT |
+        GL_DEPTH_BUFFER_BIT,
+        GL_NEAREST
+    );
     extractBrightAreas();
     blurBrightAreas();
 
@@ -1136,6 +1133,66 @@ void Week09Scene::createFramebuffer(int width, int height)
         GL_TEXTURE_2D_MULTISAMPLE,
         multisampleColorTexture,
         0);
+
+    glGenTextures(
+        1,
+        &framebufferDepthTexture
+    );
+
+    glBindTexture(
+        GL_TEXTURE_2D,
+        framebufferDepthTexture
+    );
+
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_DEPTH24_STENCIL8,
+        width,
+        height,
+        0,
+        GL_DEPTH_STENCIL,
+        GL_UNSIGNED_INT_24_8,
+        nullptr
+    );
+
+    glTexParameteri(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_MIN_FILTER,
+        GL_NEAREST
+    );
+
+    glTexParameteri(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_MAG_FILTER,
+        GL_NEAREST
+    );
+
+    glTexParameteri(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_WRAP_S,
+        GL_CLAMP_TO_EDGE
+    );
+
+    glTexParameteri(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_WRAP_T,
+        GL_CLAMP_TO_EDGE
+    );
+
+    glTexParameteri(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_COMPARE_MODE,
+        GL_NONE
+    );
+
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER,
+        GL_DEPTH_STENCIL_ATTACHMENT,
+        GL_TEXTURE_2D,
+        framebufferDepthTexture,
+        0
+    );
 
     glGenRenderbuffers(1, &multisampleRBO);
     glBindRenderbuffer(GL_RENDERBUFFER, multisampleRBO);
@@ -1501,6 +1558,10 @@ void Week09Scene::drawScreenQuad()
 {
     glUseProgram(screenShaderProgram);
 
+    glUniform1i(uniformLocation(screenShaderProgram, "screenTexture"), 0);
+    glUniform1i(uniformLocation(screenShaderProgram, "bloomTexture"), 1);
+    glUniform1i(uniformLocation(screenShaderProgram, "depthTexture"), 2);
+
     glUniform1i(uniformLocation(screenShaderProgram, "blurEnabled"), blurEnabled);
     glUniform1i(uniformLocation(screenShaderProgram, "gammaCorrectionEnabled"), true);
     glUniform1i(uniformLocation(screenShaderProgram, "hdrEnabled"), true);
@@ -1508,8 +1569,13 @@ void Week09Scene::drawScreenQuad()
     glUniform1i(uniformLocation(screenShaderProgram, "bloomEnabled"), bloomEnabled);
     glUniform1f(uniformLocation(screenShaderProgram, "bloomStrength"), bloomStrength);
 
+    glUniform1i(uniformLocation(screenShaderProgram, "depthDebugEnabled"), depthDebugEnabled);
+    glUniform1f(uniformLocation(screenShaderProgram, "nearPlane"), 0.1f);
+    glUniform1f(uniformLocation(screenShaderProgram, "farPlane"), 100.0f);
+
     bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, framebufferTexture);
     bindTexture(GL_TEXTURE1, GL_TEXTURE_2D, blurredBloomTexture);
+    bindTexture(GL_TEXTURE2, GL_TEXTURE_2D, framebufferDepthTexture);
 
     glBindVertexArray(screenQuadVAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -2234,7 +2300,8 @@ void Week09Scene::cleanup()
         ceilingDiffuseTexture,
         ceilingNormalTexture,
         pingPongTextures[0],
-        pingPongTextures[1]
+        pingPongTextures[1],
+        framebufferDepthTexture
     };
     glDeleteTextures(static_cast<GLsizei>(sizeof(textures) / sizeof(textures[0])), textures);
     glDeleteTextures(static_cast<GLsizei>(pointDepthCubemaps.size()), pointDepthCubemaps.data());

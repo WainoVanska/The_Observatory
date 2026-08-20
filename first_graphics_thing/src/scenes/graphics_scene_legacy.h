@@ -378,6 +378,7 @@ private:
     GLuint framebuffer = 0;
     GLuint framebufferTexture = 0;
     GLuint framebufferRBO = 0;
+    GLuint framebufferDepthTexture = 0;
 
     GLuint brightPassFBO = 0;
     GLuint brightTexture = 0;

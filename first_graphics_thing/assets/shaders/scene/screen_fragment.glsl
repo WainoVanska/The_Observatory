@@ -12,9 +12,52 @@ uniform bool blurEnabled;
 uniform bool gammaCorrectionEnabled;
 uniform bool hdrEnabled;
 uniform float exposure;
+uniform sampler2D depthTexture;
+uniform bool depthDebugEnabled;
+uniform float nearPlane;
+uniform float farPlane;
+
+float linearizeDepth(float depth)
+{
+    float ndcDepth = depth * 2.0 - 1.0;
+    return (2.0 * nearPlane * farPlane) / 
+    (farPlane + nearPlane - ndcDepth * 
+    (farPlane - nearPlane));
+}
 
 void main()
 {
+    if (depthDebugEnabled)
+    {
+        float storedDepth =
+            texture(
+                depthTexture,
+                TexCoords
+            ).r;
+
+        float linearDepth =
+            linearizeDepth(storedDepth);
+
+        float normalizedDepth =
+            log(1.0 + linearDepth) /
+            log(1.0 + farPlane);
+
+        float depthColor =
+            1.0 -
+            clamp(
+                normalizedDepth,
+                0.0,
+                1.0
+            );
+
+        FragColor = vec4(
+            vec3(depthColor),
+            1.0
+        );
+
+        return;
+    }
+
     vec3 color;
 
     if (!blurEnabled)
