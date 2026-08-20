@@ -1117,130 +1117,52 @@ void Week09Scene::createFramebuffer(int width, int height)
 
     glGenFramebuffers(1, &multisampleFramebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, multisampleFramebuffer);
+
     glGenTextures(1, &multisampleColorTexture);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, multisampleColorTexture);
-    glTexImage2DMultisample(
-        GL_TEXTURE_2D_MULTISAMPLE,
-        MSAA_SAMPLES,
-        GL_RGB16F,
-        width,
-        height,
-        GL_TRUE);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-    glFramebufferTexture2D(
-        GL_FRAMEBUFFER,
-        GL_COLOR_ATTACHMENT0,
-        GL_TEXTURE_2D_MULTISAMPLE,
-        multisampleColorTexture,
-        0);
-
-    glGenTextures(
-        1,
-        &framebufferDepthTexture
-    );
-
-    glBindTexture(
-        GL_TEXTURE_2D,
-        framebufferDepthTexture
-    );
-
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_DEPTH24_STENCIL8,
-        width,
-        height,
-        0,
-        GL_DEPTH_STENCIL,
-        GL_UNSIGNED_INT_24_8,
-        nullptr
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_MIN_FILTER,
-        GL_NEAREST
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_MAG_FILTER,
-        GL_NEAREST
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_WRAP_S,
-        GL_CLAMP_TO_EDGE
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_WRAP_T,
-        GL_CLAMP_TO_EDGE
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_COMPARE_MODE,
-        GL_NONE
-    );
-
-    glFramebufferTexture2D(
-        GL_FRAMEBUFFER,
-        GL_DEPTH_STENCIL_ATTACHMENT,
-        GL_TEXTURE_2D,
-        framebufferDepthTexture,
-        0
-    );
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_SAMPLES, GL_RGB16F, width, height, GL_TRUE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, multisampleColorTexture, 0);
 
     glGenRenderbuffers(1, &multisampleRBO);
     glBindRenderbuffer(GL_RENDERBUFFER, multisampleRBO);
-    glRenderbufferStorageMultisample(
-        GL_RENDERBUFFER,
-        MSAA_SAMPLES,
-        GL_DEPTH24_STENCIL8,
-        width,
-        height);
-    glFramebufferRenderbuffer(
-        GL_FRAMEBUFFER,
-        GL_DEPTH_STENCIL_ATTACHMENT,
-        GL_RENDERBUFFER,
-        multisampleRBO);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, MSAA_SAMPLES, GL_DEPTH24_STENCIL8, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, multisampleRBO);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
-        std::cout << "ERROR::FRAMEBUFFER:: Multisample framebuffer is not complete!" << std::endl;
+        std::cout << "ERROR::FRAMEBUFFER:: Multisample framebuffer is not complete!\n";
     }
 
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
     glGenTextures(1, &framebufferTexture);
     glBindTexture(GL_TEXTURE_2D, framebufferTexture);
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGB16F,
-        width,
-        height,
-        0,
-        GL_RGB,
-        GL_UNSIGNED_BYTE,
-        nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(
-        GL_FRAMEBUFFER,
-        GL_COLOR_ATTACHMENT0,
-        GL_TEXTURE_2D,
-        framebufferTexture,
-        0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebufferTexture, 0);
+
+    glGenTextures(1, &framebufferDepthTexture);
+    glBindTexture(GL_TEXTURE_2D, framebufferDepthTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, framebufferDepthTexture, 0);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
-        std::cout << "ERROR::FRAMEBUFFER:: Resolved framebuffer is not complete!" << std::endl;
+        std::cout << "ERROR::FRAMEBUFFER:: Resolved framebuffer is not complete!\n";
     }
 
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
