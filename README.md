@@ -41,6 +41,8 @@ The Observatory Scene is a real-time C++ and OpenGL learning project that combin
 | **N** | Toggle normal visualization |
 | **V** | Toggle depth visualization |
 | **Q / E** | Decrease/increase the parallax height scale |
+| **M** | Toggle indoor/outdoor mode |
+| **H** | Toggle the backpack model material |
 | **P** | Toggle the backpack model outline |
 | **B** | Toggle framebuffer blur effect |
 | **Esc** | Close the application |
