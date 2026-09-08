@@ -5,12 +5,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <string>
+#include <iostream>
+#include <string>
 
 #include "../engine/free_camera.h"
 #include "../engine/light_controller.h"
 #include "../engine/window.h"
 #include "../scenes/graphics_scene.h"
-#include "../engine/Framerecorder.h"
+#include "../engine/FrameRecorder.h"
 
 namespace
 {
@@ -93,6 +95,9 @@ int main()
     FrameRecorder recorder;
     bool recordKeyWasPressed = false;
 
+    constexpr double RECORDING_INTERVAL = 1.0 / 60.0;
+    double nextRecordingFrame = 0.0;
+
     while (!glfwWindowShouldClose(window))
     {
         camera.update(window);
@@ -113,7 +118,37 @@ int main()
                 int framebufferHeight;
 
                 glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
-                recorder.start("observatory.mp4", framebufferWidth, framebufferHeight, 60);
+
+                std::cout
+                    << "Original framebuffer: "
+                    << framebufferWidth << "x"
+                    << framebufferHeight << '\n';
+
+                // Round odd dimensions by one pixel
+                framebufferWidth -= framebufferWidth % 2;
+                framebufferHeight -= framebufferHeight % 2;
+
+                std::cout
+                    << "Recording resolution: "
+                    << framebufferWidth << "x"
+                    << framebufferHeight << '\n';
+
+                const bool started = recorder.start(
+                    "observatory.mp4",
+                    framebufferWidth,
+                    framebufferHeight,
+                    60
+                );
+
+                if (started)
+                {
+                    // Start the recording timer from the current moment.
+                    nextRecordingFrame = glfwGetTime();
+                }
+                else
+                {
+                    std::cerr << "Recorder failed to start.\n";
+                }
             }
         }
 
@@ -128,7 +163,19 @@ int main()
 
         if (recorder.isRecording())
         {
-            recorder.captureFrame();
+            const double currentTime = glfwGetTime();
+
+            if (currentTime >= nextRecordingFrame)
+            {
+                recorder.captureFrame();
+                nextRecordingFrame += RECORDING_INTERVAL;
+
+                // Prevent trying to catch up after a large delay.
+                if (nextRecordingFrame < currentTime)
+                {
+                    nextRecordingFrame = currentTime + RECORDING_INTERVAL;
+                }
+            }
         }
 
         frameRateTitle.update(window, recorder.isRecording());

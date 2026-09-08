@@ -1,4 +1,4 @@
-#include "Framerecorder.h"
+#include "FrameRecorder.h"
 
 #include <glad/glad.h>
 
@@ -58,7 +58,7 @@ bool FrameRecorder::start(
         R"(C:\Users\xcove\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.2-full_build\bin\ffmpeg.exe)";
 
     command
-        << "\"" << ffmpegPath << "\" -y "
+        << ffmpegPath << " -y "
         << "-f rawvideo "
         << "-pixel_format rgb24 "
         << "-video_size " << width << "x" << height << " "
@@ -67,7 +67,7 @@ bool FrameRecorder::start(
         << "-vf vflip "
         << "-an "
         << "-c:v libx264 "
-        << "-preset medium "
+        << "-preset veryfast "
         << "-crf 18 "
         << "-pix_fmt yuv420p "
         << "\"" << outputPath << "\"";
