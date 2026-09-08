@@ -25,6 +25,7 @@ The Observatory Scene is a real-time C++ and OpenGL learning project that combin
 
 * Blue light only has an impartial implementation (no lighting on the walls and no shadows from objects) and should be treated as such.
 * Normal debug mode doesn't contain the planet or asteroids.
+* When the backpack material is toggled to glass (H key) the material only takes the skybox texture into consideration. The stars reflecting on the backpack look messy, this isn't intended because the original implementation was made with a different skybox texture initially.
 
 ### Controls
 

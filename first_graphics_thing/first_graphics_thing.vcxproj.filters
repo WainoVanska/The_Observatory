@@ -1,54 +1,147 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files\App"><UniqueIdentifier>{DC4A86C7-5EAB-4C73-8A5F-C7353D18B303}</UniqueIdentifier></Filter>
-    <Filter Include="Source Files\Engine"><UniqueIdentifier>{45374185-4399-408C-9C55-6C5880548EC5}</UniqueIdentifier></Filter>
-    <Filter Include="Source Files\Scenes"><UniqueIdentifier>{B774F73C-12DB-4F27-A8E7-AC5536E80A5F}</UniqueIdentifier></Filter>
-    <Filter Include="Header Files\Engine"><UniqueIdentifier>{9CA6224E-3BA2-43BF-A1F3-EF9436194731}</UniqueIdentifier></Filter>
-    <Filter Include="Header Files\Scenes"><UniqueIdentifier>{220104FE-5738-4AA0-9DC6-B78609EB0A37}</UniqueIdentifier></Filter>
-    <Filter Include="Shaders\Scene"><UniqueIdentifier>{B0C33480-3EB4-485A-9E09-B4D6EB72560A}</UniqueIdentifier></Filter>
-    <Filter Include="Shaders\Skybox"><UniqueIdentifier>{FA48D136-D981-45A4-AFD0-A760E1A05C2B}</UniqueIdentifier></Filter>
+    <ClCompile Include="dependencies\glad\src\glad.c" />
+    <ClCompile Include="src\app\main.cpp" />
+    <ClCompile Include="src\engine\character.cpp" />
+    <ClCompile Include="src\engine\character_skin.cpp" />
+    <ClCompile Include="src\engine\cube.cpp" />
+    <ClCompile Include="src\engine\cubemap_texture.cpp" />
+    <ClCompile Include="src\engine\free_camera.cpp" />
+    <ClCompile Include="src\engine\light_controller.cpp" />
+    <ClCompile Include="src\engine\material.cpp" />
+    <ClCompile Include="src\engine\mesh.cpp" />
+    <ClCompile Include="src\engine\model.cpp" />
+    <ClCompile Include="src\engine\shader.cpp" />
+    <ClCompile Include="src\engine\skybox.cpp" />
+    <ClCompile Include="src\engine\sphere.cpp" />
+    <ClCompile Include="src\engine\texture.cpp" />
+    <ClCompile Include="src\engine\window.cpp" />
+    <ClCompile Include="src\scenes\graphics_scene.cpp" />
+    <ClCompile Include="src\engine\FrameRecorder.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dependencies\glad\src\glad.c"><Filter>Source Files\Engine</Filter></ClCompile>
-    <ClCompile Include="src\app\main.cpp"><Filter>Source Files\App</Filter></ClCompile>
-    <ClCompile Include="src\engine\character.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
-    <ClCompile Include="src\engine\character_skin.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
-    <ClCompile Include="src\engine\cube.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
-    <ClCompile Include="src\engine\cubemap_texture.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
-    <ClCompile Include="src\engine\free_camera.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
-    <ClCompile Include="src\engine\light_controller.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
-    <ClCompile Include="src\engine\material.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
-    <ClCompile Include="src\engine\mesh.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
-    <ClCompile Include="src\engine\model.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
-    <ClCompile Include="src\engine\shader.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
-    <ClCompile Include="src\engine\skybox.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
-    <ClCompile Include="src\engine\sphere.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
-    <ClCompile Include="src\engine\texture.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
-    <ClCompile Include="src\engine\window.cpp"><Filter>Source Files\Engine</Filter></ClCompile>
-    <ClCompile Include="src\scenes\graphics_scene.cpp"><Filter>Source Files\Scenes</Filter></ClCompile>
+    <ClInclude Include="src\engine\character.h" />
+    <ClInclude Include="src\engine\character_skin.h" />
+    <ClInclude Include="src\engine\cube.h" />
+    <ClInclude Include="src\engine\cubemap_texture.h" />
+    <ClInclude Include="src\engine\free_camera.h" />
+    <ClInclude Include="src\engine\light_controller.h" />
+    <ClInclude Include="src\engine\material.h" />
+    <ClInclude Include="src\engine\mesh.h" />
+    <ClInclude Include="src\engine\model.h" />
+    <ClInclude Include="src\engine\shader.h" />
+    <ClInclude Include="src\engine\skybox.h" />
+    <ClInclude Include="src\engine\sphere.h" />
+    <ClInclude Include="src\engine\texture.h" />
+    <ClInclude Include="src\engine\window.h" />
+    <ClInclude Include="src\scenes\graphics_scene.h" />
+    <ClInclude Include="src\scenes\graphics_scene_legacy.h" />
+    <ClInclude Include="src\scenes\week09_scene.h" />
+    <ClInclude Include="src\engine\FrameRecorder.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\engine\character.h"><Filter>Header Files\Engine</Filter></ClInclude>
-    <ClInclude Include="src\engine\character_skin.h"><Filter>Header Files\Engine</Filter></ClInclude>
-    <ClInclude Include="src\engine\cube.h"><Filter>Header Files\Engine</Filter></ClInclude>
-    <ClInclude Include="src\engine\cubemap_texture.h"><Filter>Header Files\Engine</Filter></ClInclude>
-    <ClInclude Include="src\engine\free_camera.h"><Filter>Header Files\Engine</Filter></ClInclude>
-    <ClInclude Include="src\engine\light_controller.h"><Filter>Header Files\Engine</Filter></ClInclude>
-    <ClInclude Include="src\engine\material.h"><Filter>Header Files\Engine</Filter></ClInclude>
-    <ClInclude Include="src\engine\mesh.h"><Filter>Header Files\Engine</Filter></ClInclude>
-    <ClInclude Include="src\engine\model.h"><Filter>Header Files\Engine</Filter></ClInclude>
-    <ClInclude Include="src\engine\shader.h"><Filter>Header Files\Engine</Filter></ClInclude>
-    <ClInclude Include="src\engine\skybox.h"><Filter>Header Files\Engine</Filter></ClInclude>
-    <ClInclude Include="src\engine\sphere.h"><Filter>Header Files\Engine</Filter></ClInclude>
-    <ClInclude Include="src\engine\texture.h"><Filter>Header Files\Engine</Filter></ClInclude>
-    <ClInclude Include="src\engine\window.h"><Filter>Header Files\Engine</Filter></ClInclude>
-    <ClInclude Include="src\scenes\graphics_scene.h"><Filter>Header Files\Scenes</Filter></ClInclude>
-    <ClInclude Include="src\scenes\graphics_scene_legacy.h"><Filter>Header Files\Scenes</Filter></ClInclude>
-    <ClInclude Include="src\scenes\week09_scene.h"><Filter>Header Files\Scenes</Filter></ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="assets\shaders\scene\*.glsl"><Filter>Shaders\Scene</Filter></None>
-    <None Include="assets\shaders\skybox\*.glsl"><Filter>Shaders\Skybox</Filter></None>
+    <None Include="assets\shaders\scene\depth_debug_fragment.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\directional_depth_fragment.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\directional_depth_vertex.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\fragment.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\gaussian_blur_fragment.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\glass_fragment.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\glass_vertex.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\instanced_directional_depth_vertex.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\instanced_model_vertex.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\instanced_rock_fragment.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\lamp_fragment.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\lamp_vertex.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\model_fragment.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\model_vertex.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\normal_debug_fragment.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\normal_mapping_fragment.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\normal_mapping_vertex.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\point_depth_fragment.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\point_depth_geometry.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\point_depth_vertex.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\screen_fragment.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\screen_vertex.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\single_color_fragment.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\scene\vertex.glsl">
+      <Filter>Shaders\Scene</Filter>
+    </None>
+    <None Include="assets\shaders\skybox\skybox_vertex.glsl">
+      <Filter>Shaders\Skybox</Filter>
+    </None>
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\scene\*.glsl" />
+    <None Include="assets\shaders\skybox\*.glsl" />
+    <None Include="assets\shaders\skybox\*.glsl" />
   </ItemGroup>
 </Project>
