@@ -6,7 +6,7 @@
 
 #include <string>
 #include <iostream>
-#include <string>
+#include <filesystem>
 
 #include "../engine/free_camera.h"
 #include "../engine/light_controller.h"
@@ -19,6 +19,21 @@ namespace
     constexpr int WINDOW_WIDTH = 1920;
     constexpr int WINDOW_HEIGHT = 1080;
     constexpr const char* WINDOW_TITLE = "---";
+
+    std::filesystem::path nextRecordingPath()
+    {
+        for (int number = 1; ; ++number)
+        {
+            const std::filesystem::path path =
+                std::filesystem::current_path() /
+                ("observatory_" + std::to_string(number) + ".mp4");
+
+            if (!std::filesystem::exists(path))
+            {
+                return path;
+            }
+        }
+    }
 
     class FrameRateTitle
     {
@@ -133,8 +148,11 @@ int main()
                     << framebufferWidth << "x"
                     << framebufferHeight << '\n';
 
+                const std::filesystem::path outputPath =
+                    nextRecordingPath();
+
                 const bool started = recorder.start(
-                    "observatory.mp4",
+                    outputPath.string(),
                     framebufferWidth,
                     framebufferHeight,
                     60
@@ -142,8 +160,11 @@ int main()
 
                 if (started)
                 {
-                    // Start the recording timer from the current moment.
                     nextRecordingFrame = glfwGetTime();
+
+                    std::cout
+                        << "Saving recording to: "
+                        << outputPath << '\n';
                 }
                 else
                 {

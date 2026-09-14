@@ -67,8 +67,8 @@ bool FrameRecorder::start(
         << "-vf vflip "
         << "-an "
         << "-c:v libx264 "
-        << "-preset veryfast "
-        << "-crf 18 "
+        << "-preset fast "
+        << "-crf 14 "
         << "-pix_fmt yuv420p "
         << "\"" << outputPath << "\"";
 

@@ -3,7 +3,7 @@
 LightController::LightController()
 {
     position = glm::vec3(0.0f, 1.5f, 1.2f);
-    speed = 0.02f;
+    speed = 0.005f;
 }
 
 void LightController::update(GLFWwindow* window)
