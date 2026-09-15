@@ -24,9 +24,6 @@
 </table>
 
 
-
-## I struggled:
-
 ## Thoughts:
 
 - This week has been mostly putting the observatory scene together by fixing remaining bugs and inconsistancies in the code (normal-, depth debugger, flashlight).

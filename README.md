@@ -20,12 +20,16 @@ The Observatory Scene is a real-time C++ and OpenGL learning project that combin
 * Stencil outlines and transparent model materials.
 * Multisample antialiasing.
 * Normal and framebuffer-depth visualization modes.
+* In-engine video recording through FFmpeg.
 
-### Note
+### Notes
 
 * Blue light only has an impartial implementation (no lighting on the walls and no shadows from objects) and should be treated as such.
 * Normal debug mode doesn't contain the planet or asteroids.
 * When the backpack material is toggled to glass (H key) the material only takes the skybox texture into consideration. The stars reflecting on the backpack look messy, this isn't intended because the original implementation was made with a different skybox texture initially.
+* Video recording requires FFmpeg to be installed and available through the system `PATH`. On Windows, it can be installed with `winget install --id Gyan.FFmpeg --exact`.
+* Recordings are saved in the application's working directory as `observatory_1.mp4`, `observatory_2.mp4`, and so on. Audio isn't recorded in the current setup.
+* Window resizing has to manually configured through `main.cpp` (WINDOW WIDTH / WINDOW HEIGHT values).
 
 ### Controls
 
@@ -33,19 +37,20 @@ The Observatory Scene is a real-time C++ and OpenGL learning project that combin
 |---|---|
 | **W, A, S, D** | Move the camera |
 | **Mouse** | Look around |
-| **Space / Left CTRL** | Move up/down |
+| **Space / Left CTRL** | Move up / down |
 | **1** | Switch between stationary lights and movable light |
 | **I, J, K, L** | Move the light position (after toggling key 1) |
-| **U / O** | Move the light up/down |
+| **U / O** | Move the light up / down |
 | **2** | Toggle blue light (lighting only working on certain objects) |
 | **F** | Toggle the flashlight |
 | **N** | Toggle normal visualization |
 | **V** | Toggle depth visualization |
-| **Q / E** | Decrease/increase the parallax height scale |
+| **Q / E** | Decrease / increase the parallax height scale |
 | **M** | Toggle indoor/outdoor mode |
 | **H** | Toggle the backpack model material |
 | **P** | Toggle the backpack model outline |
 | **B** | Toggle framebuffer blur effect |
+| **R** | Start / stop video recording |
 | **Esc** | Close the application |
 
 ## Learning material
@@ -55,7 +60,7 @@ The Observatory Scene is a real-time C++ and OpenGL learning project that combin
 | Fundamentals of Computer Graphics, Fifth Edition | 🟡 |
 | Ray Tracing in One Weekend Book Series | 🔴 |
 | [CMU Computer Graphics Lectures](https://youtube.com/playlist?list=PL9_jI1bdZmz2emSh0UQ5iOdT2xRHFHL7E&si=knAZi4WGLnnt8G_z) | 🟢 |
-| [LearnOpenGL](https://learnopengl.com/) | 🟡 |
+| [LearnOpenGL](https://learnopengl.com/) | 🟢 |
 
 ## Weekly progress
 
