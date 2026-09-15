@@ -2,7 +2,7 @@
 
 The Observatory Scene is a real-time C++ and OpenGL learning project that combines the rendering techniques I studied into one interactive scene.
 
-<img src="learning_log_images/planet_and_asteroids.mp4" alt="-" width="700">
+<img src="first_graphics_thing/planet_and_asteroids.mp4" alt="-" width="700">
 
 ## Features
 
