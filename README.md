@@ -4,6 +4,8 @@ The Observatory Scene is a real-time C++ and OpenGL learning project that combin
 
 <img src="https://github.com/user-attachments/assets/e302b108-f384-4bd5-9276-2b2b9fb43b94" alt="-" width="700">
 
+https://github.com/user-attachments/assets/e302b108-f384-4bd5-9276-2b2b9fb43b94
+
 ## Features
 
 * Written in C++ using OpenGL 3.3 and GLSL.
