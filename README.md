@@ -77,6 +77,6 @@ The repository documents my weekly graphics-programming progress, including impl
 ## How to build
 
 1. Clone the repository.
-2. Open `first_graphics_thing/first_graphics_thing.vcxproj` in Visual Studio.
+2. Open `The_Observatory/The_Observatory.vcxproj` in Visual Studio.
 3. Select an x64 Debug or Release configuration.
 4. Build and run the project by pressing the F5 key.
