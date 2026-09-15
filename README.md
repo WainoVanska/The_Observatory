@@ -55,12 +55,10 @@ https://github.com/user-attachments/assets/e302b108-f384-4bd5-9276-2b2b9fb43b94
 
 ## Learning material
 
-| Material | Status |
-|---|---|
-| Fundamentals of Computer Graphics, Fifth Edition | 🟡 |
-| Ray Tracing in One Weekend Book Series | 🔴 |
-| [CMU Computer Graphics Lectures](https://youtube.com/playlist?list=PL9_jI1bdZmz2emSh0UQ5iOdT2xRHFHL7E&si=knAZi4WGLnnt8G_z) | 🟢 |
-| [LearnOpenGL](https://learnopengl.com/) | 🟢 |
+* Fundamentals of Computer Graphics, Fifth Edition
+* Ray Tracing in One Weekend Book Series
+* [CMU Computer Graphics Lectures](https://youtube.com/playlist?list=PL9_jI1bdZmz2emSh0UQ5iOdT2xRHFHL7E&si=knAZi4WGLnnt8G_z)
+* [LearnOpenGL](https://learnopengl.com/)
 
 ## Weekly progress
 
