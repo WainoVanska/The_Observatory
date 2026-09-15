@@ -5,9 +5,9 @@
 - how to setup the context with glfw, glad, visual studio and openGL
 - to make my first triangle on the screen
 
-<img src="../learning_log_images/image_triangle.png" alt="-" width="500">
+<img src="images/image_triangle.png" alt="-" width="500">
 
-<img src="../learning_log_images/Ohjelmointi_kurssiasioita.png" alt="-" width="500">
+<img src="images/Ohjelmointi_kurssiasioita.png" alt="-" width="500">
 
 - understood that data travels from CPU --> OpenGL --> GPU
 - there is a front and back buffer that creates a frame buffer?

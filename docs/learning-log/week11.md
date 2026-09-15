@@ -4,17 +4,17 @@
 
 - how instancing works with models, created a group of asteroids circling a planet to test this out.
 
-<img src="../learning_log_images/instancing_asteroids.png" alt="-" width="500">
+<img src="images/instancing_asteroids.png" alt="-" width="500">
 
 - how to gamma correct models, textures and objects in the scene through the correct order of operations in the fragment shaders. 
 
 *image also contains tweaks with the ambiences compared to the upper screenshot, so the comparison isn't as clear*
 
-<img src="../learning_log_images/gamma_corrected_week11.png" alt="-" width="500">
+<img src="images/gamma_corrected_week11.png" alt="-" width="500">
 
 - how to implement shadows with directional lighting in the skybox scene
 
-<img src="../learning_log_images/directional_shadows.png" alt="-" width="500">
+<img src="images/directional_shadows.png" alt="-" width="500">
 
 
 ## I struggled:

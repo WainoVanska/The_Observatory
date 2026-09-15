@@ -6,19 +6,19 @@
 
 - added diffuse and specular lighting for textures, so that you can have a specularity map, where some part of the material is shiny while other parts aren't
 
-![Poster experiment](../learning_log_images/week_8_stuff.png)
+![Poster experiment](images/week_8_stuff.png)
 
 - added a flashlight light source mounted to the FPS POV that can be turned on/off by pressing F
 
-![Poster experiment](../learning_log_images/flashlight_test_2.png)
+![Poster experiment](images/flashlight_test_2.png)
 
 - added Assimp library integration for mesh/model loading and loaded a detailed backpack model ( different lights + normals )
 
-![Poster experiment](../learning_log_images/backpack_versions.png)
+![Poster experiment](images/backpack_versions.png)
 
 - added B&W depth testing debugger
 
-<img src="../learning_log_images/depth_testing_debug.png" alt="depth test debugger" width="500">
+<img src="images/depth_testing_debug.png" alt="depth test debugger" width="500">
 
 - added stencil testing debugger feature ( toggle with key P)
 

@@ -6,11 +6,11 @@
 
 - how to create reflections in textures, implemented this feature on the backpack object model turning it into glass texture through refraction
 
-<img src="../learning_log_images/glass_backpack.png" alt="-" width="500">
+<img src="images/glass_backpack.png" alt="-" width="500">
 
 - to create a blurring effect to the scene through separate framebuffer post-processing
 
-<img src="../learning_log_images/blur_effect.png" alt="-" width="500">
+<img src="images/blur_effect.png" alt="-" width="500">
 
 ## I struggled:
 

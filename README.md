@@ -64,6 +64,8 @@ https://github.com/user-attachments/assets/e302b108-f384-4bd5-9276-2b2b9fb43b94
 
 The repository documents my weekly graphics-programming progress, including implementations, problems, debugging and my thoughts on each learning stage.
 
+[View the weekly learning log](docs/learning-log/)
+
 ## Topics in need of review
 
 * Multipass rendering

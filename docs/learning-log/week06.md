@@ -4,7 +4,7 @@
 
 - the basic way to implement sky textures with the skybox method ( tutorial from https://ogldev.org/www/tutorial25/tutorial25.html )
 
-![Poster experiment](../learning_log_images/skybox_test.png)
+![Poster experiment](images/skybox_test.png)
 
 
 ## I struggled:

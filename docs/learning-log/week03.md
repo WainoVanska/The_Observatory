@@ -7,13 +7,13 @@
 - how to make 3D objects
 - made a simple cube (connecting the whole thing together)
 
-![Poster experiment](../learning_log_images/week_3_rotating_3d_rect.png)
+![Poster experiment](images/week_3_rotating_3d_rect.png)
 
 - how it necessary to enable the glEnable(GL_DEPTH_TEST) to actually make the cube depth (so it's not transparent)
 
 - How to create multiple objects in a more scalable way
 
-![Poster experiment](../learning_log_images/minecraft_figure_no_depth.png)
+![Poster experiment](images/minecraft_figure_no_depth.png)
 
 - How to mount objects together so that one object is a parent object to its children ( like with the character ), child transformations move relative to parent transformations
 

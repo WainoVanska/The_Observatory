@@ -6,7 +6,7 @@
 - about perspective and orthogonal projection matrices
 - to create tiles that appear when they enter the view matrice area?
 
-![Poster experiment](../learning_log_images/week_4_rotating_camera.png)
+![Poster experiment](images/week_4_rotating_camera.png)
 
 
 ## I struggled:

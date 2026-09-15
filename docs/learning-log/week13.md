@@ -4,7 +4,7 @@
 
 - to show shadows from other objects on the normal mapped surfaces (like on the brickwall)
 
-<img src="../learning_log_images/normal_mapped_shadows.png" alt="-" width="500">
+<img src="images/normal_mapped_shadows.png" alt="-" width="500">
 
 - about refactoring graphics scenes in a more proper way. In this case I mostly let AI do its thing and organize the graphics repository into a more reasonable format. Refactoring mainly consisted of remaking the previous `week09_scene.cpp` into a more compact and readable `graphics_scene.cpp`. In addition the folders/file were reorganized and renamed appropriately in order to separate all the different elements of the current scene.
 
@@ -20,7 +20,7 @@
 
 *sliding my displacement value from high to low to see difference between parallax + normal mapping vs. only normal mapping*
 
-<img src="../learning_log_images//parallax_mapping.gif" width="700" alt="Parallax mapping">
+<img src="images/parallax_mapping.gif" width="700" alt="Parallax mapping">
 
 ## I struggled:
 

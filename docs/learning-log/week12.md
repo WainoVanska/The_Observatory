@@ -4,19 +4,19 @@
 
 - how point shadows work. Created this by making a depth cubemap containing six faces of the room scene that each stored depth data(distance from the the point light to the closest surface). Instead of orthographic projection with directional lighting, this time I used perspective projection for each of the six faces.
 
-<img src="../learning_log_images/point_shadows.png" alt="-" width="500">
+<img src="images/point_shadows.png" alt="-" width="500">
 
 <table>
   <tr>
     <td align="center">
-      <img src="../learning_log_images/jagged_shadow_edges.png"
+      <img src="images/jagged_shadow_edges.png"
            alt="Jagged point-shadow edges"
            width="100%">
       <br>
       <em>Before PCF</em>
     </td>
     <td align="center">
-      <img src="../learning_log_images/jagged_edge_pcf.png"
+      <img src="images/jagged_edge_pcf.png"
            alt="Point shadows smoothed with PCF"
            width="100%">
       <br>
@@ -27,7 +27,7 @@
 
 - about normal mapping. Implemented a brickwall texture on one of the walls that contained a normal mapping, which made the brickwall look like it had more depth.
 
-<img src="../learning_log_images/normal_mapped_lighting_brickwall.png" alt="-" width="500">
+<img src="images/normal_mapped_lighting_brickwall.png" alt="-" width="500">
 
 - how normal mapping is used for optimization of complex models. It was mindblowing to see how effective this little trick can be when normal mapped shadows are added and number of triangles is decreased.
 

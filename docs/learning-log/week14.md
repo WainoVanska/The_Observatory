@@ -10,7 +10,7 @@
 
 - with making the wall lamp model emit light through semi-transparent glass. I chose a bit of a difficult model to create the lighting on, but since I was already halfway, I stuck with the original one. Also certain surfaces of the model (back wall inside the lamp) don't look as intended.
 
-<img src="../learning_log_images/wall_lamp.png" alt="-" width="500">
+<img src="images/wall_lamp.png" alt="-" width="500">
 
 
 ## Thoughts:

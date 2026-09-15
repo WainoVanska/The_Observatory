@@ -7,14 +7,14 @@
 <table>
   <tr>
     <td align="center">
-      <img src="../learning_log_images/normal_debug_before.png"
+      <img src="images/normal_debug_before.png"
            alt="Normal debugger with z-fighting and overlapping"
            width="100%">
       <br>
       <em>Before</em>
     </td>
     <td align="center">
-      <img src="../learning_log_images/normal_debug_after.png"
+      <img src="images/normal_debug_after.png"
            alt="Normal debugger fixed"
            width="100%">
       <br>

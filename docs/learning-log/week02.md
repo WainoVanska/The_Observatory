@@ -5,7 +5,7 @@
 - how to make rectangles move
 - simple bouncing rectangle simulation ( moving in 2D from left to right and up and down with acceleration)
 
-<img src="../learning_log_images/moving_rect_1.png" alt="-" width="500">
+<img src="images/moving_rect_1.png" alt="-" width="500">
 
 - how EBO works (with indices buffer) and why it's sometimes (most times?) better
 - color gradients to triangles/rectangles and color changing depending on the pos of rectangle

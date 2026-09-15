@@ -6,11 +6,11 @@
 
 - how to create bloom effect on my lighting. Did this with the help of LearnOpenGL tutorial: first extract bright colors exceeding a certain treshold to a separate frame, then blur the bright parts with two-pass Gaussian blur and finally blend the blurred and normal frames together to create the bloom effect in the lighting.
 
-<img src="../learning_log_images/bloom.png" alt="-" width="500">
+<img src="images/bloom.png" alt="-" width="500">
 
 - started implementing the observatory by using a space skybox and scaling the planet and asteroids up.
 
-<img src="../learning_log_images/space_and_asteroids.png" alt="-" width="500">
+<img src="images/space_and_asteroids.png" alt="-" width="500">
 
 - read about deferred shading (a scalable way to have many light sources in a scene at the same time). However in my scene deferred shading is probably going to cause unnecessary complexity without decent trade-offs (since I would have to route every aspect of the scene through the G-Buffer instead), so I'm going to skip its implementation for now.
 

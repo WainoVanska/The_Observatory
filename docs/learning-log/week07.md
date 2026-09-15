@@ -6,7 +6,7 @@
 
 - one way to create spheres
 
-![Poster experiment](../learning_log_images/sphere_lighting.png)
+![Poster experiment](images/sphere_lighting.png)
 
 - since the sphere has more normals for the light to process, it looks way smoother (flat normals vs. smooth normals)
 
@@ -14,7 +14,7 @@
 
 - to have multiple lights
 
-![Poster experiment](../learning_log_images/light_2.png)
+![Poster experiment](images/light_2.png)
 
 
 ## I struggled:

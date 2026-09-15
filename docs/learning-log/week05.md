@@ -7,11 +7,11 @@
 
 - how to add textures to my cube and why mipmaps are important for scaling
 
-![Poster experiment](../learning_log_images/texture_adding_3.png)
+![Poster experiment](images/texture_adding_3.png)
 
 - how to add complete character textures (with different faces) in scalable way from one .jpg/.png file
 
-![Poster experiment](../learning_log_images/minecraft_char_texture.png)
+![Poster experiment](images/minecraft_char_texture.png)
 
 
 ## I struggled:
