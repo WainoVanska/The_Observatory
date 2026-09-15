@@ -1,8 +1,8 @@
-# Observatory Scene
+# The Observatory
 
 The Observatory Scene is a real-time C++ and OpenGL learning project that combines the rendering techniques I studied into one interactive scene.
 
-<img src="learning_log_images/space_and_asteroids.png" alt="-" width="700">
+<img src="learning_log_images/planet_and_asteroids.mp4" alt="-" width="700">
 
 ## Features
 
@@ -29,7 +29,7 @@ The Observatory Scene is a real-time C++ and OpenGL learning project that combin
 * When the backpack material is toggled to glass (H key) the material only takes the skybox texture into consideration. The stars reflecting on the backpack look messy, this isn't intended because the original implementation was made with a different skybox texture initially.
 * Video recording requires FFmpeg to be installed and available through the system `PATH`. On Windows, it can be installed with `winget install --id Gyan.FFmpeg --exact`.
 * Recordings are saved in the application's working directory as `observatory_1.mp4`, `observatory_2.mp4`, and so on. Audio isn't recorded in the current setup.
-* Window resizing has to manually configured through `main.cpp` (WINDOW WIDTH / WINDOW HEIGHT values).
+* Window resizing has to be manually configured through `main.cpp` (WINDOW WIDTH / WINDOW HEIGHT values).
 
 ### Controls
 
