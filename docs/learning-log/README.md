@@ -1,6 +1,6 @@
 # Learning Log
 
-Weekly notes documenting the development of The Observatory, including implementations, debugging, challenges, and reflections.
+Weekly notes documenting the development of The Observatory, including implementations, debugging, challenges, and reflections. The implementations from the first weeks are not included in the final repository.
 
 [Back to the project overview](../../README.md)
 

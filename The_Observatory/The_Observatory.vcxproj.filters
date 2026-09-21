@@ -3,8 +3,6 @@
   <ItemGroup>
     <ClCompile Include="dependencies\glad\src\glad.c" />
     <ClCompile Include="src\app\main.cpp" />
-    <ClCompile Include="src\engine\character.cpp" />
-    <ClCompile Include="src\engine\character_skin.cpp" />
     <ClCompile Include="src\engine\cube.cpp" />
     <ClCompile Include="src\engine\cubemap_texture.cpp" />
     <ClCompile Include="src\engine\free_camera.cpp" />
@@ -21,8 +19,6 @@
     <ClCompile Include="src\engine\FrameRecorder.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\engine\character.h" />
-    <ClInclude Include="src\engine\character_skin.h" />
     <ClInclude Include="src\engine\cube.h" />
     <ClInclude Include="src\engine\cubemap_texture.h" />
     <ClInclude Include="src\engine\free_camera.h" />

@@ -2,7 +2,6 @@
 
 #include <glm/glm.hpp>
 #include <glad/glad.h>
-#include "character_skin.h"
 
 struct CubeMesh {
 	GLuint VAO;
@@ -17,12 +16,6 @@ void drawCube(GLuint VAO, GLuint modelLoc, const glm::mat4& model);
 
 void drawTexturedCube(GLuint VAO, GLuint modelLoc, const glm::mat4& model, GLuint texture);
 
-void drawCubeWithUVs(
-    const CubeMesh& cube,
-    GLuint modelLoc,
-    const glm::mat4& model,
-    const BoxUVs& uvs
-);
 
 void drawTexturedCubeWithSpecularMap(
     GLuint VAO,
@@ -32,12 +25,5 @@ void drawTexturedCubeWithSpecularMap(
     GLuint specularTexture
 );
 
-void drawSkyboxCube(const CubeMesh& cube);
 
-void drawClosedRoom(GLuint VAO, GLuint modelLoc, GLuint texture);
 
-void drawRoomFloorAndCeiling(
-    GLuint VAO,
-    GLuint modelLoc,
-    GLuint texture
-);
