@@ -169,8 +169,6 @@
     <ClInclude Include="src\engine\texture.h" />
     <ClInclude Include="src\engine\window.h" />
     <ClInclude Include="src\scenes\graphics_scene.h" />
-    <ClInclude Include="src\scenes\graphics_scene_legacy.h" />
-    <ClInclude Include="src\scenes\week09_scene.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\scene\*.glsl" />

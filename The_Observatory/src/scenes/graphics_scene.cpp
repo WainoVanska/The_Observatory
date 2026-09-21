@@ -1,4 +1,4 @@
-#include "week09_scene.h"
+#include "graphics_scene.h"
 
 #include "../common/shader.h"
 #include "../common/texture.h"
@@ -405,7 +405,7 @@ namespace
     }
 }
 
-void Week09Scene::init(int width, int height, FreeCamera* camera)
+void GraphicsScene::init(int width, int height, FreeCamera* camera)
 {
     shaderProgram = createShaderProgram("src/week09/vertex.glsl", "src/week09/fragment.glsl");
     lampShaderProgram = createShaderProgram("src/week09/lamp_vertex.glsl", "src/week09/lamp_fragment.glsl");
@@ -634,7 +634,7 @@ void Week09Scene::init(int width, int height, FreeCamera* camera)
     glUniform1i(uniformLocation(gaussianBlurShaderProgram,"image"),0);
 }
 
-void Week09Scene::handleInput(GLFWwindow* window)
+void GraphicsScene::handleInput(GLFWwindow* window)
 {
     toggleOnKeyPress(window, GLFW_KEY_1, key1WasPressed, movableLightModeEnabled);
     toggleOnKeyPress(window, GLFW_KEY_2, key2WasPressed, light2Enabled);
@@ -667,7 +667,7 @@ void Week09Scene::handleInput(GLFWwindow* window)
     toggleOnKeyPress(window, GLFW_KEY_H, keyHWasPressed, glassBackpackEnabled);
 }
 
-void Week09Scene::draw(
+void GraphicsScene::draw(
     const glm::mat4& view,
     const glm::mat4& projection,
     const glm::vec3& cameraPos,
@@ -886,7 +886,7 @@ void Week09Scene::draw(
     glEnable(GL_CULL_FACE);
 }
 
-void Week09Scene::drawLitObjects()
+void GraphicsScene::drawLitObjects()
 {
     setMaterial(shaderProgram, texturedMaterial);
     drawTexturedCubeWithSpecularMap(
@@ -909,22 +909,22 @@ void Week09Scene::drawLitObjects()
     }
 }
 
-glm::mat4 Week09Scene::createOutdoorGroundModelMatrix() const
+glm::mat4 GraphicsScene::createOutdoorGroundModelMatrix() const
 {
     return makeTransform(glm::vec3(0.0f, -0.95f, 0.0f), glm::vec3(20.0f, 0.1f, 20.0f));
 }
 
-void Week09Scene::drawNormalDebugObjects()
+void GraphicsScene::drawNormalDebugObjects()
 {
     drawDebugPrimitives(cube, sphere, normalDebugUniforms.model, containerTexture);
 }
 
-void Week09Scene::drawDepthDebugObjects()
+void GraphicsScene::drawDepthDebugObjects()
 {
     drawDebugPrimitives(cube, sphere, depthDebugUniforms.model, containerTexture);
 }
 
-void Week09Scene::drawLampMarker(
+void GraphicsScene::drawLampMarker(
     const glm::vec3& position,
     const glm::vec3& color,
     float scale)
@@ -937,7 +937,7 @@ void Week09Scene::drawLampMarker(
         makeTransform(position, glm::vec3(scale)));
 }
 
-void Week09Scene::drawBackpack(
+void GraphicsScene::drawBackpack(
     const glm::mat4& view,
     const glm::mat4& projection,
     const glm::vec3& cameraPos,
@@ -979,7 +979,7 @@ void Week09Scene::drawBackpack(
     backpack->draw(modelShaderProgram);
 }
 
-glm::mat4 Week09Scene::createBackpackOutlineModelMatrix() const
+glm::mat4 GraphicsScene::createBackpackOutlineModelMatrix() const
 {
     return makeTransform(
         glm::vec3(-1.0f, -0.5f, 0.0f),
@@ -988,7 +988,7 @@ glm::mat4 Week09Scene::createBackpackOutlineModelMatrix() const
         glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
-void Week09Scene::drawBackpackNormalDebug(const glm::mat4& view, const glm::mat4& projection)
+void GraphicsScene::drawBackpackNormalDebug(const glm::mat4& view, const glm::mat4& projection)
 {
     drawModelWithMatrices(
         backpack,
@@ -999,7 +999,7 @@ void Week09Scene::drawBackpackNormalDebug(const glm::mat4& view, const glm::mat4
         createBackpackModelMatrix());
 }
 
-void Week09Scene::drawBackpackOutline(const glm::mat4& view, const glm::mat4& projection)
+void GraphicsScene::drawBackpackOutline(const glm::mat4& view, const glm::mat4& projection)
 {
     drawModelWithMatrices(
         backpack,
@@ -1010,7 +1010,7 @@ void Week09Scene::drawBackpackOutline(const glm::mat4& view, const glm::mat4& pr
         createBackpackOutlineModelMatrix());
 }
 
-void Week09Scene::drawBackpackDepthDebug(const glm::mat4& view, const glm::mat4& projection)
+void GraphicsScene::drawBackpackDepthDebug(const glm::mat4& view, const glm::mat4& projection)
 {
     if (!backpack)
     {
@@ -1026,7 +1026,7 @@ void Week09Scene::drawBackpackDepthDebug(const glm::mat4& view, const glm::mat4&
     backpack->draw(modelDepthDebugShaderProgram);
 }
 
-glm::mat4 Week09Scene::createBackpackModelMatrix() const
+glm::mat4 GraphicsScene::createBackpackModelMatrix() const
 {
     return makeTransform(
         glm::vec3(-1.0f, -0.5f, 0.0f),
@@ -1035,7 +1035,7 @@ glm::mat4 Week09Scene::createBackpackModelMatrix() const
         glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
-void Week09Scene::createGlassPaneMesh()
+void GraphicsScene::createGlassPaneMesh()
 {
     const float vertices[] = {
         -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
@@ -1056,7 +1056,7 @@ void Week09Scene::createGlassPaneMesh()
     glBindVertexArray(0);
 }
 
-void Week09Scene::drawGlassPanes(
+void GraphicsScene::drawGlassPanes(
     const glm::mat4& view,
     const glm::mat4& projection,
     const glm::vec3& cameraPos)
@@ -1110,7 +1110,7 @@ void Week09Scene::drawGlassPanes(
     glActiveTexture(GL_TEXTURE0);
 }
 
-void Week09Scene::createFramebuffer(int width, int height)
+void GraphicsScene::createFramebuffer(int width, int height)
 {
     framebufferWidth = width;
     framebufferHeight = height;
@@ -1166,7 +1166,7 @@ void Week09Scene::createFramebuffer(int width, int height)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Week09Scene::createBloomFramebuffer(
+void GraphicsScene::createBloomFramebuffer(
     int width,
     int height
 )
@@ -1241,7 +1241,7 @@ void Week09Scene::createBloomFramebuffer(
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Week09Scene::createPingPongFramebuffers(
+void GraphicsScene::createPingPongFramebuffers(
     int width,
     int height
 )
@@ -1332,7 +1332,7 @@ void Week09Scene::createPingPongFramebuffers(
     );
 }
 
-void Week09Scene::extractBrightAreas()
+void GraphicsScene::extractBrightAreas()
 {
     glBindFramebuffer(
         GL_FRAMEBUFFER,
@@ -1380,7 +1380,7 @@ void Week09Scene::extractBrightAreas()
     glBindVertexArray(0);
 }
 
-void Week09Scene::blurBrightAreas()
+void GraphicsScene::blurBrightAreas()
 {
     constexpr unsigned int blurPassCount = 10;
 
@@ -1455,7 +1455,7 @@ void Week09Scene::blurBrightAreas()
     );
 }
 
-void Week09Scene::createScreenQuad()
+void GraphicsScene::createScreenQuad()
 {
     const float vertices[] = {
         -1.0f,  1.0f, 0.0f, 1.0f,
@@ -1476,7 +1476,7 @@ void Week09Scene::createScreenQuad()
     glBindVertexArray(0);
 }
 
-void Week09Scene::drawScreenQuad()
+void GraphicsScene::drawScreenQuad()
 {
     glUseProgram(screenShaderProgram);
 
@@ -1506,7 +1506,7 @@ void Week09Scene::drawScreenQuad()
     glActiveTexture(GL_TEXTURE0);
 }
 
-void Week09Scene::createAsteroidInstances()
+void GraphicsScene::createAsteroidInstances()
 {
     if (!rock)
     {
@@ -1547,7 +1547,7 @@ void Week09Scene::createAsteroidInstances()
     rock->configureInstancing(asteroidInstanceVBO);
 }
 
-void Week09Scene::drawMiniPlanetSystem(
+void GraphicsScene::drawMiniPlanetSystem(
     const glm::mat4& view,
     const glm::mat4& projection,
     const glm::vec3& cameraPos,
@@ -1619,7 +1619,7 @@ void Week09Scene::drawMiniPlanetSystem(
     rock->drawInstanced(instancedModelShaderProgram, ASTEROID_COUNT);
 }
 
-void Week09Scene::createDirectionalShadowMap()
+void GraphicsScene::createDirectionalShadowMap()
 {
     glGenFramebuffers(1, &directionalDepthFBO);
     glGenTextures(1, &directionalDepthMap);
@@ -1657,7 +1657,7 @@ void Week09Scene::createDirectionalShadowMap()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-glm::mat4 Week09Scene::createDirectionalLightSpaceMatrix(const glm::vec3& direction) const
+glm::mat4 GraphicsScene::createDirectionalLightSpaceMatrix(const glm::vec3& direction) const
 {
     const glm::vec3 sceneCenter(0.0f);
     const glm::vec3 lightPosition = sceneCenter - glm::normalize(direction) * 10.0f;
@@ -1669,7 +1669,7 @@ glm::mat4 Week09Scene::createDirectionalLightSpaceMatrix(const glm::vec3& direct
     return lightProjection * lightView;
 }
 
-void Week09Scene::drawDirectionalShadowCasters(
+void GraphicsScene::drawDirectionalShadowCasters(
     GLuint depthShaderProgram,
     const glm::mat4& lightSpaceMatrix)
 {
@@ -1705,7 +1705,7 @@ void Week09Scene::drawDirectionalShadowCasters(
     }
 }
 
-void Week09Scene::renderDirectionalShadowMap(const glm::mat4& lightSpaceMatrix)
+void GraphicsScene::renderDirectionalShadowMap(const glm::mat4& lightSpaceMatrix)
 {
     glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
     glBindFramebuffer(GL_FRAMEBUFFER, directionalDepthFBO);
@@ -1718,7 +1718,7 @@ void Week09Scene::renderDirectionalShadowMap(const glm::mat4& lightSpaceMatrix)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-glm::mat4 Week09Scene::createAsteroidSystemModel() const
+glm::mat4 GraphicsScene::createAsteroidSystemModel() const
 {
     const float orbitAngle =
         static_cast<float>(glfwGetTime()) *
@@ -1747,7 +1747,7 @@ glm::mat4 Week09Scene::createAsteroidSystemModel() const
     );
 }
 
-void Week09Scene::createPointShadowMaps()
+void GraphicsScene::createPointShadowMaps()
 {
     glGenFramebuffers(
         1,
@@ -1848,7 +1848,7 @@ void Week09Scene::createPointShadowMaps()
     fixedPointShadowMapsValid.fill(false);
 }
 
-std::vector<glm::mat4> Week09Scene::createPointShadowMatrices(
+std::vector<glm::mat4> GraphicsScene::createPointShadowMatrices(
     const glm::vec3& lightPosition) const
 {
     const float aspect = static_cast<float>(POINT_SHADOW_WIDTH) /
@@ -1888,7 +1888,7 @@ std::vector<glm::mat4> Week09Scene::createPointShadowMatrices(
     return matrices;
 }
 
-void Week09Scene::drawPointShadowCasters(GLuint depthShaderProgram)
+void GraphicsScene::drawPointShadowCasters(GLuint depthShaderProgram)
 {
     const GLint modelLocation = uniformLocation(depthShaderProgram, "model");
     drawCube(
@@ -1907,7 +1907,7 @@ void Week09Scene::drawPointShadowCasters(GLuint depthShaderProgram)
     }
 }
 
-void Week09Scene::renderPointShadowMap(
+void GraphicsScene::renderPointShadowMap(
     const glm::vec3& lightPosition,
     GLuint targetCubemap)
 {
@@ -2008,7 +2008,7 @@ void Week09Scene::renderPointShadowMap(
     );
 }
 
-void Week09Scene::configureModelPointShadows()
+void GraphicsScene::configureModelPointShadows()
 {
     bindPointShadowMaps(
         modelUniforms,
@@ -2026,7 +2026,7 @@ void Week09Scene::configureModelPointShadows()
     );
 }
 
-void Week09Scene::createNormalMappedPlane()
+void GraphicsScene::createNormalMappedPlane()
 {
     const glm::vec3 p1(-1.0f, 1.0f, 0.0f);
     const glm::vec3 p2(1.0f, 1.0f, 0.0f);
@@ -2065,7 +2065,7 @@ void Week09Scene::createNormalMappedPlane()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void Week09Scene::drawNormalMappedSurface(
+void GraphicsScene::drawNormalMappedSurface(
     const glm::mat4& model,
     const glm::vec2& uvScale,
     GLuint diffuseTexture,
@@ -2114,7 +2114,7 @@ void Week09Scene::drawNormalMappedSurface(
     glActiveTexture(GL_TEXTURE0);
 }
 
-void Week09Scene::drawNormalMappedRoomWalls(
+void GraphicsScene::drawNormalMappedRoomWalls(
     const glm::mat4& view,
     const glm::mat4& projection,
     const glm::vec3& cameraPos,
@@ -2158,7 +2158,7 @@ void Week09Scene::drawNormalMappedRoomWalls(
     }
 }
 
-void Week09Scene::drawNormalMappedFloorAndCeiling(
+void GraphicsScene::drawNormalMappedFloorAndCeiling(
     const glm::mat4& view,
     const glm::mat4& projection,
     const glm::vec3& cameraPos,
@@ -2202,7 +2202,7 @@ void Week09Scene::drawNormalMappedFloorAndCeiling(
     }
 }
 
-void Week09Scene::cleanup()
+void GraphicsScene::cleanup()
 {
     deleteCubeMesh(cube);
     deleteSphereMesh(sphere);
