@@ -81,9 +81,9 @@ The repository documents my weekly graphics-programming progress, including impl
 Install and integrate vcpkg once on your computer:
 
 ```powershell
-git clone https://github.com/microsoft/vcpkg.git C:\dev\vcpkg
-C:\dev\vcpkg\bootstrap-vcpkg.bat
-C:\dev\vcpkg\vcpkg.exe integrate install
+git clone https://github.com/microsoft/vcpkg.git "$env:USERPROFILE\vcpkg"
+& "$env:USERPROFILE\vcpkg\bootstrap-vcpkg.bat"
+& "$env:USERPROFILE\vcpkg\vcpkg.exe" integrate install
 ```
 
 The repository's `vcpkg.json` manifest declares Assimp, GLM and GLFW. Visual Studio restores these dependencies automatically when the project is built.
