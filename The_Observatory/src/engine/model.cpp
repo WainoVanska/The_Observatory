@@ -11,6 +11,14 @@ Model::Model(const std::string& path)
     loadModel(path);
 }
 
+Model::~Model()
+{
+    for (const MeshTexture& texture : texturesLoaded)
+    {
+        glDeleteTextures(1, &texture.id);
+    }
+}
+
 void Model::draw(GLuint shaderProgram) const
 {
     for (const Mesh& mesh : meshes)

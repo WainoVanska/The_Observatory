@@ -16,6 +16,9 @@
     <ClCompile Include="src\engine\texture.cpp" />
     <ClCompile Include="src\engine\window.cpp" />
     <ClCompile Include="src\scenes\graphics_scene.cpp" />
+    <ClCompile Include="src\scenes\graphics_scene_geometry.cpp" />
+    <ClCompile Include="src\scenes\graphics_scene_postprocess.cpp" />
+    <ClCompile Include="src\scenes\graphics_scene_shadows.cpp" />
     <ClCompile Include="src\engine\FrameRecorder.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -32,6 +35,7 @@
     <ClInclude Include="src\engine\texture.h" />
     <ClInclude Include="src\engine\window.h" />
     <ClInclude Include="src\scenes\graphics_scene.h" />
+    <ClInclude Include="src\scenes\graphics_scene_support.h" />
     <ClInclude Include="src\engine\FrameRecorder.h" />
   </ItemGroup>
   <ItemGroup>
@@ -110,32 +114,5 @@
     <None Include="assets\shaders\skybox\skybox_vertex.glsl">
       <Filter>Shaders\Skybox</Filter>
     </None>
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\scene\*.glsl" />
-    <None Include="assets\shaders\skybox\*.glsl" />
-    <None Include="assets\shaders\skybox\*.glsl" />
   </ItemGroup>
 </Project>

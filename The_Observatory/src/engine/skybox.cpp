@@ -48,8 +48,8 @@ bool SkyBox::Init(
     const std::string& negZ)
 {
     shaderProgram = createSkyboxShaderProgram();
-    gWVPLoc = glGetUniformLocation(shaderProgram, "gWVP");
-    cubemapLoc = glGetUniformLocation(shaderProgram, "gCubemapTexture");
+    gWVPLoc = getUniformLocation(shaderProgram, "gWVP");
+    cubemapLoc = getUniformLocation(shaderProgram, "gCubemapTexture");
 
     glUseProgram(shaderProgram);
     glUniform1i(cubemapLoc, 0);

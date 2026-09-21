@@ -3,6 +3,9 @@
 #include <glad/glad.h>
 #include <string>
 
+GLint getUniformLocation(GLuint program, const std::string& name);
+void clearUniformLocationCache();
+
 std::string readShaderFile(
     const std::string& filePath
 );

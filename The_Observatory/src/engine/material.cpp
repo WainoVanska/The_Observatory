@@ -1,5 +1,7 @@
 #include "material.h"
 
+#include "shader.h"
+
 #include <glm/gtc/type_ptr.hpp>
 
 void setMaterial(GLuint shaderProgram, const Material& material)
@@ -11,42 +13,39 @@ void setMaterial(GLuint shaderProgram, const Material& material)
         );
 
     glUniform3fv(
-        glGetUniformLocation(
-            shaderProgram,
-            "material.diffuseColor"
-        ),
+        getUniformLocation(shaderProgram, "material.diffuseColor"),
         1,
         glm::value_ptr(linearDiffuseColor)
     );
 
     glUniform3fv(
-        glGetUniformLocation(shaderProgram, "material.specularColor"),
+        getUniformLocation(shaderProgram, "material.specularColor"),
         1,
         &material.specularColor[0]
     );
 
     glUniform1f(
-        glGetUniformLocation(shaderProgram, "material.shininess"),
+        getUniformLocation(shaderProgram, "material.shininess"),
         material.shininess
     );
 
     glUniform1i(
-        glGetUniformLocation(shaderProgram, "material.useDiffuseMap"),
+        getUniformLocation(shaderProgram, "material.useDiffuseMap"),
         material.useDiffuseMap
     );
 
     glUniform1i(
-        glGetUniformLocation(shaderProgram, "material.useSpecularMap"),
+        getUniformLocation(shaderProgram, "material.useSpecularMap"),
         material.useSpecularMap
     );
 
     glUniform1i(
-        glGetUniformLocation(shaderProgram, "material.diffuseMap"),
+        getUniformLocation(shaderProgram, "material.diffuseMap"),
         0
     );
 
     glUniform1i(
-        glGetUniformLocation(shaderProgram, "material.specularMap"),
+        getUniformLocation(shaderProgram, "material.specularMap"),
         1
     );
 }

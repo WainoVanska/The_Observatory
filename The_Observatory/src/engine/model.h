@@ -15,6 +15,10 @@ class Model
 {
 public:
     Model(const std::string& path);
+    ~Model();
+
+    Model(const Model&) = delete;
+    Model& operator=(const Model&) = delete;
 
     void draw(GLuint shaderProgram) const;
     void configureInstancing(GLuint instanceVBO);

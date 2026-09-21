@@ -34,6 +34,6 @@ private:
     CubeMesh cube;
 
     GLuint shaderProgram;
-    GLuint gWVPLoc;
-    GLuint cubemapLoc;
+    GLint gWVPLoc;
+    GLint cubemapLoc;
 };

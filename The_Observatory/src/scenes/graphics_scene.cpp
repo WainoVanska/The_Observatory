@@ -1,4 +1,5 @@
 #include "graphics_scene.h"
+#include "graphics_scene_support.h"
 
 #include "../engine/shader.h"
 #include "../engine/texture.h"
@@ -15,395 +16,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-namespace
-{
-    constexpr float FLASHLIGHT_INNER_ANGLE = 10.0f;
-    constexpr float FLASHLIGHT_OUTER_ANGLE = 28.0f;
-
-    const glm::vec3 DISTANT_PLANET_POSITION(
-        0.0f,
-        6.0f,
-        -80.0f
-    );
-
-    constexpr float DISTANT_PLANET_SCALE = 12.0f;
-
-    constexpr float DISTANT_ASTEROID_SYSTEM_SCALE = 1.20f;
-
-    GLint uniformLocation(GLuint program, const char* name)
-    {
-        return glGetUniformLocation(program, name);
-    }
-
-    void setMatrix(GLint location, const glm::mat4& value)
-    {
-        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
-    }
-
-    void setVector(GLint location, const glm::vec3& value)
-    {
-        glUniform3fv(location, 1, glm::value_ptr(value));
-    }
-
-    void bindTexture(GLenum unit, GLenum target, GLuint texture)
-    {
-        glActiveTexture(unit);
-        glBindTexture(target, texture);
-    }
-
-    glm::mat4 makeTransform(
-        const glm::vec3& position,
-        const glm::vec3& scale,
-        float angleDegrees = 0.0f,
-        const glm::vec3& axis = glm::vec3(0.0f, 1.0f, 0.0f))
-    {
-        glm::mat4 model(1.0f);
-        model = glm::translate(model, position);
-        if (angleDegrees != 0.0f)
-        {
-            model = glm::rotate(model, glm::radians(angleDegrees), axis);
-        }
-        return glm::scale(model, scale);
-    }
-
-    glm::vec3 sunDirection()
-    {
-        return glm::vec3(-0.3f, -1.0f, -0.2f);
-    }
-
-    glm::vec3 sunColor()
-    {
-        return glm::vec3(0.45f, 0.43f, 0.36f);
-    }
-
-    constexpr std::size_t ROOM_POINT_LIGHT_COUNT = 4;
-
-    const std::array<glm::vec3, ROOM_POINT_LIGHT_COUNT>
-        ROOM_POINT_LIGHT_POSITIONS = {
-
-        // Left wall
-        glm::vec3(-2.60f, 1.30f, -1.35f),
-        glm::vec3(-2.60f, 1.30f,  1.35f),
-
-        // Right wall
-        glm::vec3(2.60f, 1.30f, -1.35f),
-        glm::vec3(2.60f, 1.30f,  1.35f)
-    };
-
-    const glm::vec3 FIXED_ROOM_LIGHT_COLOR(
-        0.18f,
-        0.16f,
-        0.12f
-    );
-
-    const glm::vec3 MOVABLE_LIGHT_COLOR(
-        0.70f,
-        0.63f,
-        0.50f
-    );
-
-    template <typename Uniforms>
-    void cacheRoomPointLightUniforms(
-        GLuint program,
-        Uniforms& uniforms)
-    {
-        for (std::size_t i = 0;
-            i < ROOM_POINT_LIGHT_COUNT;
-            ++i)
-        {
-            const std::string prefix =
-                "pointLights[" +
-                std::to_string(i) +
-                "].";
-
-            uniforms.pointLightPositions[i] =
-                uniformLocation(
-                    program,
-                    (prefix + "position").c_str()
-                );
-
-            uniforms.pointLightColors[i] =
-                uniformLocation(
-                    program,
-                    (prefix + "color").c_str()
-                );
-
-            uniforms.pointLightEnabled[i] =
-                uniformLocation(
-                    program,
-                    (prefix + "enabled").c_str()
-                );
-        }
-    }
-
-    template <typename Uniforms>
-    void cachePointShadowMapUniforms(
-        GLuint program,
-        Uniforms& uniforms)
-    {
-        for (std::size_t i = 0;
-            i < ROOM_POINT_LIGHT_COUNT;
-            ++i)
-        {
-            const std::string uniformName =
-                "pointShadowMap" +
-                std::to_string(i);
-
-            uniforms.pointShadowMaps[i] =
-                uniformLocation(
-                    program,
-                    uniformName.c_str()
-                );
-        }
-    }
-
-    template <typename Uniforms>
-    void bindPointShadowMaps(
-        const Uniforms& uniforms,
-        const std::array<
-        GLuint,
-        ROOM_POINT_LIGHT_COUNT
-        >& cubemaps)
-    {
-        for (std::size_t i = 0;
-            i < ROOM_POINT_LIGHT_COUNT;
-            ++i)
-        {
-            const GLenum textureUnit =
-                GL_TEXTURE4 +
-                static_cast<GLenum>(i);
-
-            bindTexture(
-                textureUnit,
-                GL_TEXTURE_CUBE_MAP,
-                cubemaps[i]
-            );
-
-            glUniform1i(
-                uniforms.pointShadowMaps[i],
-                4 + static_cast<GLint>(i)
-            );
-        }
-    }
-
-    template <typename Uniforms>
-    void uploadRoomPointLights(
-        const Uniforms& uniforms,
-        const glm::vec3& movableLightPosition,
-        bool movableModeEnabled,
-        bool outdoorModeEnabled)
-    {
-        for (std::size_t i = 0;
-            i < ROOM_POINT_LIGHT_COUNT;
-            ++i)
-        {
-            const bool enabled =
-                !outdoorModeEnabled &&
-                (
-                    !movableModeEnabled ||
-                    i == 0
-                    );
-
-            glm::vec3 position =
-                ROOM_POINT_LIGHT_POSITIONS[i];
-
-            if (movableModeEnabled && i == 0)
-            {
-                position = movableLightPosition;
-            }
-
-            setVector(
-                uniforms.pointLightPositions[i],
-                position
-            );
-
-            const glm::vec3 color =
-                movableModeEnabled && i == 0
-                ? MOVABLE_LIGHT_COLOR
-                : FIXED_ROOM_LIGHT_COLOR;
-
-            setVector(
-                uniforms.pointLightColors[i],
-                color
-            );
-
-            glUniform1i(
-                uniforms.pointLightEnabled[i],
-                enabled
-            );
-        }
-    }
-
-    bool toggleOnKeyPress(GLFWwindow* window, int key, bool& wasPressed, bool& value)
-    {
-        const bool isPressed = glfwGetKey(window, key) == GLFW_PRESS;
-        const bool toggled = isPressed && !wasPressed;
-        if (toggled)
-        {
-            value = !value;
-        }
-        wasPressed = isPressed;
-        return toggled;
-    }
-
-    void configureVertexAttribute(
-        GLuint index,
-        GLint componentCount,
-        GLsizei stride,
-        std::size_t byteOffset)
-    {
-        glEnableVertexAttribArray(index);
-        glVertexAttribPointer(
-            index,
-            componentCount,
-            GL_FLOAT,
-            GL_FALSE,
-            stride,
-            reinterpret_cast<void*>(byteOffset));
-    }
-
-    void drawDebugPrimitives(
-        const CubeMesh& cube,
-        const SphereMesh& sphere,
-        GLint modelLocation,
-        GLuint texture)
-    {
-        drawTexturedCube(
-            cube.VAO,
-            modelLocation,
-            makeTransform(glm::vec3(-0.2f, -0.6f, 0.0f), glm::vec3(1.0f)),
-            texture);
-
-        drawSphere(
-            sphere,
-            modelLocation,
-            makeTransform(glm::vec3(0.8f, -0.4f, 0.0f), glm::vec3(1.0f)));
-
-    }
-
-    template <typename Uniforms>
-    void configureModelLighting(
-        const Uniforms& uniforms,
-        const glm::mat4& view,
-        const glm::mat4& projection,
-        const glm::vec3& cameraPos,
-        const glm::vec3& cameraFront,
-        const glm::vec3& lightPos,
-        const glm::vec3& lightColor,
-        const glm::vec3& secondLightPos,
-        const glm::vec3& secondLightColor,
-        bool light1Enabled,
-        bool light2Enabled,
-        bool directionalLightEnabled,
-        bool flashlightEnabled)
-    {
-        setMatrix(uniforms.view, view);
-        setMatrix(uniforms.projection, projection);
-        setVector(uniforms.viewPos, cameraPos);
-        setVector(uniforms.lightPos, lightPos);
-        setVector(uniforms.lightColor, lightColor);
-        setVector(uniforms.secondLightPos, secondLightPos);
-        setVector(uniforms.secondLightColor, secondLightColor);
-        glUniform1i(uniforms.light1Enabled, light1Enabled);
-        glUniform1i(uniforms.light2Enabled, light2Enabled);
-        glUniform1i(uniforms.directionalLightEnabled, directionalLightEnabled);
-        setVector(uniforms.directionalLightDirection, sunDirection());
-        setVector(uniforms.directionalLightColor, sunColor());
-        setVector(uniforms.flashlightPos, cameraPos);
-        setVector(uniforms.flashlightDir, cameraFront);
-        glUniform1i(uniforms.flashlightEnabled, flashlightEnabled);
-        glUniform1f(uniforms.flashlightCutOff, glm::cos(glm::radians(FLASHLIGHT_INNER_ANGLE)));
-        glUniform1f(uniforms.flashlightOuterCutOff, glm::cos(glm::radians(FLASHLIGHT_OUTER_ANGLE)));
-    }
-
-    void configureInstancedLighting(
-        GLuint program,
-        const glm::mat4& view,
-        const glm::mat4& projection,
-        const glm::vec3& cameraPos,
-        const glm::vec3& cameraFront,
-        const glm::vec3& lightPos,
-        const glm::vec3& lightColor,
-        const glm::vec3& secondLightPos,
-        const glm::vec3& secondLightColor,
-        bool light1Enabled,
-        bool light2Enabled,
-        bool directionalLightEnabled,
-        bool flashlightEnabled)
-    {
-        setMatrix(uniformLocation(program, "view"), view);
-        setMatrix(uniformLocation(program, "projection"), projection);
-        setVector(uniformLocation(program, "viewPos"), cameraPos);
-        setVector(uniformLocation(program, "lightPos"), lightPos);
-        setVector(uniformLocation(program, "lightColor"), lightColor);
-        setVector(uniformLocation(program, "secondLightPos"), secondLightPos);
-        setVector(uniformLocation(program, "secondLightColor"), secondLightColor);
-        glUniform1i(uniformLocation(program, "light1Enabled"), light1Enabled);
-        glUniform1i(uniformLocation(program, "light2Enabled"), light2Enabled);
-        glUniform1i(uniformLocation(program, "directionalLightEnabled"), directionalLightEnabled);
-        setVector(uniformLocation(program, "directionalLightDirection"), sunDirection());
-        setVector(uniformLocation(program, "directionalLightColor"), sunColor());
-        setVector(uniformLocation(program, "flashlightPos"), cameraPos);
-        setVector(uniformLocation(program, "flashlightDir"), cameraFront);
-        glUniform1i(uniformLocation(program, "flashlightEnabled"), flashlightEnabled);
-        glUniform1f(
-            uniformLocation(program, "flashlightCutOff"),
-            glm::cos(glm::radians(FLASHLIGHT_INNER_ANGLE)));
-        glUniform1f(
-            uniformLocation(program, "flashlightOuterCutOff"),
-            glm::cos(glm::radians(FLASHLIGHT_OUTER_ANGLE)));
-    }
-
-    template <typename Uniforms>
-    void drawModelWithMatrices(
-        Model* model,
-        GLuint program,
-        const Uniforms& uniforms,
-        const glm::mat4& view,
-        const glm::mat4& projection,
-        const glm::mat4& modelMatrix)
-    {
-        if (!model)
-        {
-            return;
-        }
-
-        glUseProgram(program);
-        setMatrix(uniforms.view, view);
-        setMatrix(uniforms.projection, projection);
-        setMatrix(uniforms.model, modelMatrix);
-        model->draw(program);
-    }
-
-    struct TangentBasis
-    {
-        glm::vec3 tangent;
-        glm::vec3 bitangent;
-    };
-
-    TangentBasis calculateTangentBasis(
-        const glm::vec3& p1,
-        const glm::vec3& p2,
-        const glm::vec3& p3,
-        const glm::vec2& uv1,
-        const glm::vec2& uv2,
-        const glm::vec2& uv3)
-    {
-        const glm::vec3 edge1 = p2 - p1;
-        const glm::vec3 edge2 = p3 - p1;
-        const glm::vec2 deltaUV1 = uv2 - uv1;
-        const glm::vec2 deltaUV2 = uv3 - uv1;
-        const float inverseDeterminant = 1.0f /
-            (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
-
-        TangentBasis basis;
-        basis.tangent = glm::normalize(
-            inverseDeterminant * (deltaUV2.y * edge1 - deltaUV1.y * edge2));
-        basis.bitangent = glm::normalize(
-            inverseDeterminant * (-deltaUV2.x * edge1 + deltaUV1.x * edge2));
-        return basis;
-    }
-}
+using namespace graphics_scene_detail;
 
 void GraphicsScene::init(int width, int height, FreeCamera* camera)
 {
@@ -467,9 +80,7 @@ void GraphicsScene::init(int width, int height, FreeCamera* camera)
     outdoorGroundMaterial.shininess = 8.0f;
     outdoorGroundMaterial.useDiffuseMap = false;
     outdoorGroundMaterial.useSpecularMap = false;
-    dullOrange = createDullOrangeMaterial();
     shinyBlue = createShinyBlueMaterial();
-    matteGray = createMatteGrayMaterial();
     texturedMaterial = createTexturedMaterial();
 
     skybox = new SkyBox(camera);
@@ -481,7 +92,7 @@ void GraphicsScene::init(int width, int height, FreeCamera* camera)
     }
 
     const auto location = [](GLuint program, const char* name) {
-        return static_cast<GLuint>(glGetUniformLocation(program, name));
+        return getUniformLocation(program, name);
     };
 
     lightingUniforms.model = location(shaderProgram, "model");
@@ -555,6 +166,7 @@ void GraphicsScene::init(int width, int height, FreeCamera* camera)
     modelUniforms.flashlightOuterCutOff = location(modelShaderProgram, "flashlightOuterCutOff");
     modelUniforms.skybox = location(modelShaderProgram, "skybox");
     modelUniforms.glassBackpackEnabled = location(modelShaderProgram, "glassBackpackEnabled");
+    modelUniforms.materialShininess = location(modelShaderProgram, "material.shininess");
     modelUniforms.wallLightPos = location(modelShaderProgram, "wallLightPos");
     modelUniforms.wallLightColor = location(modelShaderProgram, "wallLightColor");
     modelUniforms.wallLightEnabled = location(modelShaderProgram, "wallLightEnabled");
@@ -565,6 +177,31 @@ void GraphicsScene::init(int width, int height, FreeCamera* camera)
     glassUniforms.model = location(glassShaderProgram, "model");
     glassUniforms.view = location(glassShaderProgram, "view");
     glassUniforms.projection = location(glassShaderProgram, "projection");
+    glassUniforms.texture = location(glassShaderProgram, "glassTexture");
+
+    instancedModelUniforms.view = location(instancedModelShaderProgram, "view");
+    instancedModelUniforms.projection = location(instancedModelShaderProgram, "projection");
+    instancedModelUniforms.viewPos = location(instancedModelShaderProgram, "viewPos");
+    instancedModelUniforms.lightPos = location(instancedModelShaderProgram, "lightPos");
+    instancedModelUniforms.lightColor = location(instancedModelShaderProgram, "lightColor");
+    instancedModelUniforms.secondLightPos = location(instancedModelShaderProgram, "secondLightPos");
+    instancedModelUniforms.secondLightColor = location(instancedModelShaderProgram, "secondLightColor");
+    instancedModelUniforms.light1Enabled = location(instancedModelShaderProgram, "light1Enabled");
+    instancedModelUniforms.light2Enabled = location(instancedModelShaderProgram, "light2Enabled");
+    instancedModelUniforms.directionalLightEnabled = location(instancedModelShaderProgram, "directionalLightEnabled");
+    instancedModelUniforms.directionalLightDirection = location(instancedModelShaderProgram, "directionalLightDirection");
+    instancedModelUniforms.directionalLightColor = location(instancedModelShaderProgram, "directionalLightColor");
+    instancedModelUniforms.flashlightPos = location(instancedModelShaderProgram, "flashlightPos");
+    instancedModelUniforms.flashlightDir = location(instancedModelShaderProgram, "flashlightDir");
+    instancedModelUniforms.flashlightEnabled = location(instancedModelShaderProgram, "flashlightEnabled");
+    instancedModelUniforms.flashlightCutOff = location(instancedModelShaderProgram, "flashlightCutOff");
+    instancedModelUniforms.flashlightOuterCutOff = location(instancedModelShaderProgram, "flashlightOuterCutOff");
+    instancedModelUniforms.lightSpaceMatrix = location(instancedModelShaderProgram, "lightSpaceMatrix");
+    instancedModelUniforms.directionalShadowMap = location(instancedModelShaderProgram, "directionalShadowMap");
+    instancedModelUniforms.systemModel = location(instancedModelShaderProgram, "systemModel");
+    instancedModelUniforms.objectColor = location(instancedModelShaderProgram, "objectColor");
+    instancedModelUniforms.objectSpecularColor = location(instancedModelShaderProgram, "objectSpecularColor");
+    instancedModelUniforms.shininess = location(instancedModelShaderProgram, "shininess");
 
     normalMappingUniforms.model = location(normalMappingShaderProgram, "model");
     normalMappingUniforms.view = location(normalMappingShaderProgram, "view");
@@ -591,6 +228,38 @@ void GraphicsScene::init(int width, int height, FreeCamera* camera)
     normalMappingUniforms.flashlightOuterCutOff = location(normalMappingShaderProgram, "flashlightOuterCutOff");
     normalMappingUniforms.normalDebugEnabled = location(normalMappingShaderProgram,"normalDebugEnabled");
 
+    screenUniforms.screenTexture = location(screenShaderProgram, "screenTexture");
+    screenUniforms.bloomTexture = location(screenShaderProgram, "bloomTexture");
+    screenUniforms.depthTexture = location(screenShaderProgram, "depthTexture");
+    screenUniforms.blurEnabled = location(screenShaderProgram, "blurEnabled");
+    screenUniforms.gammaCorrectionEnabled = location(screenShaderProgram, "gammaCorrectionEnabled");
+    screenUniforms.hdrEnabled = location(screenShaderProgram, "hdrEnabled");
+    screenUniforms.exposure = location(screenShaderProgram, "exposure");
+    screenUniforms.bloomEnabled = location(screenShaderProgram, "bloomEnabled");
+    screenUniforms.bloomStrength = location(screenShaderProgram, "bloomStrength");
+    screenUniforms.depthDebugEnabled = location(screenShaderProgram, "depthDebugEnabled");
+    screenUniforms.nearPlane = location(screenShaderProgram, "nearPlane");
+    screenUniforms.farPlane = location(screenShaderProgram, "farPlane");
+
+    brightPassUniforms.sceneTexture = location(brightPassShaderProgram, "sceneTexture");
+    brightPassUniforms.brightnessThreshold = location(brightPassShaderProgram, "brightnessThreshold");
+    gaussianBlurUniforms.image = location(gaussianBlurShaderProgram, "image");
+    gaussianBlurUniforms.horizontal = location(gaussianBlurShaderProgram, "horizontal");
+
+    directionalDepthUniforms.lightSpaceMatrix = location(directionalDepthShaderProgram, "lightSpaceMatrix");
+    directionalDepthUniforms.model = location(directionalDepthShaderProgram, "model");
+    instancedDirectionalDepthUniforms.lightSpaceMatrix = location(instancedDirectionalDepthShaderProgram, "lightSpaceMatrix");
+    instancedDirectionalDepthUniforms.systemModel = location(instancedDirectionalDepthShaderProgram, "systemModel");
+    pointDepthUniforms.lightPosition = location(pointDepthShaderProgram, "lightPos");
+    pointDepthUniforms.farPlane = location(pointDepthShaderProgram, "farPlane");
+    pointDepthUniforms.model = location(pointDepthShaderProgram, "model");
+    for (std::size_t face = 0; face < pointDepthUniforms.shadowMatrices.size(); ++face)
+    {
+        pointDepthUniforms.shadowMatrices[face] = location(
+            pointDepthShaderProgram,
+            ("shadowMatrices[" + std::to_string(face) + "]").c_str());
+    }
+
     cacheRoomPointLightUniforms(shaderProgram, lightingUniforms);
     cacheRoomPointLightUniforms(modelShaderProgram, modelUniforms);
     cacheRoomPointLightUniforms(normalMappingShaderProgram, normalMappingUniforms);
@@ -604,7 +273,7 @@ void GraphicsScene::init(int width, int height, FreeCamera* camera)
     bindPointShadowMaps(lightingUniforms, pointDepthCubemaps);
 
     glUseProgram(modelShaderProgram);
-    glUniform1f(uniformLocation(modelShaderProgram, "material.shininess"), 32.0f);
+    glUniform1f(modelUniforms.materialShininess, 32.0f);
     bindPointShadowMaps(modelUniforms, pointDepthCubemaps);
     glUniform1i(modelUniforms.skybox, 2);
 
@@ -618,20 +287,18 @@ void GraphicsScene::init(int width, int height, FreeCamera* camera)
     glUniform1i(normalMappingUniforms.depthMap, 2);
 
     glUseProgram(glassShaderProgram);
-    glUniform1i(uniformLocation(glassShaderProgram, "glassTexture"), 0);
+    glUniform1i(glassUniforms.texture, 0);
 
     glUseProgram(screenShaderProgram);
-    screenTextureUniform = location(screenShaderProgram, "screenTexture");
-    glUniform1i(screenTextureUniform, 0);
-    glUniform1i(uniformLocation(screenShaderProgram, "depthTexture"), 2);
-
-    glUniform1i(uniformLocation(screenShaderProgram,"bloomTexture"),1);
+    glUniform1i(screenUniforms.screenTexture, 0);
+    glUniform1i(screenUniforms.bloomTexture, 1);
+    glUniform1i(screenUniforms.depthTexture, 2);
 
     glUseProgram(brightPassShaderProgram);
-    glUniform1i(uniformLocation(brightPassShaderProgram, "sceneTexture"), 0);
+    glUniform1i(brightPassUniforms.sceneTexture, 0);
 
     glUseProgram(gaussianBlurShaderProgram);
-    glUniform1i(uniformLocation(gaussianBlurShaderProgram,"image"),0);
+    glUniform1i(gaussianBlurUniforms.image, 0);
 }
 
 void GraphicsScene::handleInput(GLFWwindow* window)
@@ -674,10 +341,16 @@ void GraphicsScene::draw(
     const glm::vec3& movableLightPos,
     const glm::vec3& cameraFront)
 {
-    const glm::vec3 lightPos = movableLightPos;
-    const glm::vec3 lightColor(0.70f, 0.63f, 0.50f);
-    const glm::vec3 secondLightPos(-2.0f, 2.2f, -2.0f);
-    const glm::vec3 secondLightColor(0.3f, 0.5f, 1.0f);
+    const RenderContext context{view, projection, cameraPos, cameraFront};
+    const LightingState lighting{
+        movableLightPos,
+        glm::vec3(0.70f, 0.63f, 0.50f),
+        glm::vec3(-2.0f, 2.2f, -2.0f),
+        glm::vec3(0.3f, 0.5f, 1.0f),
+        !outdoorModeEnabled && movableLightModeEnabled,
+        !outdoorModeEnabled && light2Enabled,
+        outdoorModeEnabled,
+        flashlightEnabled};
     glm::mat4 lightSpaceMatrix(1.0f);
 
     glEnable(GL_DEPTH_TEST);
@@ -697,7 +370,7 @@ void GraphicsScene::draw(
     else if (movableLightModeEnabled)
     {
         renderPointShadowMap(
-            lightPos,
+            lighting.primaryPosition,
             pointDepthCubemaps[0]
         );
 
@@ -746,29 +419,12 @@ void GraphicsScene::draw(
     bindPointShadowMaps(lightingUniforms, pointDepthCubemaps);
     glUniform1f(lightingUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
     glUniform1i(lightingUniforms.pointShadowsEnabled,!outdoorModeEnabled);
-    glUniform1i(lightingUniforms.light1Enabled, !outdoorModeEnabled && movableLightModeEnabled);
-    glUniform1i(lightingUniforms.light2Enabled, !outdoorModeEnabled && light2Enabled);
-    glUniform1i(lightingUniforms.directionalLightEnabled, outdoorModeEnabled);
-    setVector(lightingUniforms.directionalLightDirection, sunDirection());
-    setVector(lightingUniforms.directionalLightColor, sunColor());
-    setMatrix(lightingUniforms.view, view);
-    setMatrix(lightingUniforms.projection, projection);
-    setVector(lightingUniforms.viewPos, cameraPos);
-    setVector(lightingUniforms.lightPos, lightPos);
-    setVector(lightingUniforms.lightColor, lightColor);
-    uploadRoomPointLights(lightingUniforms, lightPos, movableLightModeEnabled, outdoorModeEnabled);
-    setVector(lightingUniforms.secondLightPos, secondLightPos);
-    setVector(lightingUniforms.secondLightColor, secondLightColor);
-
-    setVector(lightingUniforms.flashlightPos, cameraPos);
-    setVector(lightingUniforms.flashlightDir, cameraFront);
-    glUniform1i(lightingUniforms.flashlightEnabled, flashlightEnabled);
-    glUniform1f(lightingUniforms.flashlightCutOff, glm::cos(glm::radians(FLASHLIGHT_INNER_ANGLE)));
-    glUniform1f(lightingUniforms.flashlightOuterCutOff, glm::cos(glm::radians(FLASHLIGHT_OUTER_ANGLE)));
-
-    glUseProgram(modelShaderProgram);
-
-    glUseProgram(shaderProgram);
+    configureLighting(lightingUniforms, context, lighting);
+    uploadRoomPointLights(
+        lightingUniforms,
+        lighting.primaryPosition,
+        movableLightModeEnabled,
+        outdoorModeEnabled);
 
     glStencilMask(0x00);
     drawLitObjects();
@@ -777,30 +433,23 @@ void GraphicsScene::draw(
     {
         glUseProgram(normalMappingShaderProgram);
 
-        setVector(normalMappingUniforms.flashlightPos, cameraPos);
-        setVector(normalMappingUniforms.flashlightDir, cameraFront);
-        glUniform1i(normalMappingUniforms.flashlightEnabled, flashlightEnabled);
+        setVector(normalMappingUniforms.flashlightPos, context.cameraPosition);
+        setVector(normalMappingUniforms.flashlightDir, context.cameraFront);
+        glUniform1i(normalMappingUniforms.flashlightEnabled, lighting.flashlightEnabled);
         glUniform1f(normalMappingUniforms.flashlightCutOff, glm::cos(glm::radians(FLASHLIGHT_INNER_ANGLE)));
         glUniform1f(normalMappingUniforms.flashlightOuterCutOff, glm::cos(glm::radians(FLASHLIGHT_OUTER_ANGLE)));
 
-        drawNormalMappedRoomWalls(view, projection, cameraPos, lightPos, lightColor);
-        drawNormalMappedFloorAndCeiling(view, projection, cameraPos, lightPos, lightColor);
+        drawNormalMappedRoomWalls(context, lighting);
+        drawNormalMappedFloorAndCeiling(context, lighting);
     }
 
-    drawMiniPlanetSystem(
-        view,
-        projection,
-        cameraPos,
-        cameraFront,
-        lightPos,
-        secondLightPos,
-        secondLightColor);
+    drawMiniPlanetSystem(context, lighting);
 
     if (outlineEnabled)
     {
         glStencilFunc(GL_ALWAYS, 1, 0xFF);
         glStencilMask(0xFF);
-        drawBackpack(view, projection, cameraPos, cameraFront, lightPos, secondLightPos, secondLightColor);
+        drawBackpack(context, lighting);
 
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
         glStencilMask(0x00);
@@ -812,12 +461,9 @@ void GraphicsScene::draw(
     else
     {
         glStencilMask(0x00);
-        drawBackpack(view, projection, cameraPos, cameraFront, lightPos, secondLightPos, secondLightColor);
+        drawBackpack(context, lighting);
         glStencilMask(0xFF);
     }
-
-    glStencilMask(0x00);
-    glUseProgram(lampShaderProgram);
 
     glStencilMask(0x00);
     glUseProgram(lampShaderProgram);
@@ -829,7 +475,7 @@ void GraphicsScene::draw(
         if (movableLightModeEnabled)
         {
             drawLampMarker(
-                lightPos,
+                lighting.primaryPosition,
                 glm::vec3(1.0f, 1.0f, 0.3f)
             );
         }
@@ -846,7 +492,7 @@ void GraphicsScene::draw(
         }
         if (light2Enabled)
         {
-            drawLampMarker(secondLightPos, glm::vec3(0.3f, 0.5f, 1.0f));
+            drawLampMarker(lighting.secondaryPosition, lighting.secondaryColor);
         }
     }
 
@@ -909,11 +555,6 @@ void GraphicsScene::drawLitObjects()
     }
 }
 
-glm::mat4 GraphicsScene::createOutdoorGroundModelMatrix() const
-{
-    return makeTransform(glm::vec3(0.0f, -0.95f, 0.0f), glm::vec3(20.0f, 0.1f, 20.0f));
-}
-
 void GraphicsScene::drawNormalDebugObjects()
 {
     drawDebugPrimitives(cube, sphere, normalDebugUniforms.model, containerTexture);
@@ -938,13 +579,8 @@ void GraphicsScene::drawLampMarker(
 }
 
 void GraphicsScene::drawBackpack(
-    const glm::mat4& view,
-    const glm::mat4& projection,
-    const glm::vec3& cameraPos,
-    const glm::vec3& cameraFront,
-    const glm::vec3& lightPos,
-    const glm::vec3& secondLightPos,
-    const glm::vec3& secondLightColor)
+    const RenderContext& context,
+    const LightingState& lighting)
 {
     if (!backpack)
     {
@@ -952,7 +588,11 @@ void GraphicsScene::drawBackpack(
     }
 
     glUseProgram(modelShaderProgram);
-    uploadRoomPointLights(modelUniforms, lightPos, movableLightModeEnabled, outdoorModeEnabled);
+    uploadRoomPointLights(
+        modelUniforms,
+        lighting.primaryPosition,
+        movableLightModeEnabled,
+        outdoorModeEnabled);
     configureModelPointShadows();
     glUniform1i(modelUniforms.glassBackpackEnabled, glassBackpackEnabled);
     if (skybox)
@@ -960,32 +600,12 @@ void GraphicsScene::drawBackpack(
         skybox->BindTexture(GL_TEXTURE2);
     }
 
-    configureModelLighting(
-        modelUniforms,
-        view,
-        projection,
-        cameraPos,
-        cameraFront,
-        lightPos,
-        glm::vec3(1.0f),
-        secondLightPos,
-        secondLightColor,
-        !outdoorModeEnabled && movableLightModeEnabled,
-        !outdoorModeEnabled && light2Enabled,
-        outdoorModeEnabled,
-        flashlightEnabled);
+    LightingState modelLighting = lighting;
+    modelLighting.primaryColor = glm::vec3(1.0f);
+    configureLighting(modelUniforms, context, modelLighting);
 
     setMatrix(modelUniforms.model, createBackpackModelMatrix());
     backpack->draw(modelShaderProgram);
-}
-
-glm::mat4 GraphicsScene::createBackpackOutlineModelMatrix() const
-{
-    return makeTransform(
-        glm::vec3(-1.0f, -0.5f, 0.0f),
-        glm::vec3(0.215f),
-        90.0f,
-        glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void GraphicsScene::drawBackpackNormalDebug(const glm::mat4& view, const glm::mat4& projection)
@@ -1024,36 +644,6 @@ void GraphicsScene::drawBackpackDepthDebug(const glm::mat4& view, const glm::mat
     glUniform1f(modelDepthDebugUniforms.farPlane, 100.0f);
     setMatrix(modelDepthDebugUniforms.model, createBackpackModelMatrix());
     backpack->draw(modelDepthDebugShaderProgram);
-}
-
-glm::mat4 GraphicsScene::createBackpackModelMatrix() const
-{
-    return makeTransform(
-        glm::vec3(-1.0f, -0.5f, 0.0f),
-        glm::vec3(0.205f),
-        90.0f,
-        glm::vec3(0.0f, 1.0f, 0.0f));
-}
-
-void GraphicsScene::createGlassPaneMesh()
-{
-    const float vertices[] = {
-        -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
-         0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-        -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
-         0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-         0.5f,  0.5f, 0.0f, 1.0f, 1.0f
-    };
-
-    glGenVertexArrays(1, &glassVAO);
-    glGenBuffers(1, &glassVBO);
-    glBindVertexArray(glassVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, glassVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    configureVertexAttribute(0, 3, 5 * sizeof(float), 0);
-    configureVertexAttribute(1, 2, 5 * sizeof(float), 3 * sizeof(float));
-    glBindVertexArray(0);
 }
 
 void GraphicsScene::drawGlassPanes(
@@ -1110,451 +700,9 @@ void GraphicsScene::drawGlassPanes(
     glActiveTexture(GL_TEXTURE0);
 }
 
-void GraphicsScene::createFramebuffer(int width, int height)
-{
-    framebufferWidth = width;
-    framebufferHeight = height;
-
-    glGenFramebuffers(1, &multisampleFramebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, multisampleFramebuffer);
-
-    glGenTextures(1, &multisampleColorTexture);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, multisampleColorTexture);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_SAMPLES, GL_RGB16F, width, height, GL_TRUE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, multisampleColorTexture, 0);
-
-    glGenRenderbuffers(1, &multisampleRBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, multisampleRBO);
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, MSAA_SAMPLES, GL_DEPTH24_STENCIL8, width, height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, multisampleRBO);
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    {
-        std::cout << "ERROR::FRAMEBUFFER:: Multisample framebuffer is not complete!\n";
-    }
-
-    glGenFramebuffers(1, &framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-
-    glGenTextures(1, &framebufferTexture);
-    glBindTexture(GL_TEXTURE_2D, framebufferTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebufferTexture, 0);
-
-    glGenTextures(1, &framebufferDepthTexture);
-    glBindTexture(GL_TEXTURE_2D, framebufferDepthTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, framebufferDepthTexture, 0);
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    {
-        std::cout << "ERROR::FRAMEBUFFER:: Resolved framebuffer is not complete!\n";
-    }
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-void GraphicsScene::createBloomFramebuffer(
-    int width,
-    int height
-)
-{
-    glGenFramebuffers(1, &brightPassFBO);
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        brightPassFBO
-    );
-
-    glGenTextures(1, &brightTexture);
-    glBindTexture(
-        GL_TEXTURE_2D,
-        brightTexture
-    );
-
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGB16F,
-        width,
-        height,
-        0,
-        GL_RGB,
-        GL_FLOAT,
-        nullptr
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_MIN_FILTER,
-        GL_LINEAR
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_MAG_FILTER,
-        GL_LINEAR
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_WRAP_S,
-        GL_CLAMP_TO_EDGE
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_WRAP_T,
-        GL_CLAMP_TO_EDGE
-    );
-
-    glFramebufferTexture2D(
-        GL_FRAMEBUFFER,
-        GL_COLOR_ATTACHMENT0,
-        GL_TEXTURE_2D,
-        brightTexture,
-        0
-    );
-
-    if (
-        glCheckFramebufferStatus(GL_FRAMEBUFFER) !=
-        GL_FRAMEBUFFER_COMPLETE
-        )
-    {
-        std::cout
-            << "ERROR::FRAMEBUFFER:: Bright-pass "
-            << "framebuffer is not complete!"
-            << std::endl;
-    }
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-void GraphicsScene::createPingPongFramebuffers(
-    int width,
-    int height
-)
-{
-    glGenFramebuffers(
-        2,
-        pingPongFBO
-    );
-
-    glGenTextures(
-        2,
-        pingPongTextures
-    );
-
-    for (unsigned int i = 0; i < 2; i++)
-    {
-        glBindFramebuffer(
-            GL_FRAMEBUFFER,
-            pingPongFBO[i]
-        );
-
-        glBindTexture(
-            GL_TEXTURE_2D,
-            pingPongTextures[i]
-        );
-
-        glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RGB16F,
-            width,
-            height,
-            0,
-            GL_RGB,
-            GL_FLOAT,
-            nullptr
-        );
-
-        glTexParameteri(
-            GL_TEXTURE_2D,
-            GL_TEXTURE_MIN_FILTER,
-            GL_LINEAR
-        );
-
-        glTexParameteri(
-            GL_TEXTURE_2D,
-            GL_TEXTURE_MAG_FILTER,
-            GL_LINEAR
-        );
-
-        glTexParameteri(
-            GL_TEXTURE_2D,
-            GL_TEXTURE_WRAP_S,
-            GL_CLAMP_TO_EDGE
-        );
-
-        glTexParameteri(
-            GL_TEXTURE_2D,
-            GL_TEXTURE_WRAP_T,
-            GL_CLAMP_TO_EDGE
-        );
-
-        glFramebufferTexture2D(
-            GL_FRAMEBUFFER,
-            GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D,
-            pingPongTextures[i],
-            0
-        );
-
-        if (
-            glCheckFramebufferStatus(
-                GL_FRAMEBUFFER
-            ) != GL_FRAMEBUFFER_COMPLETE
-            )
-        {
-            std::cout
-                << "ERROR::FRAMEBUFFER:: Ping-pong "
-                << i
-                << " framebuffer is not complete!"
-                << std::endl;
-        }
-    }
-
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        0
-    );
-}
-
-void GraphicsScene::extractBrightAreas()
-{
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        brightPassFBO
-    );
-
-    glViewport(
-        0,
-        0,
-        framebufferWidth,
-        framebufferHeight
-    );
-
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_STENCIL_TEST);
-    glDisable(GL_CULL_FACE);
-
-    glClearColor(
-        0.0f,
-        0.0f,
-        0.0f,
-        1.0f
-    );
-
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    glUseProgram(brightPassShaderProgram);
-
-    glUniform1f(
-        uniformLocation(
-            brightPassShaderProgram,
-            "brightnessThreshold"
-        ),
-        1.0f
-    );
-
-    bindTexture(
-        GL_TEXTURE0,
-        GL_TEXTURE_2D,
-        framebufferTexture
-    );
-
-    glBindVertexArray(screenQuadVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindVertexArray(0);
-}
-
-void GraphicsScene::blurBrightAreas()
-{
-    constexpr unsigned int blurPassCount = 10;
-
-    bool horizontal = true;
-    bool firstPass = true;
-
-    glUseProgram(
-        gaussianBlurShaderProgram
-    );
-
-    glBindVertexArray(
-        screenQuadVAO
-    );
-
-    for (
-        unsigned int pass = 0;
-        pass < blurPassCount;
-        pass++
-        )
-    {
-        glBindFramebuffer(
-            GL_FRAMEBUFFER,
-            pingPongFBO[horizontal]
-        );
-
-        glUniform1i(
-            uniformLocation(
-                gaussianBlurShaderProgram,
-                "horizontal"
-            ),
-            horizontal
-        );
-
-        GLuint inputTexture;
-
-        if (firstPass)
-        {
-            inputTexture = brightTexture;
-        }
-        else
-        {
-            inputTexture =
-                pingPongTextures[!horizontal];
-        }
-
-        bindTexture(
-            GL_TEXTURE0,
-            GL_TEXTURE_2D,
-            inputTexture
-        );
-
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        glDrawArrays(
-            GL_TRIANGLES,
-            0,
-            6
-        );
-
-        horizontal = !horizontal;
-        firstPass = false;
-    }
-
-    glBindVertexArray(0);
-
-    blurredBloomTexture =
-        pingPongTextures[!horizontal];
-
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        0
-    );
-}
-
-void GraphicsScene::createScreenQuad()
-{
-    const float vertices[] = {
-        -1.0f,  1.0f, 0.0f, 1.0f,
-        -1.0f, -1.0f, 0.0f, 0.0f,
-         1.0f, -1.0f, 1.0f, 0.0f,
-        -1.0f,  1.0f, 0.0f, 1.0f,
-         1.0f, -1.0f, 1.0f, 0.0f,
-         1.0f,  1.0f, 1.0f, 1.0f
-    };
-
-    glGenVertexArrays(1, &screenQuadVAO);
-    glGenBuffers(1, &screenQuadVBO);
-    glBindVertexArray(screenQuadVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, screenQuadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    configureVertexAttribute(0, 2, 4 * sizeof(float), 0);
-    configureVertexAttribute(1, 2, 4 * sizeof(float), 2 * sizeof(float));
-    glBindVertexArray(0);
-}
-
-void GraphicsScene::drawScreenQuad()
-{
-    glUseProgram(screenShaderProgram);
-
-    glUniform1i(uniformLocation(screenShaderProgram, "screenTexture"), 0);
-    glUniform1i(uniformLocation(screenShaderProgram, "bloomTexture"), 1);
-    glUniform1i(uniformLocation(screenShaderProgram, "depthTexture"), 2);
-
-    glUniform1i(uniformLocation(screenShaderProgram, "blurEnabled"), blurEnabled);
-    glUniform1i(uniformLocation(screenShaderProgram, "gammaCorrectionEnabled"), true);
-    glUniform1i(uniformLocation(screenShaderProgram, "hdrEnabled"), true);
-    glUniform1f(uniformLocation(screenShaderProgram, "exposure"), 1.2f);
-    glUniform1i(uniformLocation(screenShaderProgram, "bloomEnabled"), bloomEnabled);
-    glUniform1f(uniformLocation(screenShaderProgram, "bloomStrength"), bloomStrength);
-
-    glUniform1i(uniformLocation(screenShaderProgram, "depthDebugEnabled"), depthDebugEnabled);
-    glUniform1f(uniformLocation(screenShaderProgram, "nearPlane"), 0.1f);
-    glUniform1f(uniformLocation(screenShaderProgram, "farPlane"), 100.0f);
-
-    bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, framebufferTexture);
-    bindTexture(GL_TEXTURE1, GL_TEXTURE_2D, blurredBloomTexture);
-    bindTexture(GL_TEXTURE2, GL_TEXTURE_2D, framebufferDepthTexture);
-
-    glBindVertexArray(screenQuadVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindVertexArray(0);
-
-    glActiveTexture(GL_TEXTURE0);
-}
-
-void GraphicsScene::createAsteroidInstances()
-{
-    if (!rock)
-    {
-        return;
-    }
-
-    asteroidMatrices.resize(ASTEROID_COUNT);
-    std::mt19937 randomEngine(1337);
-    std::uniform_real_distribution<float> displacement(-8.0f, 8.0f);
-    std::uniform_real_distribution<float> scaleDistribution(0.05f, 0.12f);
-    std::uniform_real_distribution<float> rotationDistribution(0.0f, glm::two_pi<float>());
-    const glm::vec3 rotationAxis = glm::normalize(glm::vec3(0.4f, 0.6f, 0.8f));
-    constexpr float radius = 50.0f;
-
-    for (unsigned int i = 0; i < ASTEROID_COUNT; ++i)
-    {
-        const float percentage = static_cast<float>(i) / static_cast<float>(ASTEROID_COUNT);
-        const float angle = percentage * glm::two_pi<float>();
-        const float x = std::sin(angle) * radius + displacement(randomEngine);
-        const float y = displacement(randomEngine) * 0.25f;
-        const float z = std::cos(angle) * radius + displacement(randomEngine);
-        const glm::vec3 position(x, y, z);
-        const float scale = scaleDistribution(randomEngine);
-
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
-        model = glm::scale(model, glm::vec3(scale));
-        asteroidMatrices[i] = glm::rotate(model, rotationDistribution(randomEngine), rotationAxis);
-    }
-
-    glGenBuffers(1, &asteroidInstanceVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, asteroidInstanceVBO);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        asteroidMatrices.size() * sizeof(glm::mat4),
-        asteroidMatrices.data(),
-        GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    rock->configureInstancing(asteroidInstanceVBO);
-}
-
 void GraphicsScene::drawMiniPlanetSystem(
-    const glm::mat4& view,
-    const glm::mat4& projection,
-    const glm::vec3& cameraPos,
-    const glm::vec3& cameraFront,
-    const glm::vec3& lightPos,
-    const glm::vec3& secondLightPos,
-    const glm::vec3& secondLightColor)
+    const RenderContext& context,
+    const LightingState& lighting)
 {
     if (!planet || !rock)
     {
@@ -1569,637 +717,33 @@ void GraphicsScene::drawMiniPlanetSystem(
     const glm::mat4 asteroidSystemModel = createAsteroidSystemModel();
 
     glUseProgram(modelShaderProgram);
-    uploadRoomPointLights(modelUniforms, lightPos, movableLightModeEnabled, true);
+    uploadRoomPointLights(modelUniforms, lighting.primaryPosition, movableLightModeEnabled, true);
     configureModelPointShadows();
-    configureModelLighting(
-        modelUniforms,
-        view,
-        projection,
-        cameraPos,
-        cameraFront,
-        lightPos,
-        mainLightColor,
-        secondLightPos,
-        secondLightColor,
-        false,
-        false,
-        true,
-        false
-    );
+    LightingState planetLighting = lighting;
+    planetLighting.primaryColor = mainLightColor;
+    planetLighting.primaryEnabled = false;
+    planetLighting.secondaryEnabled = false;
+    planetLighting.directionalEnabled = true;
+    planetLighting.flashlightEnabled = false;
+    configureLighting(modelUniforms, context, planetLighting);
     glUniform1i(modelUniforms.pointShadowsEnabled, false);
     glUniform1i(modelUniforms.glassBackpackEnabled, false);
-    glUniform1f(uniformLocation(modelShaderProgram, "material.shininess"), 16.0f);
+    glUniform1f(modelUniforms.materialShininess, 16.0f);
     setMatrix(modelUniforms.model, planetModel);
     planet->draw(modelShaderProgram);
 
     glUseProgram(instancedModelShaderProgram);
     const glm::mat4 lightSpaceMatrix = createDirectionalLightSpaceMatrix(sunDirection());
-    setMatrix(uniformLocation(instancedModelShaderProgram, "lightSpaceMatrix"), lightSpaceMatrix);
+    setMatrix(instancedModelUniforms.lightSpaceMatrix, lightSpaceMatrix);
     bindTexture(GL_TEXTURE3, GL_TEXTURE_2D, directionalDepthMap);
-    glUniform1i(uniformLocation(instancedModelShaderProgram, "directionalShadowMap"), 3);
-    setMatrix(uniformLocation(instancedModelShaderProgram, "systemModel"), asteroidSystemModel);
-    configureInstancedLighting(
-        instancedModelShaderProgram,
-        view,
-        projection,
-        cameraPos,
-        cameraFront,
-        lightPos,
-        mainLightColor,
-        secondLightPos,
-        secondLightColor,
-        false,
-        false,
-        true,
-        false);
+    glUniform1i(instancedModelUniforms.directionalShadowMap, 3);
+    setMatrix(instancedModelUniforms.systemModel, asteroidSystemModel);
+    configureLighting(instancedModelUniforms, context, planetLighting);
 
-    setVector(uniformLocation(instancedModelShaderProgram, "objectColor"), glm::vec3(0.55f, 0.45f, 0.34f));
-    setVector(uniformLocation(instancedModelShaderProgram, "objectSpecularColor"), glm::vec3(0.08f));
-    glUniform1f(uniformLocation(instancedModelShaderProgram, "shininess"), 8.0f);
+    setVector(instancedModelUniforms.objectColor, glm::vec3(0.55f, 0.45f, 0.34f));
+    setVector(instancedModelUniforms.objectSpecularColor, glm::vec3(0.08f));
+    glUniform1f(instancedModelUniforms.shininess, 8.0f);
     rock->drawInstanced(instancedModelShaderProgram, ASTEROID_COUNT);
-}
-
-void GraphicsScene::createDirectionalShadowMap()
-{
-    glGenFramebuffers(1, &directionalDepthFBO);
-    glGenTextures(1, &directionalDepthMap);
-    glBindTexture(GL_TEXTURE_2D, directionalDepthMap);
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_DEPTH_COMPONENT24,
-        SHADOW_WIDTH,
-        SHADOW_HEIGHT,
-        0,
-        GL_DEPTH_COMPONENT,
-        GL_FLOAT,
-        nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    const float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, directionalDepthFBO);
-    glFramebufferTexture2D(
-        GL_FRAMEBUFFER,
-        GL_DEPTH_ATTACHMENT,
-        GL_TEXTURE_2D,
-        directionalDepthMap,
-        0);
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    {
-        std::cerr << "Directional shadow framebuffer incomplete\n";
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-glm::mat4 GraphicsScene::createDirectionalLightSpaceMatrix(const glm::vec3& direction) const
-{
-    const glm::vec3 sceneCenter(0.0f);
-    const glm::vec3 lightPosition = sceneCenter - glm::normalize(direction) * 10.0f;
-    const glm::mat4 lightProjection = glm::ortho(-7.0f, 7.0f, -7.0f, 7.0f, 0.1f, 25.0f);
-    const glm::mat4 lightView = glm::lookAt(
-        lightPosition,
-        sceneCenter,
-        glm::vec3(0.0f, 1.0f, 0.0f));
-    return lightProjection * lightView;
-}
-
-void GraphicsScene::drawDirectionalShadowCasters(
-    GLuint depthShaderProgram,
-    const glm::mat4& lightSpaceMatrix)
-{
-    (void)lightSpaceMatrix;
-    const GLint modelLocation = uniformLocation(depthShaderProgram, "model");
-    drawCube(cube.VAO, modelLocation, createOutdoorGroundModelMatrix());
-    drawCube(
-        cube.VAO,
-        modelLocation,
-        makeTransform(glm::vec3(-0.2f, -0.6f, 0.0f), glm::vec3(1.0f)));
-    drawSphere(
-        sphere,
-        modelLocation,
-        makeTransform(glm::vec3(0.8f, -0.4f, 0.0f), glm::vec3(1.0f)));
-
-    if (backpack)
-    {
-        setMatrix(modelLocation, createBackpackModelMatrix());
-        backpack->draw(depthShaderProgram);
-    }
-
-    if (rock)
-    {
-        glUseProgram(instancedDirectionalDepthShaderProgram);
-        setMatrix(
-            uniformLocation(instancedDirectionalDepthShaderProgram, "lightSpaceMatrix"),
-            createDirectionalLightSpaceMatrix(sunDirection()));
-        setMatrix(
-            uniformLocation(instancedDirectionalDepthShaderProgram, "systemModel"),
-            createAsteroidSystemModel());
-        rock->drawInstanced(instancedDirectionalDepthShaderProgram, ASTEROID_COUNT);
-        glUseProgram(depthShaderProgram);
-    }
-}
-
-void GraphicsScene::renderDirectionalShadowMap(const glm::mat4& lightSpaceMatrix)
-{
-    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-    glBindFramebuffer(GL_FRAMEBUFFER, directionalDepthFBO);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    glUseProgram(directionalDepthShaderProgram);
-    setMatrix(uniformLocation(directionalDepthShaderProgram, "lightSpaceMatrix"), lightSpaceMatrix);
-    glCullFace(GL_FRONT);
-    drawDirectionalShadowCasters(directionalDepthShaderProgram, lightSpaceMatrix);
-    glCullFace(GL_BACK);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-glm::mat4 GraphicsScene::createAsteroidSystemModel() const
-{
-    const float orbitAngle =
-        static_cast<float>(glfwGetTime()) *
-        glm::radians(3.0f);
-
-    glm::mat4 model = glm::translate(
-        glm::mat4(1.0f),
-        DISTANT_PLANET_POSITION
-    );
-
-    model = glm::rotate(
-        model,
-        glm::radians(0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f)
-    );
-
-    model = glm::rotate(
-        model,
-        orbitAngle,
-        glm::vec3(0.0f, 1.0f, 0.0f)
-    );
-
-    return glm::scale(
-        model,
-        glm::vec3(DISTANT_ASTEROID_SYSTEM_SCALE)
-    );
-}
-
-void GraphicsScene::createPointShadowMaps()
-{
-    glGenFramebuffers(
-        1,
-        &pointDepthFBO
-    );
-
-    glGenTextures(
-        static_cast<GLsizei>(
-            pointDepthCubemaps.size()
-            ),
-        pointDepthCubemaps.data()
-    );
-
-    for (GLuint cubemap : pointDepthCubemaps)
-    {
-        glBindTexture(
-            GL_TEXTURE_CUBE_MAP,
-            cubemap
-        );
-
-        for (unsigned int face = 0;
-            face < 6;
-            ++face)
-        {
-            glTexImage2D(
-                GL_TEXTURE_CUBE_MAP_POSITIVE_X +
-                face,
-                0,
-                GL_DEPTH_COMPONENT24,
-                POINT_SHADOW_WIDTH,
-                POINT_SHADOW_HEIGHT,
-                0,
-                GL_DEPTH_COMPONENT,
-                GL_FLOAT,
-                nullptr
-            );
-        }
-
-        glTexParameteri(
-            GL_TEXTURE_CUBE_MAP,
-            GL_TEXTURE_MIN_FILTER,
-            GL_NEAREST
-        );
-
-        glTexParameteri(
-            GL_TEXTURE_CUBE_MAP,
-            GL_TEXTURE_MAG_FILTER,
-            GL_NEAREST
-        );
-
-        glTexParameteri(
-            GL_TEXTURE_CUBE_MAP,
-            GL_TEXTURE_WRAP_S,
-            GL_CLAMP_TO_EDGE
-        );
-
-        glTexParameteri(
-            GL_TEXTURE_CUBE_MAP,
-            GL_TEXTURE_WRAP_T,
-            GL_CLAMP_TO_EDGE
-        );
-
-        glTexParameteri(
-            GL_TEXTURE_CUBE_MAP,
-            GL_TEXTURE_WRAP_R,
-            GL_CLAMP_TO_EDGE
-        );
-    }
-
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        pointDepthFBO
-    );
-
-    glFramebufferTexture(
-        GL_FRAMEBUFFER,
-        GL_DEPTH_ATTACHMENT,
-        pointDepthCubemaps[0],
-        0
-    );
-
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
-
-    if (
-        glCheckFramebufferStatus(
-            GL_FRAMEBUFFER
-        ) != GL_FRAMEBUFFER_COMPLETE
-        )
-    {
-        std::cerr
-            << "Point shadow framebuffer incomplete\n";
-    }
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-
-    fixedPointShadowMapsValid.fill(false);
-}
-
-std::vector<glm::mat4> GraphicsScene::createPointShadowMatrices(
-    const glm::vec3& lightPosition) const
-{
-    const float aspect = static_cast<float>(POINT_SHADOW_WIDTH) /
-        static_cast<float>(POINT_SHADOW_HEIGHT);
-    const glm::mat4 projection = glm::perspective(
-        glm::radians(90.0f),
-        aspect,
-        POINT_SHADOW_NEAR_PLANE,
-        POINT_SHADOW_FAR_PLANE);
-
-    const std::array<glm::vec3, 6> directions = {
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(-1.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f),
-        glm::vec3(0.0f, -1.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f),
-        glm::vec3(0.0f, 0.0f, -1.0f)
-    };
-    const std::array<glm::vec3, 6> upVectors = {
-        glm::vec3(0.0f, -1.0f, 0.0f),
-        glm::vec3(0.0f, -1.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f),
-        glm::vec3(0.0f, 0.0f, -1.0f),
-        glm::vec3(0.0f, -1.0f, 0.0f),
-        glm::vec3(0.0f, -1.0f, 0.0f)
-    };
-
-    std::vector<glm::mat4> matrices;
-    matrices.reserve(6);
-    for (std::size_t face = 0; face < directions.size(); ++face)
-    {
-        matrices.push_back(projection * glm::lookAt(
-            lightPosition,
-            lightPosition + directions[face],
-            upVectors[face]));
-    }
-    return matrices;
-}
-
-void GraphicsScene::drawPointShadowCasters(GLuint depthShaderProgram)
-{
-    const GLint modelLocation = uniformLocation(depthShaderProgram, "model");
-    drawCube(
-        cube.VAO,
-        modelLocation,
-        makeTransform(glm::vec3(-0.2f, -0.6f, 0.0f), glm::vec3(1.0f)));
-    drawSphere(
-        sphere,
-        modelLocation,
-        makeTransform(glm::vec3(0.8f, -0.4f, 0.0f), glm::vec3(1.0f)));
-
-    if (backpack)
-    {
-        setMatrix(modelLocation, createBackpackModelMatrix());
-        backpack->draw(depthShaderProgram);
-    }
-}
-
-void GraphicsScene::renderPointShadowMap(
-    const glm::vec3& lightPosition,
-    GLuint targetCubemap)
-{
-    const std::vector<glm::mat4>
-        shadowMatrices =
-        createPointShadowMatrices(
-            lightPosition
-        );
-
-    glViewport(
-        0,
-        0,
-        POINT_SHADOW_WIDTH,
-        POINT_SHADOW_HEIGHT
-    );
-
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        pointDepthFBO
-    );
-
-    glFramebufferTexture(
-        GL_FRAMEBUFFER,
-        GL_DEPTH_ATTACHMENT,
-        targetCubemap,
-        0
-    );
-
-    glClear(GL_DEPTH_BUFFER_BIT);
-
-    glUseProgram(pointDepthShaderProgram);
-
-    for (unsigned int face = 0;
-        face < 6;
-        ++face)
-    {
-        const std::string uniformName =
-            "shadowMatrices[" +
-            std::to_string(face) +
-            "]";
-
-        setMatrix(
-            uniformLocation(
-                pointDepthShaderProgram,
-                uniformName.c_str()
-            ),
-            shadowMatrices[face]
-        );
-    }
-
-    setVector(
-        uniformLocation(
-            pointDepthShaderProgram,
-            "lightPos"
-        ),
-        lightPosition
-    );
-
-    glUniform1f(
-        uniformLocation(
-            pointDepthShaderProgram,
-            "farPlane"
-        ),
-        POINT_SHADOW_FAR_PLANE
-    );
-
-    const GLboolean cullingWasEnabled =
-        glIsEnabled(GL_CULL_FACE);
-
-    GLint previousCullFaceMode = GL_BACK;
-
-    glGetIntegerv(
-        GL_CULL_FACE_MODE,
-        &previousCullFaceMode
-    );
-
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
-
-    drawPointShadowCasters(
-        pointDepthShaderProgram
-    );
-
-    glCullFace(
-        static_cast<GLenum>(
-            previousCullFaceMode
-            )
-    );
-
-    if (!cullingWasEnabled)
-    {
-        glDisable(GL_CULL_FACE);
-    }
-
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        0
-    );
-}
-
-void GraphicsScene::configureModelPointShadows()
-{
-    bindPointShadowMaps(
-        modelUniforms,
-        pointDepthCubemaps
-    );
-
-    glUniform1f(
-        modelUniforms.pointShadowFarPlane,
-        POINT_SHADOW_FAR_PLANE
-    );
-
-    glUniform1i(
-        modelUniforms.pointShadowsEnabled,
-        !outdoorModeEnabled
-    );
-}
-
-void GraphicsScene::createNormalMappedPlane()
-{
-    const glm::vec3 p1(-1.0f, 1.0f, 0.0f);
-    const glm::vec3 p2(1.0f, 1.0f, 0.0f);
-    const glm::vec3 p3(1.0f, -1.0f, 0.0f);
-    const glm::vec3 p4(-1.0f, -1.0f, 0.0f);
-    const glm::vec2 uv1(0.0f, 1.0f);
-    const glm::vec2 uv2(1.0f, 1.0f);
-    const glm::vec2 uv3(1.0f, 0.0f);
-    const glm::vec2 uv4(0.0f, 0.0f);
-    const glm::vec3 normal(0.0f, 0.0f, 1.0f);
-    const TangentBasis first = calculateTangentBasis(p1, p2, p3, uv1, uv2, uv3);
-    const TangentBasis second = calculateTangentBasis(p1, p3, p4, uv1, uv3, uv4);
-
-    const float vertices[] = {
-        p1.x, p1.y, p1.z, normal.x, normal.y, normal.z, uv1.x, uv1.y, first.tangent.x, first.tangent.y, first.tangent.z, first.bitangent.x, first.bitangent.y, first.bitangent.z,
-        p2.x, p2.y, p2.z, normal.x, normal.y, normal.z, uv2.x, uv2.y, first.tangent.x, first.tangent.y, first.tangent.z, first.bitangent.x, first.bitangent.y, first.bitangent.z,
-        p3.x, p3.y, p3.z, normal.x, normal.y, normal.z, uv3.x, uv3.y, first.tangent.x, first.tangent.y, first.tangent.z, first.bitangent.x, first.bitangent.y, first.bitangent.z,
-        p1.x, p1.y, p1.z, normal.x, normal.y, normal.z, uv1.x, uv1.y, second.tangent.x, second.tangent.y, second.tangent.z, second.bitangent.x, second.bitangent.y, second.bitangent.z,
-        p3.x, p3.y, p3.z, normal.x, normal.y, normal.z, uv3.x, uv3.y, second.tangent.x, second.tangent.y, second.tangent.z, second.bitangent.x, second.bitangent.y, second.bitangent.z,
-        p4.x, p4.y, p4.z, normal.x, normal.y, normal.z, uv4.x, uv4.y, second.tangent.x, second.tangent.y, second.tangent.z, second.bitangent.x, second.bitangent.y, second.bitangent.z
-    };
-
-    glGenVertexArrays(1, &normalMappedPlaneVAO);
-    glGenBuffers(1, &normalMappedPlaneVBO);
-    glBindVertexArray(normalMappedPlaneVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, normalMappedPlaneVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    constexpr GLsizei stride = 14 * sizeof(float);
-    configureVertexAttribute(0, 3, stride, 0);
-    configureVertexAttribute(1, 3, stride, 3 * sizeof(float));
-    configureVertexAttribute(2, 2, stride, 6 * sizeof(float));
-    configureVertexAttribute(3, 3, stride, 8 * sizeof(float));
-    configureVertexAttribute(4, 3, stride, 11 * sizeof(float));
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-}
-
-void GraphicsScene::drawNormalMappedSurface(
-    const glm::mat4& model,
-    const glm::vec2& uvScale,
-    GLuint diffuseTexture,
-    GLuint normalTexture,
-    GLuint depthTexture,
-    float normalStrength,
-    float heightScale,
-    const glm::mat4& view,
-    const glm::mat4& projection,
-    const glm::vec3& cameraPos,
-    const glm::vec3& lightPos,
-    const glm::vec3& lightColor)
-{
-    glUseProgram(normalMappingShaderProgram);
-
-    glUniform1i(normalMappingUniforms.normalDebugEnabled, normalDebugEnabled ? GL_TRUE : GL_FALSE);
-
-    bindPointShadowMaps(normalMappingUniforms, pointDepthCubemaps);
-    glUniform1f(normalMappingUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
-    glUniform1i(normalMappingUniforms.pointShadowsEnabled, !outdoorModeEnabled);
-    uploadRoomPointLights(normalMappingUniforms,lightPos, movableLightModeEnabled, outdoorModeEnabled);
-    setMatrix(normalMappingUniforms.model, model);
-    setMatrix(normalMappingUniforms.view, view);
-    setMatrix(normalMappingUniforms.projection, projection);
-    setVector(normalMappingUniforms.viewPos, cameraPos);
-    setVector(normalMappingUniforms.lightPos, lightPos);
-    setVector(normalMappingUniforms.lightColor, lightColor);
-    glUniform1i(normalMappingUniforms.lightEnabled, !outdoorModeEnabled && movableLightModeEnabled);
-    glUniform1i(normalMappingUniforms.wallLightEnabled, !outdoorModeEnabled && !movableLightModeEnabled);
-    glUniform2f(normalMappingUniforms.uvScale, uvScale.x, uvScale.y);
-    glUniform1f(normalMappingUniforms.normalStrength, normalStrength);
-    glUniform1f(normalMappingUniforms.heightScale,heightScale);
-    bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, diffuseTexture);
-    bindTexture(GL_TEXTURE1, GL_TEXTURE_2D, normalTexture);
-    bindTexture(GL_TEXTURE2, GL_TEXTURE_2D, depthTexture);
-
-    const GLboolean cullingWasEnabled = glIsEnabled(GL_CULL_FACE);
-    glDisable(GL_CULL_FACE);
-    glBindVertexArray(normalMappedPlaneVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindVertexArray(0);
-    if (cullingWasEnabled)
-    {
-        glEnable(GL_CULL_FACE);
-    }
-    glActiveTexture(GL_TEXTURE0);
-}
-
-void GraphicsScene::drawNormalMappedRoomWalls(
-    const glm::mat4& view,
-    const glm::mat4& projection,
-    const glm::vec3& cameraPos,
-    const glm::vec3& lightPos,
-    const glm::vec3& lightColor)
-{
-    struct Wall
-    {
-        glm::vec3 position;
-        float rotation;
-    };
-
-    constexpr float roomWallPosition = 2.95f;
-
-    const std::array<Wall, 3> walls = {
-        Wall{ glm::vec3(0.0f, 1.0f, roomWallPosition), 180.0f },
-        Wall{ glm::vec3(-roomWallPosition, 1.0f, 0.0f), 90.0f },
-        Wall{ glm::vec3(roomWallPosition, 1.0f, 0.0f), -90.0f }
-    };
-
-    for (const Wall& wall : walls)
-    {
-        drawNormalMappedSurface(
-            makeTransform(
-                wall.position,
-                glm::vec3(3.0f, 2.0f, 1.0f),
-                wall.rotation
-            ),
-            glm::vec2(4.0f, 3.0f),
-            brickDiffuseTexture,
-            brickNormalTexture,
-            brickDepthTexture,
-            1.0f,
-            parallaxHeightScale,
-            view,
-            projection,
-            cameraPos,
-            lightPos,
-            lightColor
-        );
-    }
-}
-
-void GraphicsScene::drawNormalMappedFloorAndCeiling(
-    const glm::mat4& view,
-    const glm::mat4& projection,
-    const glm::vec3& cameraPos,
-    const glm::vec3& lightPos,
-    const glm::vec3& lightColor)
-{
-    struct Surface
-    {
-        glm::vec3 position;
-        float rotation;
-        glm::vec2 uvScale;
-        float normalStrength;
-    };
-
-    const std::array<Surface, 2> surfaces = {
-        Surface{ glm::vec3(0.0f, -0.95f, 0.0f), -90.0f, glm::vec2(3.0f), 0.9f },
-        Surface{ glm::vec3(0.0f, 2.95f, 0.0f), 90.0f, glm::vec2(2.0f), 0.3f }
-    };
-
-    for (const Surface& surface : surfaces)
-    {
-        drawNormalMappedSurface(
-            makeTransform(
-                surface.position,
-                glm::vec3(3.0f, 3.0f, 1.0f),
-                surface.rotation,
-                glm::vec3(1.0f, 0.0f, 0.0f)
-            ),
-            surface.uvScale,
-            brickDiffuseTexture,
-            brickNormalTexture,
-            brickDepthTexture,
-            surface.normalStrength,
-            parallaxHeightScale,
-            view,
-            projection,
-            cameraPos,
-            lightPos,
-            lightColor
-        );
-    }
 }
 
 void GraphicsScene::cleanup()
@@ -2223,7 +767,8 @@ void GraphicsScene::cleanup()
         ceilingNormalTexture,
         pingPongTextures[0],
         pingPongTextures[1],
-        framebufferDepthTexture
+        framebufferDepthTexture,
+        brightTexture
     };
     glDeleteTextures(static_cast<GLsizei>(sizeof(textures) / sizeof(textures[0])), textures);
     glDeleteTextures(static_cast<GLsizei>(pointDepthCubemaps.size()), pointDepthCubemaps.data());
@@ -2244,7 +789,8 @@ void GraphicsScene::cleanup()
         instancedDirectionalDepthShaderProgram,
         pointDepthShaderProgram,
         normalMappingShaderProgram,
-        gaussianBlurShaderProgram
+        gaussianBlurShaderProgram,
+        brightPassShaderProgram
     };
     for (GLuint program : programs)
     {
@@ -2257,7 +803,8 @@ void GraphicsScene::cleanup()
         directionalDepthFBO,
         pointDepthFBO,
         pingPongFBO[0],
-        pingPongFBO[1]
+        pingPongFBO[1],
+        brightPassFBO
     };
     glDeleteFramebuffers(static_cast<GLsizei>(sizeof(framebuffers) / sizeof(framebuffers[0])), framebuffers);
 
@@ -2276,4 +823,6 @@ void GraphicsScene::cleanup()
     planet = nullptr;
     delete rock;
     rock = nullptr;
+
+    clearUniformLocationCache();
 }

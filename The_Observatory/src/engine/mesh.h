@@ -35,6 +35,12 @@ public:
         bool isTransparent = false,
         float opacity = 1.0f
     );
+    ~Mesh();
+
+    Mesh(const Mesh&) = delete;
+    Mesh& operator=(const Mesh&) = delete;
+    Mesh(Mesh&& other) noexcept;
+    Mesh& operator=(Mesh&& other) noexcept;
 
     void draw(GLuint shaderProgram) const;
 
@@ -50,4 +56,8 @@ private:
     float opacity = 1.0f;
 
     void setupMesh();
+    void releaseGpuResources();
+    void bindMaterial(GLuint shaderProgram) const;
+    void beginTransparentDraw(GLboolean& blendingWasEnabled, GLboolean& depthWritingWasEnabled) const;
+    void endTransparentDraw(GLboolean blendingWasEnabled, GLboolean depthWritingWasEnabled) const;
 };

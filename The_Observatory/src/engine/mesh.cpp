@@ -1,6 +1,9 @@
 #include "mesh.h"
 
+#include "shader.h"
+
 #include <cstddef>
+#include <utility>
 
 Mesh::Mesh(
     const std::vector<Vertex>& vertices,
@@ -17,6 +20,61 @@ Mesh::Mesh(
     this->opacity = opacity;
 
     setupMesh();
+}
+
+Mesh::~Mesh()
+{
+    releaseGpuResources();
+}
+
+Mesh::Mesh(Mesh&& other) noexcept
+    : vertices(std::move(other.vertices)),
+      indices(std::move(other.indices)),
+      textures(std::move(other.textures)),
+      VAO(std::exchange(other.VAO, 0)),
+      VBO(std::exchange(other.VBO, 0)),
+      EBO(std::exchange(other.EBO, 0)),
+      isTransparent(other.isTransparent),
+      opacity(other.opacity)
+{
+}
+
+Mesh& Mesh::operator=(Mesh&& other) noexcept
+{
+    if (this == &other)
+    {
+        return *this;
+    }
+
+    releaseGpuResources();
+    vertices = std::move(other.vertices);
+    indices = std::move(other.indices);
+    textures = std::move(other.textures);
+    VAO = std::exchange(other.VAO, 0);
+    VBO = std::exchange(other.VBO, 0);
+    EBO = std::exchange(other.EBO, 0);
+    isTransparent = other.isTransparent;
+    opacity = other.opacity;
+    return *this;
+}
+
+void Mesh::releaseGpuResources()
+{
+    if (EBO != 0)
+    {
+        glDeleteBuffers(1, &EBO);
+        EBO = 0;
+    }
+    if (VBO != 0)
+    {
+        glDeleteBuffers(1, &VBO);
+        VBO = 0;
+    }
+    if (VAO != 0)
+    {
+        glDeleteVertexArrays(1, &VAO);
+        VAO = 0;
+    }
 }
 
 void Mesh::setupMesh()
@@ -111,6 +169,41 @@ void Mesh::configureInstanceMatrix(GLuint instanceVBO)
 
 void Mesh::draw(GLuint shaderProgram) const
 {
+    bindMaterial(shaderProgram);
+
+    GLboolean blendingWasEnabled = GL_FALSE;
+    GLboolean depthWritingWasEnabled = GL_TRUE;
+    beginTransparentDraw(blendingWasEnabled, depthWritingWasEnabled);
+
+    glBindVertexArray(VAO);
+    glDrawElements(
+        GL_TRIANGLES,
+        static_cast<GLsizei>(indices.size()),
+        GL_UNSIGNED_INT,
+        nullptr);
+    glBindVertexArray(0);
+
+    endTransparentDraw(blendingWasEnabled, depthWritingWasEnabled);
+    glActiveTexture(GL_TEXTURE0);
+}
+
+void Mesh::drawInstanced(GLuint shaderProgram, GLsizei instanceCount) const
+{
+    bindMaterial(shaderProgram);
+
+    glBindVertexArray(VAO);
+    glDrawElementsInstanced(
+        GL_TRIANGLES,
+        static_cast<GLsizei>(indices.size()),
+        GL_UNSIGNED_INT,
+        nullptr,
+        instanceCount);
+    glBindVertexArray(0);
+    glActiveTexture(GL_TEXTURE0);
+}
+
+void Mesh::bindMaterial(GLuint shaderProgram) const
+{
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
     unsigned int emissiveNr = 1;
@@ -145,13 +238,7 @@ void Mesh::draw(GLuint shaderProgram) const
         std::string uniformName =
             "material." + name + number;
 
-        glUniform1i(
-            glGetUniformLocation(
-                shaderProgram,
-                uniformName.c_str()
-            ),
-            static_cast<GLint>(i)
-        );
+        glUniform1i(getUniformLocation(shaderProgram, uniformName), static_cast<GLint>(i));
 
         glBindTexture(
             GL_TEXTURE_2D,
@@ -159,48 +246,21 @@ void Mesh::draw(GLuint shaderProgram) const
         );
     }
 
-    glUniform1i(
-        glGetUniformLocation(
-            shaderProgram,
-            "material.hasDiffuseMap"
-        ),
-        hasDiffuseMap
-    );
+    glUniform1i(getUniformLocation(shaderProgram, "material.hasDiffuseMap"), hasDiffuseMap);
 
-    glUniform1i(
-        glGetUniformLocation(
-            shaderProgram,
-            "material.hasSpecularMap"
-        ),
-        hasSpecularMap
-    );
+    glUniform1i(getUniformLocation(shaderProgram, "material.hasSpecularMap"), hasSpecularMap);
 
-    glUniform1i(
-        glGetUniformLocation(
-            shaderProgram,
-            "material.hasEmissiveMap"
-        ),
-        hasEmissiveMap
-    );
+    glUniform1i(getUniformLocation(shaderProgram, "material.hasEmissiveMap"), hasEmissiveMap);
 
-    glUniform1f(
-        glGetUniformLocation(
-            shaderProgram,
-            "material.opacity"
-        ),
-        opacity
-    );
+    glUniform1f(getUniformLocation(shaderProgram, "material.opacity"), opacity);
+}
 
-    const GLboolean blendingWasEnabled =
-        glIsEnabled(GL_BLEND);
-
-    GLboolean depthWritingWasEnabled = GL_TRUE;
-
-    glGetBooleanv(
-        GL_DEPTH_WRITEMASK,
-        &depthWritingWasEnabled
-    );
-
+void Mesh::beginTransparentDraw(
+    GLboolean& blendingWasEnabled,
+    GLboolean& depthWritingWasEnabled) const
+{
+    blendingWasEnabled = glIsEnabled(GL_BLEND);
+    glGetBooleanv(GL_DEPTH_WRITEMASK, &depthWritingWasEnabled);
     if (isTransparent)
     {
         glEnable(GL_BLEND);
@@ -213,16 +273,12 @@ void Mesh::draw(GLuint shaderProgram) const
         glDepthMask(GL_FALSE);
     }
 
-    glBindVertexArray(VAO);
-    glDrawElements(
-        GL_TRIANGLES,
-        static_cast<GLsizei>(indices.size()),
-        GL_UNSIGNED_INT,
-        0
-    );
+}
 
-    glBindVertexArray(0);
-
+void Mesh::endTransparentDraw(
+    GLboolean blendingWasEnabled,
+    GLboolean depthWritingWasEnabled) const
+{
     if (isTransparent)
     {
         glDepthMask(depthWritingWasEnabled);
@@ -233,104 +289,4 @@ void Mesh::draw(GLuint shaderProgram) const
         }
     }
 
-    glActiveTexture(GL_TEXTURE0);
-}
-
-void Mesh::drawInstanced(
-    GLuint shaderProgram,
-    GLsizei instanceCount
-) const
-{
-    unsigned int diffuseNr = 1;
-    unsigned int specularNr = 1;
-    unsigned int emissiveNr = 1;
-
-    bool hasDiffuseMap = false;
-    bool hasSpecularMap = false;
-    bool hasEmissiveMap = false;
-
-    for (unsigned int i = 0; i < textures.size(); i++)
-    {
-        glActiveTexture(GL_TEXTURE0 + i);
-
-        std::string number;
-        const std::string& name = textures[i].type;
-
-        if (name == "texture_diffuse")
-        {
-            number = std::to_string(diffuseNr++);
-            hasDiffuseMap = true;
-        }
-        else if (name == "texture_specular")
-        {
-            number = std::to_string(specularNr++);
-            hasSpecularMap = true;
-        }
-        else if (name == "texture_emissive")
-        {
-            number = std::to_string(emissiveNr++);
-            hasEmissiveMap = true;
-        }
-
-        const std::string uniformName =
-            "material." + name + number;
-
-        glUniform1i(
-            glGetUniformLocation(
-                shaderProgram,
-                uniformName.c_str()
-            ),
-            static_cast<GLint>(i)
-        );
-
-        glBindTexture(
-            GL_TEXTURE_2D,
-            textures[i].id
-        );
-    }
-
-    glUniform1i(
-        glGetUniformLocation(
-            shaderProgram,
-            "material.hasDiffuseMap"
-        ),
-        hasDiffuseMap
-    );
-
-    glUniform1i(
-        glGetUniformLocation(
-            shaderProgram,
-            "material.hasSpecularMap"
-        ),
-        hasSpecularMap
-    );
-
-    glUniform1i(
-        glGetUniformLocation(
-            shaderProgram,
-            "material.hasEmissiveMap"
-        ),
-        hasEmissiveMap
-    );
-
-    glUniform1f(
-        glGetUniformLocation(
-            shaderProgram,
-            "material.opacity"
-        ),
-        opacity
-    );
-
-    glBindVertexArray(VAO);
-
-    glDrawElementsInstanced(
-        GL_TRIANGLES,
-        static_cast<GLsizei>(indices.size()),
-        GL_UNSIGNED_INT,
-        nullptr,
-        instanceCount
-    );
-
-    glBindVertexArray(0);
-    glActiveTexture(GL_TEXTURE0);
 }
