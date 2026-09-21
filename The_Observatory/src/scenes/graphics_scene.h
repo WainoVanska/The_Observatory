@@ -7,13 +7,13 @@
 #include <vector>
 #include <array>
 
-#include "../common/cube.h"
-#include "../common/sphere.h"
-#include "../common/material.h"
-#include "../common/model.h"
+#include "../engine/cube.h"
+#include "../engine/sphere.h"
+#include "../engine/material.h"
+#include "../engine/model.h"
 
-#include "../common/skybox.h"
-#include "../common/free_camera.h"
+#include "../engine/skybox.h"
+#include "../engine/free_camera.h"
 
 class GraphicsScene
 {
@@ -366,7 +366,6 @@ private:
     SkyBox* skybox = nullptr;
     Model* planet = nullptr;
     Model* rock = nullptr;
-    Model* wallLamp = nullptr;
 
     GLuint containerTexture = 0;
     GLuint containerSpecularTexture = 0;

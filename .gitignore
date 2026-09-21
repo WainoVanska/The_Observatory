@@ -76,6 +76,9 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
+
+# Keep Wavefront model assets used by the observatory.
+!The_Observatory/assets/models/**/*.obj
 *.iobj
 *.pch
 *.pdb

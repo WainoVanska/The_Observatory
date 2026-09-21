@@ -8,29 +8,6 @@
 
 namespace
 {
-    std::string resolveShaderPath(const std::string& requestedPath)
-    {
-        constexpr const char* legacyScenePrefix = "src/week09/";
-        constexpr const char* sceneShaderPrefix = "assets/shaders/scene/";
-
-        if (requestedPath.rfind(legacyScenePrefix, 0) == 0)
-        {
-            return sceneShaderPrefix + requestedPath.substr(std::char_traits<char>::length(legacyScenePrefix));
-        }
-
-        if (requestedPath == "src/common/skybox_vertex_shader.glsl")
-        {
-            return "assets/shaders/skybox/skybox_vertex.glsl";
-        }
-
-        if (requestedPath == "src/common/skybox_fragment_shader.glsl")
-        {
-            return "assets/shaders/skybox/skybox_fragment.glsl";
-        }
-
-        return requestedPath;
-    }
-
     GLuint compileShader(GLenum type, const std::string& source)
     {
         const GLuint shader = glCreateShader(type);
@@ -61,12 +38,11 @@ namespace
 
 std::string readShaderFile(const std::string& filePath)
 {
-    const std::string resolvedPath = resolveShaderPath(filePath);
-    std::ifstream file(resolvedPath);
+    std::ifstream file(filePath);
 
     if (!file.is_open())
     {
-        std::cerr << "Failed to open shader file: " << resolvedPath << "\n";
+        std::cerr << "Failed to open shader file: " << filePath << "\n";
         return "";
     }
 

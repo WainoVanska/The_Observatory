@@ -59,12 +59,12 @@ The repository documents my weekly graphics-programming progress, including impl
 
 ### Notes
 
-* Blue light only has an impartial implementation (no lighting on the walls and no shadows from objects) and should be treated as such.
+* Blue light only has a partial implementation (no lighting on the walls and no shadows from objects) and should be treated as such.
 * Normal debug mode doesn't contain the planet or asteroids.
 * When the backpack material is toggled to glass (H key) the material only takes the skybox texture into consideration. The stars reflecting on the backpack look messy, this isn't intended because the original implementation was made with a different skybox texture initially.
 * Video recording requires FFmpeg to be installed and available through the system `PATH`. On Windows, it can be installed with `winget install --id Gyan.FFmpeg --exact`.
 * Recordings are saved in the application's working directory as `observatory_1.mp4`, `observatory_2.mp4`, and so on. Audio isn't recorded in the current setup.
-* Window resizing has to be manually configured through `main.cpp` (WINDOW WIDTH / WINDOW HEIGHT values).
+* Window resizing has to be manually configured through `main.cpp` (`WINDOW_WIDTH` / `WINDOW_HEIGHT` values).
 
 ## How to build
 
