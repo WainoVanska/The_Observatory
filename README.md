@@ -6,7 +6,7 @@ https://github.com/user-attachments/assets/e302b108-f384-4bd5-9276-2b2b9fb43b94
 
 ## Features
 
-* Written in C++ using OpenGL 3.3 and GLSL.
+* C++ using OpenGL 3.3 and GLSL.
 * Free-moving first-person camera.
 * Blinn–Phong lighting with multiple point lights and a flashlight.
 * Omnidirectional point shadows using depth cubemaps.
@@ -21,15 +21,6 @@ https://github.com/user-attachments/assets/e302b108-f384-4bd5-9276-2b2b9fb43b94
 * Multisample antialiasing.
 * Normal and framebuffer-depth visualization modes.
 * In-engine video recording through FFmpeg.
-
-### Notes
-
-* Blue light only has an impartial implementation (no lighting on the walls and no shadows from objects) and should be treated as such.
-* Normal debug mode doesn't contain the planet or asteroids.
-* When the backpack material is toggled to glass (H key) the material only takes the skybox texture into consideration. The stars reflecting on the backpack look messy, this isn't intended because the original implementation was made with a different skybox texture initially.
-* Video recording requires FFmpeg to be installed and available through the system `PATH`. On Windows, it can be installed with `winget install --id Gyan.FFmpeg --exact`.
-* Recordings are saved in the application's working directory as `observatory_1.mp4`, `observatory_2.mp4`, and so on. Audio isn't recorded in the current setup.
-* Window resizing has to be manually configured through `main.cpp` (WINDOW WIDTH / WINDOW HEIGHT values).
 
 ### Controls
 
@@ -66,15 +57,14 @@ The repository documents my weekly graphics-programming progress, including impl
 
 [View the weekly learning log](docs/learning-log/)
 
-## Topics in need of review
+### Notes
 
-* Multipass rendering
-* Geometry shaders
-* G-buffers
-* Instanced rendering
-* Gamma correction
-* Bloom
-* Shadow-map bias and filtering
+* Blue light only has an impartial implementation (no lighting on the walls and no shadows from objects) and should be treated as such.
+* Normal debug mode doesn't contain the planet or asteroids.
+* When the backpack material is toggled to glass (H key) the material only takes the skybox texture into consideration. The stars reflecting on the backpack look messy, this isn't intended because the original implementation was made with a different skybox texture initially.
+* Video recording requires FFmpeg to be installed and available through the system `PATH`. On Windows, it can be installed with `winget install --id Gyan.FFmpeg --exact`.
+* Recordings are saved in the application's working directory as `observatory_1.mp4`, `observatory_2.mp4`, and so on. Audio isn't recorded in the current setup.
+* Window resizing has to be manually configured through `main.cpp` (WINDOW WIDTH / WINDOW HEIGHT values).
 
 ## How to build
 
