@@ -1,7 +1,6 @@
 <Solution>
   <Configurations>
     <Platform Name="x64" />
-    <Platform Name="x86" />
   </Configurations>
   <Project Path="The_Observatory/The_Observatory.vcxproj" Id="67f0a3f5-a51a-463f-bbd4-d0f5a67b5969" />
 </Solution>
