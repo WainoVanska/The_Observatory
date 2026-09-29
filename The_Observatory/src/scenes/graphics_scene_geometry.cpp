@@ -122,34 +122,32 @@ void GraphicsScene::createNormalMappedPlane()
     const TangentBasis first = calculateTangentBasis(p1, p2, p3, uv1, uv2, uv3);
     const TangentBasis second = calculateTangentBasis(p1, p3, p4, uv1, uv3, uv4);
 
+    struct PlaneVertex
+    {
+        glm::vec3 position;
+        glm::vec3 normal;
+        glm::vec2 uv;
+        glm::vec3 tangent;
+        glm::vec3 bitangent;
+    };
+
+    static_assert(sizeof(PlaneVertex) == 14 * sizeof(float));
+    static_assert(offsetof(PlaneVertex, normal) == 3 * sizeof(float));
+    static_assert(offsetof(PlaneVertex, uv) == 6 * sizeof(float));
+    static_assert(offsetof(PlaneVertex, tangent) == 8 * sizeof(float));
+    static_assert(offsetof(PlaneVertex, bitangent) == 11 * sizeof(float));
+
     // clang-format off
-    const float vertices[] = {
-        // Position         Normal                          UV           Tangent / bitangent
+    const PlaneVertex vertices[] = {
         // First triangle
-        p1.x, p1.y, p1.z,  normal.x, normal.y, normal.z,  uv1.x, uv1.y,
-        first.tangent.x, first.tangent.y, first.tangent.z,
-        first.bitangent.x, first.bitangent.y, first.bitangent.z,
-
-        p2.x, p2.y, p2.z,  normal.x, normal.y, normal.z,  uv2.x, uv2.y,
-        first.tangent.x, first.tangent.y, first.tangent.z,
-        first.bitangent.x, first.bitangent.y, first.bitangent.z,
-
-        p3.x, p3.y, p3.z,  normal.x, normal.y, normal.z,  uv3.x, uv3.y,
-        first.tangent.x, first.tangent.y, first.tangent.z,
-        first.bitangent.x, first.bitangent.y, first.bitangent.z,
+        {p1, normal, uv1, first.tangent, first.bitangent},
+        {p2, normal, uv2, first.tangent, first.bitangent},
+        {p3, normal, uv3, first.tangent, first.bitangent},
 
         // Second triangle
-        p1.x, p1.y, p1.z,  normal.x, normal.y, normal.z,  uv1.x, uv1.y,
-        second.tangent.x, second.tangent.y, second.tangent.z,
-        second.bitangent.x, second.bitangent.y, second.bitangent.z,
-
-        p3.x, p3.y, p3.z,  normal.x, normal.y, normal.z,  uv3.x, uv3.y,
-        second.tangent.x, second.tangent.y, second.tangent.z,
-        second.bitangent.x, second.bitangent.y, second.bitangent.z,
-
-        p4.x, p4.y, p4.z,  normal.x, normal.y, normal.z,  uv4.x, uv4.y,
-        second.tangent.x, second.tangent.y, second.tangent.z,
-        second.bitangent.x, second.bitangent.y, second.bitangent.z,
+        {p1, normal, uv1, second.tangent, second.bitangent},
+        {p3, normal, uv3, second.tangent, second.bitangent},
+        {p4, normal, uv4, second.tangent, second.bitangent},
     };
     // clang-format on
 
@@ -159,12 +157,12 @@ void GraphicsScene::createNormalMappedPlane()
     glBindBuffer(GL_ARRAY_BUFFER, normalMappedPlaneVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    constexpr GLsizei stride = 14 * sizeof(float);
-    configureVertexAttribute(0, 3, stride, 0);
-    configureVertexAttribute(1, 3, stride, 3 * sizeof(float));
-    configureVertexAttribute(2, 2, stride, 6 * sizeof(float));
-    configureVertexAttribute(3, 3, stride, 8 * sizeof(float));
-    configureVertexAttribute(4, 3, stride, 11 * sizeof(float));
+    constexpr GLsizei stride = sizeof(PlaneVertex);
+    configureVertexAttribute(0, 3, stride, offsetof(PlaneVertex, position));
+    configureVertexAttribute(1, 3, stride, offsetof(PlaneVertex, normal));
+    configureVertexAttribute(2, 2, stride, offsetof(PlaneVertex, uv));
+    configureVertexAttribute(3, 3, stride, offsetof(PlaneVertex, tangent));
+    configureVertexAttribute(4, 3, stride, offsetof(PlaneVertex, bitangent));
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
