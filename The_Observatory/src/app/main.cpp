@@ -16,68 +16,61 @@
 
 namespace
 {
-    constexpr int WINDOW_WIDTH = 1920;
-    constexpr int WINDOW_HEIGHT = 1080;
-    constexpr const char* WINDOW_TITLE = "---";
+constexpr int WINDOW_WIDTH = 1920;
+constexpr int WINDOW_HEIGHT = 1080;
+constexpr const char* WINDOW_TITLE = "---";
 
-    std::filesystem::path nextRecordingPath()
+std::filesystem::path nextRecordingPath()
+{
+    for (int number = 1;; ++number)
     {
-        for (int number = 1; ; ++number)
-        {
-            const std::filesystem::path path =
-                std::filesystem::current_path() /
-                ("observatory_" + std::to_string(number) + ".mp4");
+        const std::filesystem::path path =
+            std::filesystem::current_path() / ("observatory_" + std::to_string(number) + ".mp4");
 
-            if (!std::filesystem::exists(path))
-            {
-                return path;
-            }
+        if (!std::filesystem::exists(path))
+        {
+            return path;
         }
     }
-
-    class FrameRateTitle
-    {
-    public:
-        FrameRateTitle()
-            : previousTime(glfwGetTime())
-        {
-        }
-
-        void update(GLFWwindow* window, bool isRecording)
-        {
-            ++frameCount;
-
-            const double currentTime = glfwGetTime();
-            const double elapsedTime = currentTime - previousTime;
-
-            if (elapsedTime < 1.0)
-            {
-                return;
-            }
-
-            const double framesPerSecond = frameCount / elapsedTime;
-
-            std::string title =
-                std::string(WINDOW_TITLE) +
-                " | FPS: " +
-                std::to_string(static_cast<int>(framesPerSecond));
-
-            if (isRecording)
-            {
-                title += " | REC";
-            }
-
-            glfwSetWindowTitle(window, title.c_str());
-
-            frameCount = 0;
-            previousTime = currentTime;
-        }
-
-    private:
-        double previousTime;
-        int frameCount = 0;
-    };
 }
+
+class FrameRateTitle
+{
+  public:
+    FrameRateTitle() : previousTime(glfwGetTime()) {}
+
+    void update(GLFWwindow* window, bool isRecording)
+    {
+        ++frameCount;
+
+        const double currentTime = glfwGetTime();
+        const double elapsedTime = currentTime - previousTime;
+
+        if (elapsedTime < 1.0)
+        {
+            return;
+        }
+
+        const double framesPerSecond = frameCount / elapsedTime;
+
+        std::string title = std::string(WINDOW_TITLE) + " | FPS: " + std::to_string(static_cast<int>(framesPerSecond));
+
+        if (isRecording)
+        {
+            title += " | REC";
+        }
+
+        glfwSetWindowTitle(window, title.c_str());
+
+        frameCount = 0;
+        previousTime = currentTime;
+    }
+
+  private:
+    double previousTime;
+    int frameCount = 0;
+};
+} // namespace
 
 int main()
 {
@@ -87,13 +80,10 @@ int main()
         return -1;
     }
 
-    const glm::mat4 projection = glm::perspective(
-        glm::radians(70.0f),
-        static_cast<float>(WINDOW_WIDTH) /
-        static_cast<float>(WINDOW_HEIGHT),
-        0.1f,
-        250.0f
-    );
+    const glm::mat4 projection = glm::perspective(glm::radians(70.0f),
+                                                  static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT),
+                                                  0.1f,
+                                                  250.0f);
 
     FreeCamera camera;
     LightController lightController;
@@ -134,37 +124,23 @@ int main()
 
                 glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
 
-                std::cout
-                    << "Original framebuffer: "
-                    << framebufferWidth << "x"
-                    << framebufferHeight << '\n';
+                std::cout << "Original framebuffer: " << framebufferWidth << "x" << framebufferHeight << '\n';
 
                 // Round odd dimensions by one pixel
                 framebufferWidth -= framebufferWidth % 2;
                 framebufferHeight -= framebufferHeight % 2;
 
-                std::cout
-                    << "Recording resolution: "
-                    << framebufferWidth << "x"
-                    << framebufferHeight << '\n';
+                std::cout << "Recording resolution: " << framebufferWidth << "x" << framebufferHeight << '\n';
 
-                const std::filesystem::path outputPath =
-                    nextRecordingPath();
+                const std::filesystem::path outputPath = nextRecordingPath();
 
-                const bool started = recorder.start(
-                    outputPath.string(),
-                    framebufferWidth,
-                    framebufferHeight,
-                    60
-                );
+                const bool started = recorder.start(outputPath.string(), framebufferWidth, framebufferHeight, 60);
 
                 if (started)
                 {
                     nextRecordingFrame = glfwGetTime();
 
-                    std::cout
-                        << "Saving recording to: "
-                        << outputPath << '\n';
+                    std::cout << "Saving recording to: " << outputPath << '\n';
                 }
                 else
                 {
@@ -175,12 +151,11 @@ int main()
 
         recordKeyWasPressed = recordKeyPressed;
 
-        scene.draw(
-            camera.getViewMatrix(),
-            projection,
-            camera.getPosition(),
-            lightController.getPosition(),
-            camera.getFront());
+        scene.draw(camera.getViewMatrix(),
+                   projection,
+                   camera.getPosition(),
+                   lightController.getPosition(),
+                   camera.getFront());
 
         if (recorder.isRecording())
         {

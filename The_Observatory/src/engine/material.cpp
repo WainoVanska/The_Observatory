@@ -6,48 +6,21 @@
 
 void setMaterial(GLuint shaderProgram, const Material& material)
 {
-    const glm::vec3 linearDiffuseColor =
-        glm::pow(
-            material.diffuseColor,
-            glm::vec3(2.2f)
-        );
+    const glm::vec3 linearDiffuseColor = glm::pow(material.diffuseColor, glm::vec3(2.2f));
 
-    glUniform3fv(
-        getUniformLocation(shaderProgram, "material.diffuseColor"),
-        1,
-        glm::value_ptr(linearDiffuseColor)
-    );
+    glUniform3fv(getUniformLocation(shaderProgram, "material.diffuseColor"), 1, glm::value_ptr(linearDiffuseColor));
 
-    glUniform3fv(
-        getUniformLocation(shaderProgram, "material.specularColor"),
-        1,
-        &material.specularColor[0]
-    );
+    glUniform3fv(getUniformLocation(shaderProgram, "material.specularColor"), 1, &material.specularColor[0]);
 
-    glUniform1f(
-        getUniformLocation(shaderProgram, "material.shininess"),
-        material.shininess
-    );
+    glUniform1f(getUniformLocation(shaderProgram, "material.shininess"), material.shininess);
 
-    glUniform1i(
-        getUniformLocation(shaderProgram, "material.useDiffuseMap"),
-        material.useDiffuseMap
-    );
+    glUniform1i(getUniformLocation(shaderProgram, "material.useDiffuseMap"), material.useDiffuseMap);
 
-    glUniform1i(
-        getUniformLocation(shaderProgram, "material.useSpecularMap"),
-        material.useSpecularMap
-    );
+    glUniform1i(getUniformLocation(shaderProgram, "material.useSpecularMap"), material.useSpecularMap);
 
-    glUniform1i(
-        getUniformLocation(shaderProgram, "material.diffuseMap"),
-        0
-    );
+    glUniform1i(getUniformLocation(shaderProgram, "material.diffuseMap"), 0);
 
-    glUniform1i(
-        getUniformLocation(shaderProgram, "material.specularMap"),
-        1
-    );
+    glUniform1i(getUniformLocation(shaderProgram, "material.specularMap"), 1);
 }
 
 Material createDullOrangeMaterial()

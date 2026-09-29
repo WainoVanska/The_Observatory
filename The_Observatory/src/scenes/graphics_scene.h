@@ -18,20 +18,19 @@
 
 class GraphicsScene
 {
-public:
+  public:
     void init(int width, int height, FreeCamera* camera);
     void handleInput(GLFWwindow* window);
 
-    void draw(
-        const glm::mat4& view,
-        const glm::mat4& projection,
-        const glm::vec3& cameraPos,
-        const glm::vec3& movableLightPos,
-        const glm::vec3& cameraFront);
+    void draw(const glm::mat4& view,
+              const glm::mat4& projection,
+              const glm::vec3& cameraPos,
+              const glm::vec3& movableLightPos,
+              const glm::vec3& cameraFront);
 
     void cleanup();
 
-private:
+  private:
     static constexpr std::size_t ROOM_POINT_LIGHT_COUNT = 4;
     static constexpr std::size_t POINT_SHADOW_FACE_COUNT = 6;
 
@@ -271,10 +270,7 @@ private:
     void drawBackpackOutline(const glm::mat4& view, const glm::mat4& projection);
 
     void createGlassPaneMesh();
-    void drawGlassPanes(
-        const glm::mat4& view,
-        const glm::mat4& projection,
-        const glm::vec3& cameraPos);
+    void drawGlassPanes(const glm::mat4& view, const glm::mat4& projection, const glm::vec3& cameraPos);
 
     void createFramebuffer(int width, int height);
     void createBloomFramebuffer(int width, int height);
@@ -290,9 +286,7 @@ private:
     void createDirectionalShadowMap();
     glm::mat4 createDirectionalLightSpaceMatrix(const glm::vec3& sunDirection) const;
     void renderDirectionalShadowMap(const glm::mat4& lightSpaceMatrix);
-    void drawDirectionalShadowCasters(
-        GLuint depthShaderProgram,
-        const glm::mat4& lightSpaceMatrix);
+    void drawDirectionalShadowCasters(GLuint depthShaderProgram, const glm::mat4& lightSpaceMatrix);
 
     void createPointShadowMaps();
     std::vector<glm::mat4> createPointShadowMatrices(const glm::vec3& lightPosition) const;
@@ -301,22 +295,17 @@ private:
     void configureModelPointShadows();
 
     void createNormalMappedPlane();
-    void drawNormalMappedSurface(
-        const glm::mat4& model,
-        const glm::vec2& uvScale,
-        GLuint diffuseTexture,
-        GLuint normalTexture,
-        GLuint depthTexture,
-        float normalStrength,
-        float heightScale,
-        const RenderContext& context,
-        const LightingState& lighting);
-    void drawNormalMappedRoomWalls(
-        const RenderContext& context,
-        const LightingState& lighting);
-    void drawNormalMappedFloorAndCeiling(
-        const RenderContext& context,
-        const LightingState& lighting);
+    void drawNormalMappedSurface(const glm::mat4& model,
+                                 const glm::vec2& uvScale,
+                                 GLuint diffuseTexture,
+                                 GLuint normalTexture,
+                                 GLuint depthTexture,
+                                 float normalStrength,
+                                 float heightScale,
+                                 const RenderContext& context,
+                                 const LightingState& lighting);
+    void drawNormalMappedRoomWalls(const RenderContext& context, const LightingState& lighting);
+    void drawNormalMappedFloorAndCeiling(const RenderContext& context, const LightingState& lighting);
 
     GLuint shaderProgram = 0;
     GLuint lampShaderProgram = 0;

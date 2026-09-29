@@ -8,27 +8,33 @@ LightController::LightController()
 
 void LightController::update(GLFWwindow* window)
 {
-    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+    {
         position.z -= speed;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
+    {
         position.z += speed;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
+    {
         position.x -= speed;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
+    {
         position.x += speed;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
+    {
         position.y += speed;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
+    {
         position.y -= speed;
     }
 }

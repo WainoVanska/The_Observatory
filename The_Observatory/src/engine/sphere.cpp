@@ -18,13 +18,13 @@ SphereMesh createSphereMesh(float radius, unsigned int sectorCount, unsigned int
 
     const float PI = 3.14159265359f;
 
-    for (unsigned int i = 0; i <= stackCount; ++i)          // stack count = how many slices around the sphere (latitude)
+    for (unsigned int i = 0; i <= stackCount; ++i) // stack count = how many slices around the sphere (latitude)
     {
         float stackAngle = PI / 2.0f - i * PI / stackCount;
-        float xy = radius * cosf(stackAngle);               // radius of horizontal circle at z height
-        float z = radius * sinf(stackAngle);                // height of ring
+        float xy = radius * cosf(stackAngle); // radius of horizontal circle at z height
+        float z = radius * sinf(stackAngle);  // height of ring
 
-        for (unsigned int j = 0; j <= sectorCount; ++j)     // how many horizontal layers from top to bottom (longitude)
+        for (unsigned int j = 0; j <= sectorCount; ++j) // how many horizontal layers from top to bottom (longitude)
         {
             float sectorAngle = j * 2.0f * PI / sectorCount;
 
@@ -59,10 +59,11 @@ SphereMesh createSphereMesh(float radius, unsigned int sectorCount, unsigned int
 
     for (unsigned int i = 0; i < stackCount; ++i)
     {
-        unsigned int k1 = i * (sectorCount + 1);        // ring
-        unsigned int k2 = k1 + sectorCount + 1;         // ring below it
+        unsigned int k1 = i * (sectorCount + 1); // ring
+        unsigned int k2 = k1 + sectorCount + 1;  // ring below it
 
-        for (unsigned int j = 0; j < sectorCount; ++j, ++k1, ++k2) // loop connects rectangle shaped area between the rings together with two triangles
+        for (unsigned int j = 0; j < sectorCount;
+             ++j, ++k1, ++k2) // loop connects rectangle shaped area between the rings together with two triangles
         {
             if (i != 0)
             {
@@ -90,20 +91,10 @@ SphereMesh createSphereMesh(float radius, unsigned int sectorCount, unsigned int
     glBindVertexArray(sphere.VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, sphere.VBO);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        vertices.size() * sizeof(float),
-        vertices.data(),
-        GL_STATIC_DRAW
-    );
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphere.EBO);
-    glBufferData(
-        GL_ELEMENT_ARRAY_BUFFER,
-        indices.size() * sizeof(unsigned int),
-        indices.data(),
-        GL_STATIC_DRAW
-    );
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 
     // position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)0);
@@ -133,11 +124,7 @@ void deleteSphereMesh(const SphereMesh& sphere)
     glDeleteBuffers(1, &sphere.EBO);
 }
 
-void drawSphere(
-    const SphereMesh& sphere,
-    GLuint modelLoc,
-    const glm::mat4& model
-)
+void drawSphere(const SphereMesh& sphere, GLuint modelLoc, const glm::mat4& model)
 {
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 

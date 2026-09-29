@@ -9,21 +9,15 @@
 
 namespace
 {
-    GLuint createSkyboxShaderProgram()
-    {
-        return createShaderProgram(
-            "assets/shaders/skybox/skybox_vertex.glsl",
-            "assets/shaders/skybox/skybox_fragment.glsl");
-    }
+GLuint createSkyboxShaderProgram()
+{
+    return createShaderProgram("assets/shaders/skybox/skybox_vertex.glsl",
+                               "assets/shaders/skybox/skybox_fragment.glsl");
 }
+} // namespace
 
 SkyBox::SkyBox(FreeCamera* camera)
-    : camera(camera),
-      cubemapTexture(nullptr),
-      cube{},
-      shaderProgram(0),
-      gWVPLoc(-1),
-      cubemapLoc(-1)
+    : camera(camera), cubemapTexture(nullptr), cube{}, shaderProgram(0), gWVPLoc(-1), cubemapLoc(-1)
 {
 }
 
@@ -38,14 +32,13 @@ SkyBox::~SkyBox()
     }
 }
 
-bool SkyBox::Init(
-    const std::string& directory,
-    const std::string& posX,
-    const std::string& negX,
-    const std::string& posY,
-    const std::string& negY,
-    const std::string& posZ,
-    const std::string& negZ)
+bool SkyBox::Init(const std::string& directory,
+                  const std::string& posX,
+                  const std::string& negX,
+                  const std::string& posY,
+                  const std::string& negY,
+                  const std::string& posZ,
+                  const std::string& negZ)
 {
     shaderProgram = createSkyboxShaderProgram();
     gWVPLoc = getUniformLocation(shaderProgram, "gWVP");
@@ -54,14 +47,7 @@ bool SkyBox::Init(
     glUseProgram(shaderProgram);
     glUniform1i(cubemapLoc, 0);
 
-    cubemapTexture = new CubemapTexture(
-        directory,
-        posX,
-        negX,
-        posY,
-        negY,
-        posZ,
-        negZ);
+    cubemapTexture = new CubemapTexture(directory, posX, negX, posY, negY, posZ, negZ);
 
     if (!cubemapTexture->Load())
     {

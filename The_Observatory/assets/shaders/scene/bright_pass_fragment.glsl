@@ -9,15 +9,9 @@ uniform float brightnessThreshold;
 
 void main()
 {
-    vec3 hdrColor = texture(
-        sceneTexture,
-        TexCoords
-    ).rgb;
+    vec3 hdrColor = texture(sceneTexture, TexCoords).rgb;
 
-    float brightness = dot(
-        hdrColor,
-        vec3(0.2126, 0.7152, 0.0722)
-    );
+    float brightness = dot(hdrColor, vec3(0.2126, 0.7152, 0.0722));
 
     if (brightness > brightnessThreshold)
     {

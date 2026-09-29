@@ -5,13 +5,11 @@
 #include <cstddef>
 #include <utility>
 
-Mesh::Mesh(
-    const std::vector<Vertex>& vertices,
-    const std::vector<unsigned int>& indices,
-    const std::vector<MeshTexture>& textures,
-    bool isTransparent,
-    float opacity
-)
+Mesh::Mesh(const std::vector<Vertex>& vertices,
+           const std::vector<unsigned int>& indices,
+           const std::vector<MeshTexture>& textures,
+           bool isTransparent,
+           float opacity)
 {
     this->vertices = vertices;
     this->indices = indices;
@@ -28,14 +26,9 @@ Mesh::~Mesh()
 }
 
 Mesh::Mesh(Mesh&& other) noexcept
-    : vertices(std::move(other.vertices)),
-      indices(std::move(other.indices)),
-      textures(std::move(other.textures)),
-      VAO(std::exchange(other.VAO, 0)),
-      VBO(std::exchange(other.VBO, 0)),
-      EBO(std::exchange(other.EBO, 0)),
-      isTransparent(other.isTransparent),
-      opacity(other.opacity)
+    : vertices(std::move(other.vertices)), indices(std::move(other.indices)), textures(std::move(other.textures)),
+      VAO(std::exchange(other.VAO, 0)), VBO(std::exchange(other.VBO, 0)), EBO(std::exchange(other.EBO, 0)),
+      isTransparent(other.isTransparent), opacity(other.opacity)
 {
 }
 
@@ -86,53 +79,22 @@ void Mesh::setupMesh()
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        vertices.size() * sizeof(Vertex),
-        vertices.data(),
-        GL_STATIC_DRAW
-    );
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(
-        GL_ELEMENT_ARRAY_BUFFER,
-        indices.size() * sizeof(unsigned int),
-        indices.data(),
-        GL_STATIC_DRAW
-    );
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 
     // position
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(
-        0,
-        3,
-        GL_FLOAT,
-        GL_FALSE,
-        sizeof(Vertex),
-        (void*)offsetof(Vertex, Position)
-    );
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Position));
 
     // normal
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(
-        1,
-        3,
-        GL_FLOAT,
-        GL_FALSE,
-        sizeof(Vertex),
-        (void*)offsetof(Vertex, Normal)
-    );
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
 
     // texture coordinates
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(
-        2,
-        2,
-        GL_FLOAT,
-        GL_FALSE,
-        sizeof(Vertex),
-        (void*)offsetof(Vertex, TexCoords)
-    );
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
 
     glBindVertexArray(0);
 }
@@ -151,14 +113,7 @@ void Mesh::configureInstanceMatrix(GLuint instanceVBO)
 
         glEnableVertexAttribArray(location);
 
-        glVertexAttribPointer(
-            location,
-            4,
-            GL_FLOAT,
-            GL_FALSE,
-            stride,
-            reinterpret_cast<void*>(column * columnSize)
-        );
+        glVertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(column * columnSize));
 
         // INSTANCING UPDATE: Advance this attribute once per instance, not once per vertex
         glVertexAttribDivisor(location, 1);
@@ -176,11 +131,7 @@ void Mesh::draw(GLuint shaderProgram) const
     beginTransparentDraw(blendingWasEnabled, depthWritingWasEnabled);
 
     glBindVertexArray(VAO);
-    glDrawElements(
-        GL_TRIANGLES,
-        static_cast<GLsizei>(indices.size()),
-        GL_UNSIGNED_INT,
-        nullptr);
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
 
     endTransparentDraw(blendingWasEnabled, depthWritingWasEnabled);
@@ -192,12 +143,11 @@ void Mesh::drawInstanced(GLuint shaderProgram, GLsizei instanceCount) const
     bindMaterial(shaderProgram);
 
     glBindVertexArray(VAO);
-    glDrawElementsInstanced(
-        GL_TRIANGLES,
-        static_cast<GLsizei>(indices.size()),
-        GL_UNSIGNED_INT,
-        nullptr,
-        instanceCount);
+    glDrawElementsInstanced(GL_TRIANGLES,
+                            static_cast<GLsizei>(indices.size()),
+                            GL_UNSIGNED_INT,
+                            nullptr,
+                            instanceCount);
     glBindVertexArray(0);
     glActiveTexture(GL_TEXTURE0);
 }
@@ -235,15 +185,11 @@ void Mesh::bindMaterial(GLuint shaderProgram) const
             hasEmissiveMap = true;
         }
 
-        std::string uniformName =
-            "material." + name + number;
+        std::string uniformName = "material." + name + number;
 
         glUniform1i(getUniformLocation(shaderProgram, uniformName), static_cast<GLint>(i));
 
-        glBindTexture(
-            GL_TEXTURE_2D,
-            textures[i].id
-        );
+        glBindTexture(GL_TEXTURE_2D, textures[i].id);
     }
 
     glUniform1i(getUniformLocation(shaderProgram, "material.hasDiffuseMap"), hasDiffuseMap);
@@ -255,9 +201,7 @@ void Mesh::bindMaterial(GLuint shaderProgram) const
     glUniform1f(getUniformLocation(shaderProgram, "material.opacity"), opacity);
 }
 
-void Mesh::beginTransparentDraw(
-    GLboolean& blendingWasEnabled,
-    GLboolean& depthWritingWasEnabled) const
+void Mesh::beginTransparentDraw(GLboolean& blendingWasEnabled, GLboolean& depthWritingWasEnabled) const
 {
     blendingWasEnabled = glIsEnabled(GL_BLEND);
     glGetBooleanv(GL_DEPTH_WRITEMASK, &depthWritingWasEnabled);
@@ -265,19 +209,13 @@ void Mesh::beginTransparentDraw(
     {
         glEnable(GL_BLEND);
 
-        glBlendFunc(
-            GL_SRC_ALPHA,
-            GL_ONE_MINUS_SRC_ALPHA
-        );
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         glDepthMask(GL_FALSE);
     }
-
 }
 
-void Mesh::endTransparentDraw(
-    GLboolean blendingWasEnabled,
-    GLboolean depthWritingWasEnabled) const
+void Mesh::endTransparentDraw(GLboolean blendingWasEnabled, GLboolean depthWritingWasEnabled) const
 {
     if (isTransparent)
     {
@@ -288,5 +226,4 @@ void Mesh::endTransparentDraw(
             glDisable(GL_BLEND);
         }
     }
-
 }

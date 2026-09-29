@@ -7,15 +7,10 @@ uniform float farPlane;
 
 void main()
 {
-    float lightDistance =
-        length(
-            FragPos.xyz -
-            lightPos
-        );
+    float lightDistance = length(FragPos.xyz - lightPos);
 
     // world space conversion to: [0, 1].
     lightDistance /= farPlane;
 
-    gl_FragDepth =
-        lightDistance;
+    gl_FragDepth = lightDistance;
 }

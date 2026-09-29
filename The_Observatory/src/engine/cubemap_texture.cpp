@@ -5,28 +5,25 @@
 
 // og tutorial from https://ogldev.org/www/tutorial25/tutorial25.html
 
-static const GLenum types[6] = {
-    GL_TEXTURE_CUBE_MAP_POSITIVE_X,
-    GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-    GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
-    GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-    GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
-    GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
-};
+static const GLenum types[6] = {GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+                                GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+                                GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+                                GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+                                GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+                                GL_TEXTURE_CUBE_MAP_NEGATIVE_Z};
 
-CubemapTexture::CubemapTexture(
-    const std::string& Directory,
-    const std::string& PosXFilename,
-    const std::string& NegXFilename,
-    const std::string& PosYFilename,
-    const std::string& NegYFilename,
-    const std::string& PosZFilename,
-    const std::string& NegZFilename
-)
+CubemapTexture::CubemapTexture(const std::string& Directory,
+                               const std::string& PosXFilename,
+                               const std::string& NegXFilename,
+                               const std::string& PosYFilename,
+                               const std::string& NegYFilename,
+                               const std::string& PosZFilename,
+                               const std::string& NegZFilename)
 {
     std::string Dir = Directory;
 
-    if (!Dir.empty() && Dir.back() != '/') {
+    if (!Dir.empty() && Dir.back() != '/')
+    {
         Dir += "/";
     }
 
@@ -42,7 +39,8 @@ CubemapTexture::CubemapTexture(
 
 CubemapTexture::~CubemapTexture()
 {
-    if (m_textureObj != 0) {
+    if (m_textureObj != 0)
+    {
         glDeleteTextures(1, &m_textureObj);
     }
 }
@@ -54,22 +52,17 @@ bool CubemapTexture::Load()
 
     stbi_set_flip_vertically_on_load(false);
 
-    for (unsigned int i = 0; i < 6; i++) {
+    for (unsigned int i = 0; i < 6; i++)
+    {
         int width;
         int height;
         int channels;
 
-        unsigned char* data = stbi_load(
-            m_fileNames[i].c_str(),
-            &width,
-            &height,
-            &channels,
-            0
-        );
+        unsigned char* data = stbi_load(m_fileNames[i].c_str(), &width, &height, &channels, 0);
 
-        if (!data) {
-            std::cout << "Failed to load cubemap face: "
-                << m_fileNames[i] << std::endl;
+        if (!data)
+        {
+            std::cout << "Failed to load cubemap face: " << m_fileNames[i] << std::endl;
             return false;
         }
 
@@ -92,17 +85,7 @@ bool CubemapTexture::Load()
             internalFormat = GL_SRGB_ALPHA;
         }
 
-        glTexImage2D(
-            types[i],
-            0,
-            internalFormat,
-            width,
-            height,
-            0,
-            dataFormat,
-            GL_UNSIGNED_BYTE,
-            data
-        );
+        glTexImage2D(types[i], 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
 
         stbi_image_free(data);
     }

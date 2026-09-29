@@ -18,12 +18,7 @@ FrameRecorder::~FrameRecorder()
     stop();
 }
 
-bool FrameRecorder::start(
-    const std::string& outputPath,
-    int recordingWidth,
-    int recordingHeight,
-    int frameRate
-)
+bool FrameRecorder::start(const std::string& outputPath, int recordingWidth, int recordingHeight, int frameRate)
 {
     if (isRecording())
     {
@@ -46,30 +41,25 @@ bool FrameRecorder::start(
     width = recordingWidth;
     height = recordingHeight;
 
-    pixelBuffer.resize(
-        static_cast<std::size_t>(width) *
-        static_cast<std::size_t>(height) *
-        3
-    );
+    pixelBuffer.resize(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 3);
 
     std::ostringstream command;
 
     const std::string ffmpegPath = "ffmpeg";
 
-    command
-        << ffmpegPath << " -y "
-        << "-f rawvideo "
-        << "-pixel_format rgb24 "
-        << "-video_size " << width << "x" << height << " "
-        << "-framerate " << frameRate << " "
-        << "-i - "
-        << "-vf vflip "
-        << "-an "
-        << "-c:v libx264 "
-        << "-preset fast "
-        << "-crf 14 "
-        << "-pix_fmt yuv420p "
-        << "\"" << outputPath << "\"";
+    command << ffmpegPath << " -y "
+            << "-f rawvideo "
+            << "-pixel_format rgb24 "
+            << "-video_size " << width << "x" << height << " "
+            << "-framerate " << frameRate << " "
+            << "-i - "
+            << "-vf vflip "
+            << "-an "
+            << "-c:v libx264 "
+            << "-preset fast "
+            << "-crf 14 "
+            << "-pix_fmt yuv420p "
+            << "\"" << outputPath << "\"";
 
     ffmpegPipe = OPEN_PIPE(command.str().c_str(), "wb");
 
@@ -94,22 +84,9 @@ void FrameRecorder::captureFrame()
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
     glReadBuffer(GL_BACK);
 
-    glReadPixels(
-        0,
-        0,
-        width,
-        height,
-        GL_RGB,
-        GL_UNSIGNED_BYTE,
-        pixelBuffer.data()
-    );
+    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixelBuffer.data());
 
-    const std::size_t writtenBytes = std::fwrite(
-        pixelBuffer.data(),
-        1,
-        pixelBuffer.size(),
-        ffmpegPipe
-    );
+    const std::size_t writtenBytes = std::fwrite(pixelBuffer.data(), 1, pixelBuffer.size(), ffmpegPipe);
 
     if (writtenBytes != pixelBuffer.size())
     {

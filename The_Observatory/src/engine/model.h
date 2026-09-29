@@ -13,7 +13,7 @@
 
 class Model
 {
-public:
+  public:
     Model(const std::string& path);
     ~Model();
 
@@ -24,7 +24,7 @@ public:
     void configureInstancing(GLuint instanceVBO);
     void drawInstanced(GLuint shaderProgram, GLsizei instanceCount) const;
 
-private:
+  private:
     std::vector<Mesh> meshes;
     std::vector<MeshTexture> texturesLoaded;
 
@@ -34,9 +34,7 @@ private:
     void processNode(aiNode* node, const aiScene* scene);
     Mesh processMesh(aiMesh* mesh, const aiScene* scene);
 
-    std::vector<MeshTexture> loadMaterialTextures(
-        aiMaterial* material,
-        aiTextureType type,
-        const std::string& typeName
-    );
+    std::vector<MeshTexture> loadMaterialTextures(aiMaterial* material,
+                                                  aiTextureType type,
+                                                  const std::string& typeName);
 };

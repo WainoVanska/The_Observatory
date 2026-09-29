@@ -21,22 +21,40 @@ using namespace graphics_scene_detail;
 void GraphicsScene::init(int width, int height, FreeCamera* camera)
 {
     shaderProgram = createShaderProgram("assets/shaders/scene/vertex.glsl", "assets/shaders/scene/fragment.glsl");
-    lampShaderProgram = createShaderProgram("assets/shaders/scene/lamp_vertex.glsl", "assets/shaders/scene/lamp_fragment.glsl");
-    normalDebugShaderProgram = createShaderProgram("assets/shaders/scene/vertex.glsl", "assets/shaders/scene/normal_debug_fragment.glsl");
-    modelShaderProgram = createShaderProgram("assets/shaders/scene/model_vertex.glsl", "assets/shaders/scene/model_fragment.glsl");
-    modelNormalDebugShaderProgram = createShaderProgram("assets/shaders/scene/model_vertex.glsl", "assets/shaders/scene/normal_debug_fragment.glsl");
-    depthDebugShaderProgram = createShaderProgram("assets/shaders/scene/vertex.glsl", "assets/shaders/scene/depth_debug_fragment.glsl");
-    modelDepthDebugShaderProgram = createShaderProgram("assets/shaders/scene/model_vertex.glsl", "assets/shaders/scene/depth_debug_fragment.glsl");
-    modelOutlineShaderProgram = createShaderProgram("assets/shaders/scene/model_vertex.glsl", "assets/shaders/scene/single_color_fragment.glsl");
-    glassShaderProgram = createShaderProgram("assets/shaders/scene/glass_vertex.glsl", "assets/shaders/scene/glass_fragment.glsl");
-    screenShaderProgram = createShaderProgram("assets/shaders/scene/screen_vertex.glsl", "assets/shaders/scene/screen_fragment.glsl");
-    brightPassShaderProgram = createShaderProgram("assets/shaders/scene/screen_vertex.glsl", "assets/shaders/scene/bright_pass_fragment.glsl");
-    gaussianBlurShaderProgram = createShaderProgram("assets/shaders/scene/screen_vertex.glsl","assets/shaders/scene/gaussian_blur_fragment.glsl");
-    instancedModelShaderProgram = createShaderProgram("assets/shaders/scene/instanced_model_vertex.glsl", "assets/shaders/scene/instanced_rock_fragment.glsl");
-    directionalDepthShaderProgram = createShaderProgram("assets/shaders/scene/directional_depth_vertex.glsl", "assets/shaders/scene/directional_depth_fragment.glsl");
-    instancedDirectionalDepthShaderProgram = createShaderProgram("assets/shaders/scene/instanced_directional_depth_vertex.glsl", "assets/shaders/scene/directional_depth_fragment.glsl");
-    pointDepthShaderProgram = createShaderProgram("assets/shaders/scene/point_depth_vertex.glsl", "assets/shaders/scene/point_depth_geometry.glsl", "assets/shaders/scene/point_depth_fragment.glsl");
-    normalMappingShaderProgram = createShaderProgram("assets/shaders/scene/normal_mapping_vertex.glsl", "assets/shaders/scene/normal_mapping_fragment.glsl");
+    lampShaderProgram =
+        createShaderProgram("assets/shaders/scene/lamp_vertex.glsl", "assets/shaders/scene/lamp_fragment.glsl");
+    normalDebugShaderProgram =
+        createShaderProgram("assets/shaders/scene/vertex.glsl", "assets/shaders/scene/normal_debug_fragment.glsl");
+    modelShaderProgram =
+        createShaderProgram("assets/shaders/scene/model_vertex.glsl", "assets/shaders/scene/model_fragment.glsl");
+    modelNormalDebugShaderProgram = createShaderProgram("assets/shaders/scene/model_vertex.glsl",
+                                                        "assets/shaders/scene/normal_debug_fragment.glsl");
+    depthDebugShaderProgram =
+        createShaderProgram("assets/shaders/scene/vertex.glsl", "assets/shaders/scene/depth_debug_fragment.glsl");
+    modelDepthDebugShaderProgram =
+        createShaderProgram("assets/shaders/scene/model_vertex.glsl", "assets/shaders/scene/depth_debug_fragment.glsl");
+    modelOutlineShaderProgram = createShaderProgram("assets/shaders/scene/model_vertex.glsl",
+                                                    "assets/shaders/scene/single_color_fragment.glsl");
+    glassShaderProgram =
+        createShaderProgram("assets/shaders/scene/glass_vertex.glsl", "assets/shaders/scene/glass_fragment.glsl");
+    screenShaderProgram =
+        createShaderProgram("assets/shaders/scene/screen_vertex.glsl", "assets/shaders/scene/screen_fragment.glsl");
+    brightPassShaderProgram = createShaderProgram("assets/shaders/scene/screen_vertex.glsl",
+                                                  "assets/shaders/scene/bright_pass_fragment.glsl");
+    gaussianBlurShaderProgram = createShaderProgram("assets/shaders/scene/screen_vertex.glsl",
+                                                    "assets/shaders/scene/gaussian_blur_fragment.glsl");
+    instancedModelShaderProgram = createShaderProgram("assets/shaders/scene/instanced_model_vertex.glsl",
+                                                      "assets/shaders/scene/instanced_rock_fragment.glsl");
+    directionalDepthShaderProgram = createShaderProgram("assets/shaders/scene/directional_depth_vertex.glsl",
+                                                        "assets/shaders/scene/directional_depth_fragment.glsl");
+    instancedDirectionalDepthShaderProgram =
+        createShaderProgram("assets/shaders/scene/instanced_directional_depth_vertex.glsl",
+                            "assets/shaders/scene/directional_depth_fragment.glsl");
+    pointDepthShaderProgram = createShaderProgram("assets/shaders/scene/point_depth_vertex.glsl",
+                                                  "assets/shaders/scene/point_depth_geometry.glsl",
+                                                  "assets/shaders/scene/point_depth_fragment.glsl");
+    normalMappingShaderProgram = createShaderProgram("assets/shaders/scene/normal_mapping_vertex.glsl",
+                                                     "assets/shaders/scene/normal_mapping_fragment.glsl");
 
     containerTexture = loadTexture("assets/textures/container.png", true);
     brickDiffuseTexture = loadTexture("assets/textures/brickwall.jpg", true);
@@ -49,7 +67,6 @@ void GraphicsScene::init(int width, int height, FreeCamera* camera)
     ceilingNormalTexture = loadTexture("assets/textures/plaster_normal.jpg", false);
     glassTexture = loadTransparentTexture("assets/textures/observatory_window.png", true);
 
-
     backpack = new Model("assets/models/backpack/backpack.obj");
     planet = new Model("assets/models/planet/planet.obj");
     rock = new Model("assets/models/rock/rock.obj");
@@ -60,20 +77,18 @@ void GraphicsScene::init(int width, int height, FreeCamera* camera)
     createGlassPaneMesh();
     createFramebuffer(width, height);
     createBloomFramebuffer(width, height);
-    createPingPongFramebuffers(width,height);
+    createPingPongFramebuffers(width, height);
     createScreenQuad();
     createDirectionalShadowMap();
     createPointShadowMaps();
     createNormalMappedPlane();
 
-    glassSurfaces = {
-        { glm::vec3(0.0f, 1.0f, 2.94f), glm::vec3(6.0f, 4.0f, 1.0f), 180.0f, false },   //glass wall
-        { glm::vec3(-1.8f, 0.0f, -1.8f), glm::vec3(1.0f, 1.4f, 1.0f), 0.0f, true },
-        { glm::vec3(0.0f, 0.0f, -1.8f),  glm::vec3(1.0f, 1.4f, 1.0f), 0.0f, true },
-        { glm::vec3(1.8f, 0.0f, -1.8f),  glm::vec3(1.0f, 1.4f, 1.0f), 0.0f, true },
-        { glm::vec3(-1.2f, 0.0f, 0.8f),  glm::vec3(1.0f, 1.4f, 1.0f), 0.0f, true },
-        { glm::vec3(1.2f, 0.0f, 0.8f),   glm::vec3(1.0f, 1.4f, 1.0f), 0.0f, true }
-    };
+    glassSurfaces = {{glm::vec3(0.0f, 1.0f, 2.94f), glm::vec3(6.0f, 4.0f, 1.0f), 180.0f, false}, // glass wall
+                     {glm::vec3(-1.8f, 0.0f, -1.8f), glm::vec3(1.0f, 1.4f, 1.0f), 0.0f, true},
+                     {glm::vec3(0.0f, 0.0f, -1.8f), glm::vec3(1.0f, 1.4f, 1.0f), 0.0f, true},
+                     {glm::vec3(1.8f, 0.0f, -1.8f), glm::vec3(1.0f, 1.4f, 1.0f), 0.0f, true},
+                     {glm::vec3(-1.2f, 0.0f, 0.8f), glm::vec3(1.0f, 1.4f, 1.0f), 0.0f, true},
+                     {glm::vec3(1.2f, 0.0f, 0.8f), glm::vec3(1.0f, 1.4f, 1.0f), 0.0f, true}};
 
     outdoorGroundMaterial.diffuseColor = glm::vec3(0.18f, 0.42f, 0.16f);
     outdoorGroundMaterial.specularColor = glm::vec3(0.05f);
@@ -84,14 +99,13 @@ void GraphicsScene::init(int width, int height, FreeCamera* camera)
     texturedMaterial = createTexturedMaterial();
 
     skybox = new SkyBox(camera);
-    if (!skybox->Init(
-        "assets/textures/space",
-        "px.png", "nx.png", "py.png", "ny.png", "pz.png", "nz.png"))
+    if (!skybox->Init("assets/textures/space", "px.png", "nx.png", "py.png", "ny.png", "pz.png", "nz.png"))
     {
         std::cout << "Skybox failed to load\n";
     }
 
-    const auto location = [](GLuint program, const char* name) {
+    const auto location = [](GLuint program, const char* name)
+    {
         return getUniformLocation(program, name);
     };
 
@@ -189,7 +203,8 @@ void GraphicsScene::init(int width, int height, FreeCamera* camera)
     instancedModelUniforms.light1Enabled = location(instancedModelShaderProgram, "light1Enabled");
     instancedModelUniforms.light2Enabled = location(instancedModelShaderProgram, "light2Enabled");
     instancedModelUniforms.directionalLightEnabled = location(instancedModelShaderProgram, "directionalLightEnabled");
-    instancedModelUniforms.directionalLightDirection = location(instancedModelShaderProgram, "directionalLightDirection");
+    instancedModelUniforms.directionalLightDirection =
+        location(instancedModelShaderProgram, "directionalLightDirection");
     instancedModelUniforms.directionalLightColor = location(instancedModelShaderProgram, "directionalLightColor");
     instancedModelUniforms.flashlightPos = location(instancedModelShaderProgram, "flashlightPos");
     instancedModelUniforms.flashlightDir = location(instancedModelShaderProgram, "flashlightDir");
@@ -226,7 +241,7 @@ void GraphicsScene::init(int width, int height, FreeCamera* camera)
     normalMappingUniforms.flashlightEnabled = location(normalMappingShaderProgram, "flashlightEnabled");
     normalMappingUniforms.flashlightCutOff = location(normalMappingShaderProgram, "flashlightCutOff");
     normalMappingUniforms.flashlightOuterCutOff = location(normalMappingShaderProgram, "flashlightOuterCutOff");
-    normalMappingUniforms.normalDebugEnabled = location(normalMappingShaderProgram,"normalDebugEnabled");
+    normalMappingUniforms.normalDebugEnabled = location(normalMappingShaderProgram, "normalDebugEnabled");
 
     screenUniforms.screenTexture = location(screenShaderProgram, "screenTexture");
     screenUniforms.bloomTexture = location(screenShaderProgram, "bloomTexture");
@@ -248,16 +263,16 @@ void GraphicsScene::init(int width, int height, FreeCamera* camera)
 
     directionalDepthUniforms.lightSpaceMatrix = location(directionalDepthShaderProgram, "lightSpaceMatrix");
     directionalDepthUniforms.model = location(directionalDepthShaderProgram, "model");
-    instancedDirectionalDepthUniforms.lightSpaceMatrix = location(instancedDirectionalDepthShaderProgram, "lightSpaceMatrix");
+    instancedDirectionalDepthUniforms.lightSpaceMatrix =
+        location(instancedDirectionalDepthShaderProgram, "lightSpaceMatrix");
     instancedDirectionalDepthUniforms.systemModel = location(instancedDirectionalDepthShaderProgram, "systemModel");
     pointDepthUniforms.lightPosition = location(pointDepthShaderProgram, "lightPos");
     pointDepthUniforms.farPlane = location(pointDepthShaderProgram, "farPlane");
     pointDepthUniforms.model = location(pointDepthShaderProgram, "model");
     for (std::size_t face = 0; face < pointDepthUniforms.shadowMatrices.size(); ++face)
     {
-        pointDepthUniforms.shadowMatrices[face] = location(
-            pointDepthShaderProgram,
-            ("shadowMatrices[" + std::to_string(face) + "]").c_str());
+        pointDepthUniforms.shadowMatrices[face] =
+            location(pointDepthShaderProgram, ("shadowMatrices[" + std::to_string(face) + "]").c_str());
     }
 
     cacheRoomPointLightUniforms(shaderProgram, lightingUniforms);
@@ -278,7 +293,7 @@ void GraphicsScene::init(int width, int height, FreeCamera* camera)
     glUniform1i(modelUniforms.skybox, 2);
 
     glUseProgram(normalMappingShaderProgram);
-    glUniform1i(normalMappingUniforms.normalDebugEnabled,normalDebugEnabled);
+    glUniform1i(normalMappingUniforms.normalDebugEnabled, normalDebugEnabled);
     bindPointShadowMaps(normalMappingUniforms, pointDepthCubemaps);
     glUniform1f(normalMappingUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
     glUniform1i(normalMappingUniforms.pointShadowsEnabled, false);
@@ -334,23 +349,21 @@ void GraphicsScene::handleInput(GLFWwindow* window)
     toggleOnKeyPress(window, GLFW_KEY_H, keyHWasPressed, glassBackpackEnabled);
 }
 
-void GraphicsScene::draw(
-    const glm::mat4& view,
-    const glm::mat4& projection,
-    const glm::vec3& cameraPos,
-    const glm::vec3& movableLightPos,
-    const glm::vec3& cameraFront)
+void GraphicsScene::draw(const glm::mat4& view,
+                         const glm::mat4& projection,
+                         const glm::vec3& cameraPos,
+                         const glm::vec3& movableLightPos,
+                         const glm::vec3& cameraFront)
 {
     const RenderContext context{view, projection, cameraPos, cameraFront};
-    const LightingState lighting{
-        movableLightPos,
-        glm::vec3(0.70f, 0.63f, 0.50f),
-        glm::vec3(-2.0f, 2.2f, -2.0f),
-        glm::vec3(0.3f, 0.5f, 1.0f),
-        !outdoorModeEnabled && movableLightModeEnabled,
-        !outdoorModeEnabled && light2Enabled,
-        outdoorModeEnabled,
-        flashlightEnabled};
+    const LightingState lighting{movableLightPos,
+                                 glm::vec3(0.70f, 0.63f, 0.50f),
+                                 glm::vec3(-2.0f, 2.2f, -2.0f),
+                                 glm::vec3(0.3f, 0.5f, 1.0f),
+                                 !outdoorModeEnabled && movableLightModeEnabled,
+                                 !outdoorModeEnabled && light2Enabled,
+                                 outdoorModeEnabled,
+                                 flashlightEnabled};
     glm::mat4 lightSpaceMatrix(1.0f);
 
     glEnable(GL_DEPTH_TEST);
@@ -358,39 +371,26 @@ void GraphicsScene::draw(
 
     if (outdoorModeEnabled)
     {
-        lightSpaceMatrix =
-            createDirectionalLightSpaceMatrix(
-                sunDirection()
-            );
+        lightSpaceMatrix = createDirectionalLightSpaceMatrix(sunDirection());
 
-        renderDirectionalShadowMap(
-            lightSpaceMatrix
-        );
+        renderDirectionalShadowMap(lightSpaceMatrix);
     }
     else if (movableLightModeEnabled)
     {
-        renderPointShadowMap(
-            lighting.primaryPosition,
-            pointDepthCubemaps[0]
-        );
+        renderPointShadowMap(lighting.primaryPosition, pointDepthCubemaps[0]);
 
         fixedPointShadowMapsValid[0] = false;
     }
     else
     {
-        for (std::size_t i = 0;
-            i < ROOM_POINT_LIGHT_COUNT;
-            ++i)
+        for (std::size_t i = 0; i < ROOM_POINT_LIGHT_COUNT; ++i)
         {
             if (fixedPointShadowMapsValid[i])
             {
                 continue;
             }
 
-            renderPointShadowMap(
-                ROOM_POINT_LIGHT_POSITIONS[i],
-                pointDepthCubemaps[i]
-            );
+            renderPointShadowMap(ROOM_POINT_LIGHT_POSITIONS[i], pointDepthCubemaps[i]);
 
             fixedPointShadowMapsValid[i] = true;
         }
@@ -418,13 +418,9 @@ void GraphicsScene::draw(
     bindTexture(GL_TEXTURE3, GL_TEXTURE_2D, directionalDepthMap);
     bindPointShadowMaps(lightingUniforms, pointDepthCubemaps);
     glUniform1f(lightingUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
-    glUniform1i(lightingUniforms.pointShadowsEnabled,!outdoorModeEnabled);
+    glUniform1i(lightingUniforms.pointShadowsEnabled, !outdoorModeEnabled);
     configureLighting(lightingUniforms, context, lighting);
-    uploadRoomPointLights(
-        lightingUniforms,
-        lighting.primaryPosition,
-        movableLightModeEnabled,
-        outdoorModeEnabled);
+    uploadRoomPointLights(lightingUniforms, lighting.primaryPosition, movableLightModeEnabled, outdoorModeEnabled);
 
     glStencilMask(0x00);
     drawLitObjects();
@@ -474,20 +470,13 @@ void GraphicsScene::draw(
     {
         if (movableLightModeEnabled)
         {
-            drawLampMarker(
-                lighting.primaryPosition,
-                glm::vec3(1.0f, 1.0f, 0.3f)
-            );
+            drawLampMarker(lighting.primaryPosition, glm::vec3(1.0f, 1.0f, 0.3f));
         }
         else
         {
-            for (const glm::vec3& fixedLightPosition :
-                ROOM_POINT_LIGHT_POSITIONS)
+            for (const glm::vec3& fixedLightPosition : ROOM_POINT_LIGHT_POSITIONS)
             {
-                drawLampMarker(
-                    fixedLightPosition,
-                    glm::vec3(1.0f, 1.0f, 0.3f)
-                );
+                drawLampMarker(fixedLightPosition, glm::vec3(1.0f, 1.0f, 0.3f));
             }
         }
         if (light2Enabled)
@@ -505,17 +494,16 @@ void GraphicsScene::draw(
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, multisampleFramebuffer);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
-    glBlitFramebuffer(
-        0, 0,
-        framebufferWidth,
-        framebufferHeight,
-        0, 0,
-        framebufferWidth,
-        framebufferHeight,
-        GL_COLOR_BUFFER_BIT |
-        GL_DEPTH_BUFFER_BIT,
-        GL_NEAREST
-    );
+    glBlitFramebuffer(0,
+                      0,
+                      framebufferWidth,
+                      framebufferHeight,
+                      0,
+                      0,
+                      framebufferWidth,
+                      framebufferHeight,
+                      GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
+                      GL_NEAREST);
     extractBrightAreas();
     blurBrightAreas();
 
@@ -535,18 +523,14 @@ void GraphicsScene::draw(
 void GraphicsScene::drawLitObjects()
 {
     setMaterial(shaderProgram, texturedMaterial);
-    drawTexturedCubeWithSpecularMap(
-        cube.VAO,
-        lightingUniforms.model,
-        makeTransform(glm::vec3(-0.2f, -0.6f, 0.0f), glm::vec3(1.0f)),
-        containerTexture,
-        containerSpecularTexture);
+    drawTexturedCubeWithSpecularMap(cube.VAO,
+                                    lightingUniforms.model,
+                                    makeTransform(glm::vec3(-0.2f, -0.6f, 0.0f), glm::vec3(1.0f)),
+                                    containerTexture,
+                                    containerSpecularTexture);
 
     setMaterial(shaderProgram, shinyBlue);
-    drawSphere(
-        sphere,
-        lightingUniforms.model,
-        makeTransform(glm::vec3(0.8f, -0.4f, 0.0f), glm::vec3(1.0f)));
+    drawSphere(sphere, lightingUniforms.model, makeTransform(glm::vec3(0.8f, -0.4f, 0.0f), glm::vec3(1.0f)));
 
     if (outdoorModeEnabled)
     {
@@ -565,22 +549,14 @@ void GraphicsScene::drawDepthDebugObjects()
     drawDebugPrimitives(cube, sphere, depthDebugUniforms.model, containerTexture);
 }
 
-void GraphicsScene::drawLampMarker(
-    const glm::vec3& position,
-    const glm::vec3& color,
-    float scale)
+void GraphicsScene::drawLampMarker(const glm::vec3& position, const glm::vec3& color, float scale)
 {
     setVector(lampUniforms.color, color);
 
-    drawCube(
-        cube.VAO,
-        lampUniforms.model,
-        makeTransform(position, glm::vec3(scale)));
+    drawCube(cube.VAO, lampUniforms.model, makeTransform(position, glm::vec3(scale)));
 }
 
-void GraphicsScene::drawBackpack(
-    const RenderContext& context,
-    const LightingState& lighting)
+void GraphicsScene::drawBackpack(const RenderContext& context, const LightingState& lighting)
 {
     if (!backpack)
     {
@@ -588,11 +564,7 @@ void GraphicsScene::drawBackpack(
     }
 
     glUseProgram(modelShaderProgram);
-    uploadRoomPointLights(
-        modelUniforms,
-        lighting.primaryPosition,
-        movableLightModeEnabled,
-        outdoorModeEnabled);
+    uploadRoomPointLights(modelUniforms, lighting.primaryPosition, movableLightModeEnabled, outdoorModeEnabled);
     configureModelPointShadows();
     glUniform1i(modelUniforms.glassBackpackEnabled, glassBackpackEnabled);
     if (skybox)
@@ -610,24 +582,22 @@ void GraphicsScene::drawBackpack(
 
 void GraphicsScene::drawBackpackNormalDebug(const glm::mat4& view, const glm::mat4& projection)
 {
-    drawModelWithMatrices(
-        backpack,
-        modelNormalDebugShaderProgram,
-        modelNormalDebugUniforms,
-        view,
-        projection,
-        createBackpackModelMatrix());
+    drawModelWithMatrices(backpack,
+                          modelNormalDebugShaderProgram,
+                          modelNormalDebugUniforms,
+                          view,
+                          projection,
+                          createBackpackModelMatrix());
 }
 
 void GraphicsScene::drawBackpackOutline(const glm::mat4& view, const glm::mat4& projection)
 {
-    drawModelWithMatrices(
-        backpack,
-        modelOutlineShaderProgram,
-        modelOutlineUniforms,
-        view,
-        projection,
-        createBackpackOutlineModelMatrix());
+    drawModelWithMatrices(backpack,
+                          modelOutlineShaderProgram,
+                          modelOutlineUniforms,
+                          view,
+                          projection,
+                          createBackpackOutlineModelMatrix());
 }
 
 void GraphicsScene::drawBackpackDepthDebug(const glm::mat4& view, const glm::mat4& projection)
@@ -646,10 +616,7 @@ void GraphicsScene::drawBackpackDepthDebug(const glm::mat4& view, const glm::mat
     backpack->draw(modelDepthDebugShaderProgram);
 }
 
-void GraphicsScene::drawGlassPanes(
-    const glm::mat4& view,
-    const glm::mat4& projection,
-    const glm::vec3& cameraPos)
+void GraphicsScene::drawGlassPanes(const glm::mat4& view, const glm::mat4& projection, const glm::vec3& cameraPos)
 {
     std::multimap<float, const GlassSurface*> sorted;
 
@@ -680,10 +647,7 @@ void GraphicsScene::drawGlassPanes(
     {
         const GlassSurface& surface = *it->second;
 
-        setMatrix(
-            glassUniforms.model,
-            makeTransform(surface.position, surface.scale, surface.yRotation)
-        );
+        setMatrix(glassUniforms.model, makeTransform(surface.position, surface.scale, surface.yRotation));
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
@@ -700,9 +664,7 @@ void GraphicsScene::drawGlassPanes(
     glActiveTexture(GL_TEXTURE0);
 }
 
-void GraphicsScene::drawMiniPlanetSystem(
-    const RenderContext& context,
-    const LightingState& lighting)
+void GraphicsScene::drawMiniPlanetSystem(const RenderContext& context, const LightingState& lighting)
 {
     if (!planet || !rock)
     {
@@ -710,10 +672,7 @@ void GraphicsScene::drawMiniPlanetSystem(
     }
 
     const glm::vec3 mainLightColor(1.25f);
-    const glm::mat4 planetModel = makeTransform(
-        DISTANT_PLANET_POSITION,
-        glm::vec3(DISTANT_PLANET_SCALE)
-    );
+    const glm::mat4 planetModel = makeTransform(DISTANT_PLANET_POSITION, glm::vec3(DISTANT_PLANET_SCALE));
     const glm::mat4 asteroidSystemModel = createAsteroidSystemModel();
 
     glUseProgram(modelShaderProgram);
@@ -751,67 +710,61 @@ void GraphicsScene::cleanup()
     deleteCubeMesh(cube);
     deleteSphereMesh(sphere);
 
-    const GLuint textures[] = {
-        containerTexture,
-        containerSpecularTexture,
-        glassTexture,
-        framebufferTexture,
-        multisampleColorTexture,
-        directionalDepthMap,
-        brickDiffuseTexture,
-        brickNormalTexture,
-        brickDepthTexture,
-        floorDiffuseTexture,
-        floorNormalTexture,
-        ceilingDiffuseTexture,
-        ceilingNormalTexture,
-        pingPongTextures[0],
-        pingPongTextures[1],
-        framebufferDepthTexture,
-        brightTexture
-    };
+    const GLuint textures[] = {containerTexture,
+                               containerSpecularTexture,
+                               glassTexture,
+                               framebufferTexture,
+                               multisampleColorTexture,
+                               directionalDepthMap,
+                               brickDiffuseTexture,
+                               brickNormalTexture,
+                               brickDepthTexture,
+                               floorDiffuseTexture,
+                               floorNormalTexture,
+                               ceilingDiffuseTexture,
+                               ceilingNormalTexture,
+                               pingPongTextures[0],
+                               pingPongTextures[1],
+                               framebufferDepthTexture,
+                               brightTexture};
     glDeleteTextures(static_cast<GLsizei>(sizeof(textures) / sizeof(textures[0])), textures);
     glDeleteTextures(static_cast<GLsizei>(pointDepthCubemaps.size()), pointDepthCubemaps.data());
 
-    const GLuint programs[] = {
-        shaderProgram,
-        lampShaderProgram,
-        normalDebugShaderProgram,
-        modelShaderProgram,
-        modelNormalDebugShaderProgram,
-        depthDebugShaderProgram,
-        modelDepthDebugShaderProgram,
-        modelOutlineShaderProgram,
-        glassShaderProgram,
-        screenShaderProgram,
-        instancedModelShaderProgram,
-        directionalDepthShaderProgram,
-        instancedDirectionalDepthShaderProgram,
-        pointDepthShaderProgram,
-        normalMappingShaderProgram,
-        gaussianBlurShaderProgram,
-        brightPassShaderProgram
-    };
+    const GLuint programs[] = {shaderProgram,
+                               lampShaderProgram,
+                               normalDebugShaderProgram,
+                               modelShaderProgram,
+                               modelNormalDebugShaderProgram,
+                               depthDebugShaderProgram,
+                               modelDepthDebugShaderProgram,
+                               modelOutlineShaderProgram,
+                               glassShaderProgram,
+                               screenShaderProgram,
+                               instancedModelShaderProgram,
+                               directionalDepthShaderProgram,
+                               instancedDirectionalDepthShaderProgram,
+                               pointDepthShaderProgram,
+                               normalMappingShaderProgram,
+                               gaussianBlurShaderProgram,
+                               brightPassShaderProgram};
     for (GLuint program : programs)
     {
         glDeleteProgram(program);
     }
 
-    const GLuint framebuffers[] = {
-        framebuffer,
-        multisampleFramebuffer,
-        directionalDepthFBO,
-        pointDepthFBO,
-        pingPongFBO[0],
-        pingPongFBO[1],
-        brightPassFBO
-    };
+    const GLuint framebuffers[] = {framebuffer,
+                                   multisampleFramebuffer,
+                                   directionalDepthFBO,
+                                   pointDepthFBO,
+                                   pingPongFBO[0],
+                                   pingPongFBO[1],
+                                   brightPassFBO};
     glDeleteFramebuffers(static_cast<GLsizei>(sizeof(framebuffers) / sizeof(framebuffers[0])), framebuffers);
 
-    const GLuint vertexArrays[] = { glassVAO, screenQuadVAO, normalMappedPlaneVAO };
+    const GLuint vertexArrays[] = {glassVAO, screenQuadVAO, normalMappedPlaneVAO};
     glDeleteVertexArrays(static_cast<GLsizei>(sizeof(vertexArrays) / sizeof(vertexArrays[0])), vertexArrays);
 
-    const GLuint buffers[] = { glassVBO, screenQuadVBO, asteroidInstanceVBO, normalMappedPlaneVBO };
+    const GLuint buffers[] = {glassVBO, screenQuadVBO, asteroidInstanceVBO, normalMappedPlaneVBO};
     glDeleteBuffers(static_cast<GLsizei>(sizeof(buffers) / sizeof(buffers[0])), buffers);
     glDeleteRenderbuffers(1, &multisampleRBO);
 

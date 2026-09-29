@@ -51,11 +51,10 @@ inline void bindTexture(GLenum unit, GLenum target, GLuint texture)
     glBindTexture(target, texture);
 }
 
-inline glm::mat4 makeTransform(
-    const glm::vec3& position,
-    const glm::vec3& scale,
-    float angleDegrees = 0.0f,
-    const glm::vec3& axis = glm::vec3(0.0f, 1.0f, 0.0f))
+inline glm::mat4 makeTransform(const glm::vec3& position,
+                               const glm::vec3& scale,
+                               float angleDegrees = 0.0f,
+                               const glm::vec3& axis = glm::vec3(0.0f, 1.0f, 0.0f))
 {
     glm::mat4 model(1.0f);
     model = glm::translate(model, position);
@@ -76,8 +75,7 @@ inline glm::vec3 sunColor()
     return glm::vec3(0.45f, 0.43f, 0.36f);
 }
 
-template <typename Uniforms>
-void cacheRoomPointLightUniforms(GLuint program, Uniforms& uniforms)
+template <typename Uniforms> void cacheRoomPointLightUniforms(GLuint program, Uniforms& uniforms)
 {
     for (std::size_t i = 0; i < ROOM_POINT_LIGHT_COUNT; ++i)
     {
@@ -88,37 +86,29 @@ void cacheRoomPointLightUniforms(GLuint program, Uniforms& uniforms)
     }
 }
 
-template <typename Uniforms>
-void cachePointShadowMapUniforms(GLuint program, Uniforms& uniforms)
+template <typename Uniforms> void cachePointShadowMapUniforms(GLuint program, Uniforms& uniforms)
 {
     for (std::size_t i = 0; i < ROOM_POINT_LIGHT_COUNT; ++i)
     {
-        uniforms.pointShadowMaps[i] =
-            getUniformLocation(program, "pointShadowMap" + std::to_string(i));
+        uniforms.pointShadowMaps[i] = getUniformLocation(program, "pointShadowMap" + std::to_string(i));
     }
 }
 
 template <typename Uniforms>
-void bindPointShadowMaps(
-    const Uniforms& uniforms,
-    const std::array<GLuint, ROOM_POINT_LIGHT_COUNT>& cubemaps)
+void bindPointShadowMaps(const Uniforms& uniforms, const std::array<GLuint, ROOM_POINT_LIGHT_COUNT>& cubemaps)
 {
     for (std::size_t i = 0; i < ROOM_POINT_LIGHT_COUNT; ++i)
     {
-        bindTexture(
-            GL_TEXTURE4 + static_cast<GLenum>(i),
-            GL_TEXTURE_CUBE_MAP,
-            cubemaps[i]);
+        bindTexture(GL_TEXTURE4 + static_cast<GLenum>(i), GL_TEXTURE_CUBE_MAP, cubemaps[i]);
         glUniform1i(uniforms.pointShadowMaps[i], 4 + static_cast<GLint>(i));
     }
 }
 
 template <typename Uniforms>
-void uploadRoomPointLights(
-    const Uniforms& uniforms,
-    const glm::vec3& movableLightPosition,
-    bool movableModeEnabled,
-    bool outdoorModeEnabled)
+void uploadRoomPointLights(const Uniforms& uniforms,
+                           const glm::vec3& movableLightPosition,
+                           bool movableModeEnabled,
+                           bool outdoorModeEnabled)
 {
     for (std::size_t i = 0; i < ROOM_POINT_LIGHT_COUNT; ++i)
     {
@@ -130,8 +120,7 @@ void uploadRoomPointLights(
         }
 
         setVector(uniforms.pointLightPositions[i], position);
-        const glm::vec3 color =
-            movableModeEnabled && i == 0 ? MOVABLE_LIGHT_COLOR : FIXED_ROOM_LIGHT_COLOR;
+        const glm::vec3 color = movableModeEnabled && i == 0 ? MOVABLE_LIGHT_COLOR : FIXED_ROOM_LIGHT_COLOR;
         setVector(uniforms.pointLightColors[i], color);
         glUniform1i(uniforms.pointLightEnabled[i], enabled);
     }
@@ -149,44 +138,20 @@ inline bool toggleOnKeyPress(GLFWwindow* window, int key, bool& wasPressed, bool
     return toggled;
 }
 
-inline void configureVertexAttribute(
-    GLuint index,
-    GLint componentCount,
-    GLsizei stride,
-    std::size_t byteOffset)
+inline void configureVertexAttribute(GLuint index, GLint componentCount, GLsizei stride, std::size_t byteOffset)
 {
     glEnableVertexAttribArray(index);
-    glVertexAttribPointer(
-        index,
-        componentCount,
-        GL_FLOAT,
-        GL_FALSE,
-        stride,
-        reinterpret_cast<void*>(byteOffset));
+    glVertexAttribPointer(index, componentCount, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(byteOffset));
 }
 
-inline void drawDebugPrimitives(
-    const CubeMesh& cube,
-    const SphereMesh& sphere,
-    GLint modelLocation,
-    GLuint texture)
+inline void drawDebugPrimitives(const CubeMesh& cube, const SphereMesh& sphere, GLint modelLocation, GLuint texture)
 {
-    drawTexturedCube(
-        cube.VAO,
-        modelLocation,
-        makeTransform(glm::vec3(-0.2f, -0.6f, 0.0f), glm::vec3(1.0f)),
-        texture);
-    drawSphere(
-        sphere,
-        modelLocation,
-        makeTransform(glm::vec3(0.8f, -0.4f, 0.0f), glm::vec3(1.0f)));
+    drawTexturedCube(cube.VAO, modelLocation, makeTransform(glm::vec3(-0.2f, -0.6f, 0.0f), glm::vec3(1.0f)), texture);
+    drawSphere(sphere, modelLocation, makeTransform(glm::vec3(0.8f, -0.4f, 0.0f), glm::vec3(1.0f)));
 }
 
 template <typename Uniforms, typename Context, typename Lighting>
-void configureLighting(
-    const Uniforms& uniforms,
-    const Context& context,
-    const Lighting& lighting)
+void configureLighting(const Uniforms& uniforms, const Context& context, const Lighting& lighting)
 {
     setMatrix(uniforms.view, context.view);
     setMatrix(uniforms.projection, context.projection);
@@ -203,22 +168,17 @@ void configureLighting(
     setVector(uniforms.flashlightPos, context.cameraPosition);
     setVector(uniforms.flashlightDir, context.cameraFront);
     glUniform1i(uniforms.flashlightEnabled, lighting.flashlightEnabled);
-    glUniform1f(
-        uniforms.flashlightCutOff,
-        glm::cos(glm::radians(FLASHLIGHT_INNER_ANGLE)));
-    glUniform1f(
-        uniforms.flashlightOuterCutOff,
-        glm::cos(glm::radians(FLASHLIGHT_OUTER_ANGLE)));
+    glUniform1f(uniforms.flashlightCutOff, glm::cos(glm::radians(FLASHLIGHT_INNER_ANGLE)));
+    glUniform1f(uniforms.flashlightOuterCutOff, glm::cos(glm::radians(FLASHLIGHT_OUTER_ANGLE)));
 }
 
 template <typename Uniforms>
-void drawModelWithMatrices(
-    Model* model,
-    GLuint program,
-    const Uniforms& uniforms,
-    const glm::mat4& view,
-    const glm::mat4& projection,
-    const glm::mat4& modelMatrix)
+void drawModelWithMatrices(Model* model,
+                           GLuint program,
+                           const Uniforms& uniforms,
+                           const glm::mat4& view,
+                           const glm::mat4& projection,
+                           const glm::mat4& modelMatrix)
 {
     if (!model)
     {
@@ -238,26 +198,22 @@ struct TangentBasis
     glm::vec3 bitangent;
 };
 
-inline TangentBasis calculateTangentBasis(
-    const glm::vec3& p1,
-    const glm::vec3& p2,
-    const glm::vec3& p3,
-    const glm::vec2& uv1,
-    const glm::vec2& uv2,
-    const glm::vec2& uv3)
+inline TangentBasis calculateTangentBasis(const glm::vec3& p1,
+                                          const glm::vec3& p2,
+                                          const glm::vec3& p3,
+                                          const glm::vec2& uv1,
+                                          const glm::vec2& uv2,
+                                          const glm::vec2& uv3)
 {
     const glm::vec3 edge1 = p2 - p1;
     const glm::vec3 edge2 = p3 - p1;
     const glm::vec2 deltaUV1 = uv2 - uv1;
     const glm::vec2 deltaUV2 = uv3 - uv1;
-    const float inverseDeterminant =
-        1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+    const float inverseDeterminant = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
 
     TangentBasis basis;
-    basis.tangent =
-        glm::normalize(inverseDeterminant * (deltaUV2.y * edge1 - deltaUV1.y * edge2));
-    basis.bitangent =
-        glm::normalize(inverseDeterminant * (-deltaUV2.x * edge1 + deltaUV1.x * edge2));
+    basis.tangent = glm::normalize(inverseDeterminant * (deltaUV2.y * edge1 - deltaUV1.y * edge2));
+    basis.bitangent = glm::normalize(inverseDeterminant * (-deltaUV2.x * edge1 + deltaUV1.x * edge2));
     return basis;
 }
 } // namespace graphics_scene_detail

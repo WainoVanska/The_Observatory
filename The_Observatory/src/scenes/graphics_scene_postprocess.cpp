@@ -55,7 +55,15 @@ void GraphicsScene::createFramebuffer(int width, int height)
 
     glGenTextures(1, &framebufferDepthTexture);
     glBindTexture(GL_TEXTURE_2D, framebufferDepthTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+    glTexImage2D(GL_TEXTURE_2D,
+                 0,
+                 GL_DEPTH24_STENCIL8,
+                 width,
+                 height,
+                 0,
+                 GL_DEPTH_STENCIL,
+                 GL_UNSIGNED_INT_24_8,
+                 nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -74,196 +82,79 @@ void GraphicsScene::createFramebuffer(int width, int height)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void GraphicsScene::createBloomFramebuffer(
-    int width,
-    int height
-)
+void GraphicsScene::createBloomFramebuffer(int width, int height)
 {
     glGenFramebuffers(1, &brightPassFBO);
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        brightPassFBO
-    );
+    glBindFramebuffer(GL_FRAMEBUFFER, brightPassFBO);
 
     glGenTextures(1, &brightTexture);
-    glBindTexture(
-        GL_TEXTURE_2D,
-        brightTexture
-    );
+    glBindTexture(GL_TEXTURE_2D, brightTexture);
 
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGB16F,
-        width,
-        height,
-        0,
-        GL_RGB,
-        GL_FLOAT,
-        nullptr
-    );
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, nullptr);
 
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_MIN_FILTER,
-        GL_LINEAR
-    );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_MAG_FILTER,
-        GL_LINEAR
-    );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_WRAP_S,
-        GL_CLAMP_TO_EDGE
-    );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_WRAP_T,
-        GL_CLAMP_TO_EDGE
-    );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glFramebufferTexture2D(
-        GL_FRAMEBUFFER,
-        GL_COLOR_ATTACHMENT0,
-        GL_TEXTURE_2D,
-        brightTexture,
-        0
-    );
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brightTexture, 0);
 
-    if (
-        glCheckFramebufferStatus(GL_FRAMEBUFFER) !=
-        GL_FRAMEBUFFER_COMPLETE
-        )
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
-        std::cout
-            << "ERROR::FRAMEBUFFER:: Bright-pass "
-            << "framebuffer is not complete!"
-            << std::endl;
+        std::cout << "ERROR::FRAMEBUFFER:: Bright-pass "
+                  << "framebuffer is not complete!" << std::endl;
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void GraphicsScene::createPingPongFramebuffers(
-    int width,
-    int height
-)
+void GraphicsScene::createPingPongFramebuffers(int width, int height)
 {
-    glGenFramebuffers(
-        2,
-        pingPongFBO.data()
-    );
+    glGenFramebuffers(2, pingPongFBO.data());
 
-    glGenTextures(
-        2,
-        pingPongTextures.data()
-    );
+    glGenTextures(2, pingPongTextures.data());
 
     for (unsigned int i = 0; i < 2; i++)
     {
-        glBindFramebuffer(
-            GL_FRAMEBUFFER,
-            pingPongFBO[i]
-        );
+        glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[i]);
 
-        glBindTexture(
-            GL_TEXTURE_2D,
-            pingPongTextures[i]
-        );
+        glBindTexture(GL_TEXTURE_2D, pingPongTextures[i]);
 
-        glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RGB16F,
-            width,
-            height,
-            0,
-            GL_RGB,
-            GL_FLOAT,
-            nullptr
-        );
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, nullptr);
 
-        glTexParameteri(
-            GL_TEXTURE_2D,
-            GL_TEXTURE_MIN_FILTER,
-            GL_LINEAR
-        );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-        glTexParameteri(
-            GL_TEXTURE_2D,
-            GL_TEXTURE_MAG_FILTER,
-            GL_LINEAR
-        );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        glTexParameteri(
-            GL_TEXTURE_2D,
-            GL_TEXTURE_WRAP_S,
-            GL_CLAMP_TO_EDGE
-        );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 
-        glTexParameteri(
-            GL_TEXTURE_2D,
-            GL_TEXTURE_WRAP_T,
-            GL_CLAMP_TO_EDGE
-        );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-        glFramebufferTexture2D(
-            GL_FRAMEBUFFER,
-            GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D,
-            pingPongTextures[i],
-            0
-        );
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingPongTextures[i], 0);
 
-        if (
-            glCheckFramebufferStatus(
-                GL_FRAMEBUFFER
-            ) != GL_FRAMEBUFFER_COMPLETE
-            )
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
-            std::cout
-                << "ERROR::FRAMEBUFFER:: Ping-pong "
-                << i
-                << " framebuffer is not complete!"
-                << std::endl;
+            std::cout << "ERROR::FRAMEBUFFER:: Ping-pong " << i << " framebuffer is not complete!" << std::endl;
         }
     }
 
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        0
-    );
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void GraphicsScene::extractBrightAreas()
 {
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        brightPassFBO
-    );
+    glBindFramebuffer(GL_FRAMEBUFFER, brightPassFBO);
 
-    glViewport(
-        0,
-        0,
-        framebufferWidth,
-        framebufferHeight
-    );
+    glViewport(0, 0, framebufferWidth, framebufferHeight);
 
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_STENCIL_TEST);
     glDisable(GL_CULL_FACE);
 
-    glClearColor(
-        0.0f,
-        0.0f,
-        0.0f,
-        1.0f
-    );
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -271,11 +162,7 @@ void GraphicsScene::extractBrightAreas()
 
     glUniform1f(brightPassUniforms.brightnessThreshold, 1.0f);
 
-    bindTexture(
-        GL_TEXTURE0,
-        GL_TEXTURE_2D,
-        framebufferTexture
-    );
+    bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, framebufferTexture);
 
     glBindVertexArray(screenQuadVAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -289,24 +176,13 @@ void GraphicsScene::blurBrightAreas()
     bool horizontal = true;
     bool firstPass = true;
 
-    glUseProgram(
-        gaussianBlurShaderProgram
-    );
+    glUseProgram(gaussianBlurShaderProgram);
 
-    glBindVertexArray(
-        screenQuadVAO
-    );
+    glBindVertexArray(screenQuadVAO);
 
-    for (
-        unsigned int pass = 0;
-        pass < blurPassCount;
-        pass++
-        )
+    for (unsigned int pass = 0; pass < blurPassCount; pass++)
     {
-        glBindFramebuffer(
-            GL_FRAMEBUFFER,
-            pingPongFBO[horizontal]
-        );
+        glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[horizontal]);
 
         glUniform1i(gaussianBlurUniforms.horizontal, horizontal);
 
@@ -318,23 +194,14 @@ void GraphicsScene::blurBrightAreas()
         }
         else
         {
-            inputTexture =
-                pingPongTextures[!horizontal];
+            inputTexture = pingPongTextures[!horizontal];
         }
 
-        bindTexture(
-            GL_TEXTURE0,
-            GL_TEXTURE_2D,
-            inputTexture
-        );
+        bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, inputTexture);
 
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glDrawArrays(
-            GL_TRIANGLES,
-            0,
-            6
-        );
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         horizontal = !horizontal;
         firstPass = false;
@@ -342,25 +209,15 @@ void GraphicsScene::blurBrightAreas()
 
     glBindVertexArray(0);
 
-    blurredBloomTexture =
-        pingPongTextures[!horizontal];
+    blurredBloomTexture = pingPongTextures[!horizontal];
 
-    glBindFramebuffer(
-        GL_FRAMEBUFFER,
-        0
-    );
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void GraphicsScene::createScreenQuad()
 {
-    const float vertices[] = {
-        -1.0f,  1.0f, 0.0f, 1.0f,
-        -1.0f, -1.0f, 0.0f, 0.0f,
-         1.0f, -1.0f, 1.0f, 0.0f,
-        -1.0f,  1.0f, 0.0f, 1.0f,
-         1.0f, -1.0f, 1.0f, 0.0f,
-         1.0f,  1.0f, 1.0f, 1.0f
-    };
+    const float vertices[] = {-1.0f, 1.0f, 0.0f, 1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, -1.0f, 1.0f, 0.0f,
+                              -1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  -1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  1.0f, 1.0f};
 
     glGenVertexArrays(1, &screenQuadVAO);
     glGenBuffers(1, &screenQuadVBO);

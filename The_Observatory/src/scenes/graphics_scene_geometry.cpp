@@ -25,32 +25,19 @@ glm::mat4 GraphicsScene::createOutdoorGroundModelMatrix() const
 
 glm::mat4 GraphicsScene::createBackpackOutlineModelMatrix() const
 {
-    return makeTransform(
-        glm::vec3(-1.0f, -0.5f, 0.0f),
-        glm::vec3(0.215f),
-        90.0f,
-        glm::vec3(0.0f, 1.0f, 0.0f));
+    return makeTransform(glm::vec3(-1.0f, -0.5f, 0.0f), glm::vec3(0.215f), 90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 glm::mat4 GraphicsScene::createBackpackModelMatrix() const
 {
-    return makeTransform(
-        glm::vec3(-1.0f, -0.5f, 0.0f),
-        glm::vec3(0.205f),
-        90.0f,
-        glm::vec3(0.0f, 1.0f, 0.0f));
+    return makeTransform(glm::vec3(-1.0f, -0.5f, 0.0f), glm::vec3(0.205f), 90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void GraphicsScene::createGlassPaneMesh()
 {
-    const float vertices[] = {
-        -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
-         0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-        -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
-         0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-         0.5f,  0.5f, 0.0f, 1.0f, 1.0f
-    };
+    const float vertices[] = {-0.5f, 0.5f,  0.0f, 0.0f, 1.0f, -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
+                              0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, -0.5f, 0.5f,  0.0f, 0.0f, 1.0f,
+                              0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 0.5f,  0.5f,  0.0f, 1.0f, 1.0f};
 
     glGenVertexArrays(1, &glassVAO);
     glGenBuffers(1, &glassVBO);
@@ -94,42 +81,22 @@ void GraphicsScene::createAsteroidInstances()
 
     glGenBuffers(1, &asteroidInstanceVBO);
     glBindBuffer(GL_ARRAY_BUFFER, asteroidInstanceVBO);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        asteroidMatrices.size() * sizeof(glm::mat4),
-        asteroidMatrices.data(),
-        GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, asteroidMatrices.size() * sizeof(glm::mat4), asteroidMatrices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     rock->configureInstancing(asteroidInstanceVBO);
 }
 
 glm::mat4 GraphicsScene::createAsteroidSystemModel() const
 {
-    const float orbitAngle =
-        static_cast<float>(glfwGetTime()) *
-        glm::radians(3.0f);
+    const float orbitAngle = static_cast<float>(glfwGetTime()) * glm::radians(3.0f);
 
-    glm::mat4 model = glm::translate(
-        glm::mat4(1.0f),
-        DISTANT_PLANET_POSITION
-    );
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), DISTANT_PLANET_POSITION);
 
-    model = glm::rotate(
-        model,
-        glm::radians(0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f)
-    );
+    model = glm::rotate(model, glm::radians(0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-    model = glm::rotate(
-        model,
-        orbitAngle,
-        glm::vec3(0.0f, 1.0f, 0.0f)
-    );
+    model = glm::rotate(model, orbitAngle, glm::vec3(0.0f, 1.0f, 0.0f));
 
-    return glm::scale(
-        model,
-        glm::vec3(DISTANT_ASTEROID_SYSTEM_SCALE)
-    );
+    return glm::scale(model, glm::vec3(DISTANT_ASTEROID_SYSTEM_SCALE));
 }
 
 void GraphicsScene::createNormalMappedPlane()
@@ -146,14 +113,90 @@ void GraphicsScene::createNormalMappedPlane()
     const TangentBasis first = calculateTangentBasis(p1, p2, p3, uv1, uv2, uv3);
     const TangentBasis second = calculateTangentBasis(p1, p3, p4, uv1, uv3, uv4);
 
-    const float vertices[] = {
-        p1.x, p1.y, p1.z, normal.x, normal.y, normal.z, uv1.x, uv1.y, first.tangent.x, first.tangent.y, first.tangent.z, first.bitangent.x, first.bitangent.y, first.bitangent.z,
-        p2.x, p2.y, p2.z, normal.x, normal.y, normal.z, uv2.x, uv2.y, first.tangent.x, first.tangent.y, first.tangent.z, first.bitangent.x, first.bitangent.y, first.bitangent.z,
-        p3.x, p3.y, p3.z, normal.x, normal.y, normal.z, uv3.x, uv3.y, first.tangent.x, first.tangent.y, first.tangent.z, first.bitangent.x, first.bitangent.y, first.bitangent.z,
-        p1.x, p1.y, p1.z, normal.x, normal.y, normal.z, uv1.x, uv1.y, second.tangent.x, second.tangent.y, second.tangent.z, second.bitangent.x, second.bitangent.y, second.bitangent.z,
-        p3.x, p3.y, p3.z, normal.x, normal.y, normal.z, uv3.x, uv3.y, second.tangent.x, second.tangent.y, second.tangent.z, second.bitangent.x, second.bitangent.y, second.bitangent.z,
-        p4.x, p4.y, p4.z, normal.x, normal.y, normal.z, uv4.x, uv4.y, second.tangent.x, second.tangent.y, second.tangent.z, second.bitangent.x, second.bitangent.y, second.bitangent.z
-    };
+    const float vertices[] = {p1.x,
+                              p1.y,
+                              p1.z,
+                              normal.x,
+                              normal.y,
+                              normal.z,
+                              uv1.x,
+                              uv1.y,
+                              first.tangent.x,
+                              first.tangent.y,
+                              first.tangent.z,
+                              first.bitangent.x,
+                              first.bitangent.y,
+                              first.bitangent.z,
+                              p2.x,
+                              p2.y,
+                              p2.z,
+                              normal.x,
+                              normal.y,
+                              normal.z,
+                              uv2.x,
+                              uv2.y,
+                              first.tangent.x,
+                              first.tangent.y,
+                              first.tangent.z,
+                              first.bitangent.x,
+                              first.bitangent.y,
+                              first.bitangent.z,
+                              p3.x,
+                              p3.y,
+                              p3.z,
+                              normal.x,
+                              normal.y,
+                              normal.z,
+                              uv3.x,
+                              uv3.y,
+                              first.tangent.x,
+                              first.tangent.y,
+                              first.tangent.z,
+                              first.bitangent.x,
+                              first.bitangent.y,
+                              first.bitangent.z,
+                              p1.x,
+                              p1.y,
+                              p1.z,
+                              normal.x,
+                              normal.y,
+                              normal.z,
+                              uv1.x,
+                              uv1.y,
+                              second.tangent.x,
+                              second.tangent.y,
+                              second.tangent.z,
+                              second.bitangent.x,
+                              second.bitangent.y,
+                              second.bitangent.z,
+                              p3.x,
+                              p3.y,
+                              p3.z,
+                              normal.x,
+                              normal.y,
+                              normal.z,
+                              uv3.x,
+                              uv3.y,
+                              second.tangent.x,
+                              second.tangent.y,
+                              second.tangent.z,
+                              second.bitangent.x,
+                              second.bitangent.y,
+                              second.bitangent.z,
+                              p4.x,
+                              p4.y,
+                              p4.z,
+                              normal.x,
+                              normal.y,
+                              normal.z,
+                              uv4.x,
+                              uv4.y,
+                              second.tangent.x,
+                              second.tangent.y,
+                              second.tangent.z,
+                              second.bitangent.x,
+                              second.bitangent.y,
+                              second.bitangent.z};
 
     glGenVertexArrays(1, &normalMappedPlaneVAO);
     glGenBuffers(1, &normalMappedPlaneVBO);
@@ -171,16 +214,15 @@ void GraphicsScene::createNormalMappedPlane()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void GraphicsScene::drawNormalMappedSurface(
-    const glm::mat4& model,
-    const glm::vec2& uvScale,
-    GLuint diffuseTexture,
-    GLuint normalTexture,
-    GLuint depthTexture,
-    float normalStrength,
-    float heightScale,
-    const RenderContext& context,
-    const LightingState& lighting)
+void GraphicsScene::drawNormalMappedSurface(const glm::mat4& model,
+                                            const glm::vec2& uvScale,
+                                            GLuint diffuseTexture,
+                                            GLuint normalTexture,
+                                            GLuint depthTexture,
+                                            float normalStrength,
+                                            float heightScale,
+                                            const RenderContext& context,
+                                            const LightingState& lighting)
 {
     glUseProgram(normalMappingShaderProgram);
 
@@ -189,11 +231,7 @@ void GraphicsScene::drawNormalMappedSurface(
     bindPointShadowMaps(normalMappingUniforms, pointDepthCubemaps);
     glUniform1f(normalMappingUniforms.pointShadowFarPlane, POINT_SHADOW_FAR_PLANE);
     glUniform1i(normalMappingUniforms.pointShadowsEnabled, !outdoorModeEnabled);
-    uploadRoomPointLights(
-        normalMappingUniforms,
-        lighting.primaryPosition,
-        movableLightModeEnabled,
-        outdoorModeEnabled);
+    uploadRoomPointLights(normalMappingUniforms, lighting.primaryPosition, movableLightModeEnabled, outdoorModeEnabled);
     setMatrix(normalMappingUniforms.model, model);
     setMatrix(normalMappingUniforms.view, context.view);
     setMatrix(normalMappingUniforms.projection, context.projection);
@@ -204,7 +242,7 @@ void GraphicsScene::drawNormalMappedSurface(
     glUniform1i(normalMappingUniforms.wallLightEnabled, !outdoorModeEnabled && !movableLightModeEnabled);
     glUniform2f(normalMappingUniforms.uvScale, uvScale.x, uvScale.y);
     glUniform1f(normalMappingUniforms.normalStrength, normalStrength);
-    glUniform1f(normalMappingUniforms.heightScale,heightScale);
+    glUniform1f(normalMappingUniforms.heightScale, heightScale);
     bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, diffuseTexture);
     bindTexture(GL_TEXTURE1, GL_TEXTURE_2D, normalTexture);
     bindTexture(GL_TEXTURE2, GL_TEXTURE_2D, depthTexture);
@@ -221,9 +259,7 @@ void GraphicsScene::drawNormalMappedSurface(
     glActiveTexture(GL_TEXTURE0);
 }
 
-void GraphicsScene::drawNormalMappedRoomWalls(
-    const RenderContext& context,
-    const LightingState& lighting)
+void GraphicsScene::drawNormalMappedRoomWalls(const RenderContext& context, const LightingState& lighting)
 {
     struct Wall
     {
@@ -233,35 +269,25 @@ void GraphicsScene::drawNormalMappedRoomWalls(
 
     constexpr float roomWallPosition = 2.95f;
 
-    const std::array<Wall, 3> walls = {
-        Wall{ glm::vec3(0.0f, 1.0f, roomWallPosition), 180.0f },
-        Wall{ glm::vec3(-roomWallPosition, 1.0f, 0.0f), 90.0f },
-        Wall{ glm::vec3(roomWallPosition, 1.0f, 0.0f), -90.0f }
-    };
+    const std::array<Wall, 3> walls = {Wall{glm::vec3(0.0f, 1.0f, roomWallPosition), 180.0f},
+                                       Wall{glm::vec3(-roomWallPosition, 1.0f, 0.0f), 90.0f},
+                                       Wall{glm::vec3(roomWallPosition, 1.0f, 0.0f), -90.0f}};
 
     for (const Wall& wall : walls)
     {
-        drawNormalMappedSurface(
-            makeTransform(
-                wall.position,
-                glm::vec3(3.0f, 2.0f, 1.0f),
-                wall.rotation
-            ),
-            glm::vec2(4.0f, 3.0f),
-            brickDiffuseTexture,
-            brickNormalTexture,
-            brickDepthTexture,
-            1.0f,
-            parallaxHeightScale,
-            context,
-            lighting
-        );
+        drawNormalMappedSurface(makeTransform(wall.position, glm::vec3(3.0f, 2.0f, 1.0f), wall.rotation),
+                                glm::vec2(4.0f, 3.0f),
+                                brickDiffuseTexture,
+                                brickNormalTexture,
+                                brickDepthTexture,
+                                1.0f,
+                                parallaxHeightScale,
+                                context,
+                                lighting);
     }
 }
 
-void GraphicsScene::drawNormalMappedFloorAndCeiling(
-    const RenderContext& context,
-    const LightingState& lighting)
+void GraphicsScene::drawNormalMappedFloorAndCeiling(const RenderContext& context, const LightingState& lighting)
 {
     struct Surface
     {
@@ -271,20 +297,13 @@ void GraphicsScene::drawNormalMappedFloorAndCeiling(
         float normalStrength;
     };
 
-    const std::array<Surface, 2> surfaces = {
-        Surface{ glm::vec3(0.0f, -0.95f, 0.0f), -90.0f, glm::vec2(3.0f), 0.9f },
-        Surface{ glm::vec3(0.0f, 2.95f, 0.0f), 90.0f, glm::vec2(2.0f), 0.3f }
-    };
+    const std::array<Surface, 2> surfaces = {Surface{glm::vec3(0.0f, -0.95f, 0.0f), -90.0f, glm::vec2(3.0f), 0.9f},
+                                             Surface{glm::vec3(0.0f, 2.95f, 0.0f), 90.0f, glm::vec2(2.0f), 0.3f}};
 
     for (const Surface& surface : surfaces)
     {
         drawNormalMappedSurface(
-            makeTransform(
-                surface.position,
-                glm::vec3(3.0f, 3.0f, 1.0f),
-                surface.rotation,
-                glm::vec3(1.0f, 0.0f, 0.0f)
-            ),
+            makeTransform(surface.position, glm::vec3(3.0f, 3.0f, 1.0f), surface.rotation, glm::vec3(1.0f, 0.0f, 0.0f)),
             surface.uvScale,
             brickDiffuseTexture,
             brickNormalTexture,
@@ -292,7 +311,6 @@ void GraphicsScene::drawNormalMappedFloorAndCeiling(
             surface.normalStrength,
             parallaxHeightScale,
             context,
-            lighting
-        );
+            lighting);
     }
 }

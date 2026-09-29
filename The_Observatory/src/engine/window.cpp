@@ -2,13 +2,10 @@
 
 #include <iostream>
 
-GLFWwindow* createWindow(
-    int width,
-    int height,
-    const char* title
-)
+GLFWwindow* createWindow(int width, int height, const char* title)
 {
-    if (!glfwInit()) {
+    if (!glfwInit())
+    {
         std::cerr << "GLFW init failed\n";
         return nullptr;
     }
@@ -22,7 +19,8 @@ GLFWwindow* createWindow(
 
     GLFWwindow* window = glfwCreateWindow(width, height, title, nullptr, nullptr);
 
-    if (!window) {
+    if (!window)
+    {
         std::cerr << "Window creation failed\n";
         glfwTerminate();
         return nullptr;
@@ -31,7 +29,8 @@ GLFWwindow* createWindow(
     glfwMakeContextCurrent(window);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
         std::cerr << "GLAD loading failed\n";
         glfwTerminate();
         return nullptr;

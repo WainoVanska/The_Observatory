@@ -35,10 +35,7 @@ void Model::configureInstancing(GLuint instanceVBO)
     }
 }
 
-void Model::drawInstanced(
-    GLuint shaderProgram,
-    GLsizei instanceCount
-) const
+void Model::drawInstanced(GLuint shaderProgram, GLsizei instanceCount) const
 {
     for (const Mesh& mesh : meshes)
     {
@@ -50,18 +47,9 @@ void Model::loadModel(const std::string& path)
 {
     Assimp::Importer importer;
 
-    const aiScene* scene = importer.ReadFile(
-        path,
-        aiProcess_Triangulate |
-        aiProcess_FlipUVs |
-        aiProcess_GenNormals
-    );
+    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
 
-    if (
-        !scene ||
-        scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
-        !scene->mRootNode
-        )
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
         std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
         return;
@@ -100,19 +88,11 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
     {
         Vertex vertex{};
 
-        vertex.Position = glm::vec3(
-            mesh->mVertices[i].x,
-            mesh->mVertices[i].y,
-            mesh->mVertices[i].z
-        );
+        vertex.Position = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
 
         if (mesh->HasNormals())
         {
-            vertex.Normal = glm::vec3(
-                mesh->mNormals[i].x,
-                mesh->mNormals[i].y,
-                mesh->mNormals[i].z
-            );
+            vertex.Normal = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
         }
         else
         {
@@ -121,10 +101,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 
         if (mesh->mTextureCoords[0])
         {
-            vertex.TexCoords = glm::vec2(
-                mesh->mTextureCoords[0][i].x,
-                mesh->mTextureCoords[0][i].y
-            );
+            vertex.TexCoords = glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
         }
         else
         {
@@ -150,63 +127,33 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 
         ai_real transmissionFactor = 0.0f;
 
-        if (
-            material->Get(
-                AI_MATKEY_TRANSMISSION_FACTOR,
-                transmissionFactor
-            ) == AI_SUCCESS &&
-            transmissionFactor > 0.0f
-            )
+        if (material->Get(AI_MATKEY_TRANSMISSION_FACTOR, transmissionFactor) == AI_SUCCESS && transmissionFactor > 0.0f)
         {
             isTransparent = true;
             opacity = 0.45f;
         }
 
-        std::vector<MeshTexture> diffuseMaps = loadMaterialTextures(
-            material,
-            aiTextureType_DIFFUSE,
-            "texture_diffuse"
-        );
+        std::vector<MeshTexture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
 
-        textures.insert(
-            textures.end(),
-            diffuseMaps.begin(),
-            diffuseMaps.end()
-        );
+        textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 
-        std::vector<MeshTexture> specularMaps = loadMaterialTextures(
-            material,
-            aiTextureType_SPECULAR,
-            "texture_specular"
-        );
+        std::vector<MeshTexture> specularMaps =
+            loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
 
-        textures.insert(
-            textures.end(),
-            specularMaps.begin(),
-            specularMaps.end()
-        );
+        textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 
-        std::vector<MeshTexture> emissiveMaps = loadMaterialTextures(
-            material,
-            aiTextureType_EMISSIVE,
-            "texture_emissive"
-        );
+        std::vector<MeshTexture> emissiveMaps =
+            loadMaterialTextures(material, aiTextureType_EMISSIVE, "texture_emissive");
 
-        textures.insert(
-            textures.end(),
-            emissiveMaps.begin(),
-            emissiveMaps.end()
-        );
+        textures.insert(textures.end(), emissiveMaps.begin(), emissiveMaps.end());
     }
 
     return Mesh(vertices, indices, textures, isTransparent, opacity);
 }
 
-std::vector<MeshTexture> Model::loadMaterialTextures(
-    aiMaterial* material,
-    aiTextureType type,
-    const std::string& typeName
-)
+std::vector<MeshTexture> Model::loadMaterialTextures(aiMaterial* material,
+                                                     aiTextureType type,
+                                                     const std::string& typeName)
 {
     std::vector<MeshTexture> textures;
 
@@ -233,20 +180,14 @@ std::vector<MeshTexture> Model::loadMaterialTextures(
         {
             MeshTexture texture{};
 
-            std::string fullPath =
-                directory + "/" + pathString;
+            std::string fullPath = directory + "/" + pathString;
 
+            // Diffuse and emissive maps contain surface colors that are in sRGB space, while spec. maps remain in
+            // linear space
 
-            // Diffuse and emissive maps contain surface colors that are in sRGB space, while spec. maps remain in linear space
+            const bool useSRGB = type == aiTextureType_DIFFUSE || type == aiTextureType_EMISSIVE;
 
-            const bool useSRGB =
-                type == aiTextureType_DIFFUSE ||
-                type == aiTextureType_EMISSIVE;
-
-            texture.id = loadTexture(
-                fullPath,
-                useSRGB
-            );
+            texture.id = loadTexture(fullPath, useSRGB);
 
             texture.type = typeName;
             texture.path = pathString;

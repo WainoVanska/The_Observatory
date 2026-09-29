@@ -6,13 +6,13 @@
 
 class LightController
 {
-public:
+  public:
     LightController();
 
     void update(GLFWwindow* window);
     glm::vec3 getPosition() const;
 
-private:
+  private:
     glm::vec3 position;
     float speed;
 };

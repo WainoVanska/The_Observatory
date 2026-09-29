@@ -6,8 +6,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-class FreeCamera {
-public:
+class FreeCamera
+{
+  public:
     glm::vec3 cameraPos;
     glm::vec3 cameraFront;
     glm::vec3 cameraRight;

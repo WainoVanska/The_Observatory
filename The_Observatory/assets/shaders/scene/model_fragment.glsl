@@ -51,6 +51,7 @@ uniform vec3 wallLightPos;
 uniform vec3 wallLightColor;
 uniform bool wallLightEnabled;
 
+// clang-format off
 const vec3 pointShadowSampleOffsets[20] = vec3[]
 (
     vec3( 1.0,  1.0,  1.0),
@@ -78,40 +79,26 @@ const vec3 pointShadowSampleOffsets[20] = vec3[]
     vec3( 0.0, -1.0, -1.0),
     vec3( 0.0,  1.0, -1.0)
 );
+// clang-format on
 
-float samplePointShadowMap(
-    int lightIndex,
-    vec3 sampleDirection
-)
+float samplePointShadowMap(int lightIndex, vec3 sampleDirection)
 {
     if (lightIndex == 0)
     {
-        return texture(
-            pointShadowMap0,
-            sampleDirection
-        ).r;
+        return texture(pointShadowMap0, sampleDirection).r;
     }
 
     if (lightIndex == 1)
     {
-        return texture(
-            pointShadowMap1,
-            sampleDirection
-        ).r;
+        return texture(pointShadowMap1, sampleDirection).r;
     }
 
     if (lightIndex == 2)
     {
-        return texture(
-            pointShadowMap2,
-            sampleDirection
-        ).r;
+        return texture(pointShadowMap2, sampleDirection).r;
     }
 
-    return texture(
-        pointShadowMap3,
-        sampleDirection
-    ).r;
+    return texture(pointShadowMap3, sampleDirection).r;
 }
 
 struct Material
@@ -130,140 +117,80 @@ uniform Material material;
 
 vec3 getBaseColor()
 {
-    return texture(
-        material.texture_diffuse1,
-        TexCoords
-    ).rgb;
+    return texture(material.texture_diffuse1, TexCoords).rgb;
 }
 
 vec3 getSpecularColor()
 {
-    return texture(
-        material.texture_specular1,
-        TexCoords
-    ).rgb;
+    return texture(material.texture_specular1, TexCoords).rgb;
 }
 
 vec3 getEmissiveColor()
 {
-    if (
-        !material.hasEmissiveMap ||
-        !wallLightEnabled
-    )
+    if (!material.hasEmissiveMap || !wallLightEnabled)
     {
         return vec3(0.0);
     }
 
-    vec3 emissiveMask = texture(
-        material.texture_emissive1,
-        TexCoords
-    ).rgb;
+    vec3 emissiveMask = texture(material.texture_emissive1, TexCoords).rgb;
 
-    const vec3 warmColor = vec3(
-        1.0,
-        0.35,
-        0.08
-    );
+    const vec3 warmColor = vec3(1.0, 0.35, 0.08);
 
     const float emissiveStrength = 1.0;
 
-    return emissiveMask *
-        warmColor *
-        emissiveStrength;
+    return emissiveMask * warmColor * emissiveStrength;
 }
 
-float calculatePointShadow(
-    vec3 fragmentPosition,
-    vec3 pointLightPosition,
-    vec3 norm,
-    int lightIndex
-)
+float calculatePointShadow(vec3 fragmentPosition, vec3 pointLightPosition, vec3 norm, int lightIndex)
 {
     if (!pointShadowsEnabled)
     {
         return 0.0;
     }
 
-    vec3 fragToLight =
-        fragmentPosition -
-        pointLightPosition;
+    vec3 fragToLight = fragmentPosition - pointLightPosition;
 
-    float currentDepth =
-        length(fragToLight);
+    float currentDepth = length(fragToLight);
 
     if (currentDepth >= pointShadowFarPlane)
     {
         return 0.0;
     }
 
-    vec3 lightDir =
-        normalize(
-            pointLightPosition -
-            fragmentPosition
-        );
+    vec3 lightDir = normalize(pointLightPosition - fragmentPosition);
 
-    float bias = max(
-        0.035 *
-        (1.0 - dot(norm, lightDir)),
-        0.012
-    );
+    float bias = max(0.035 * (1.0 - dot(norm, lightDir)), 0.012);
 
-    float viewDistance =
-        length(
-            viewPos -
-            fragmentPosition
-        );
+    float viewDistance = length(viewPos - fragmentPosition);
 
-    float diskRadius =
-        (
-            1.0 +
-            viewDistance /
-            pointShadowFarPlane
-        ) /
-        90.0;
+    float diskRadius = (1.0 + viewDistance / pointShadowFarPlane) / 90.0;
 
     float shadow = 0.0;
 
     const int sampleCount = 20;
 
-    for (int sampleIndex = 0;
-         sampleIndex < sampleCount;
-         ++sampleIndex)
+    for (int sampleIndex = 0; sampleIndex < sampleCount; ++sampleIndex)
     {
         float closestDepth =
-            samplePointShadowMap(
-                lightIndex,
-                fragToLight +
-                pointShadowSampleOffsets[
-                    sampleIndex
-                ] *
-                diskRadius
-            );
+            samplePointShadowMap(lightIndex, fragToLight + pointShadowSampleOffsets[sampleIndex] * diskRadius);
 
-        closestDepth *=
-            pointShadowFarPlane;
+        closestDepth *= pointShadowFarPlane;
 
-        if (
-            currentDepth - bias >
-            closestDepth
-        )
+        if (currentDepth - bias > closestDepth)
         {
             shadow += 1.0;
         }
     }
 
-    return shadow /
-        float(sampleCount);
+    return shadow / float(sampleCount);
 }
 
-vec3 calculatePointLight(
-    vec3 currentLightPos,
-    vec3 currentLightColor,
-    vec3 norm,
-    vec3 viewDir,
-    bool castsShadow,
-    int shadowMapIndex
-)
+vec3 calculatePointLight(vec3 currentLightPos,
+                         vec3 currentLightColor,
+                         vec3 norm,
+                         vec3 viewDir,
+                         bool castsShadow,
+                         int shadowMapIndex)
 {
     vec3 baseColor = getBaseColor();
     vec3 specularColor = getSpecularColor();
@@ -285,42 +212,19 @@ vec3 calculatePointLight(
     float linear = 0.14;
     float quadratic = 0.07;
 
-    float attenuation = 1.0 / (
-        constant +
-        linear * distanceToLight +
-        quadratic * distanceToLight * distanceToLight
-    );
+    float attenuation = 1.0 / (constant + linear * distanceToLight + quadratic * distanceToLight * distanceToLight);
 
     float shadow = 0.0;
 
-    if (
-        castsShadow &&
-        pointShadowsEnabled
-    )
+    if (castsShadow && pointShadowsEnabled)
     {
-        shadow = calculatePointShadow(
-            FragPos,
-            currentLightPos,
-            norm,
-            shadowMapIndex
-        );
+        shadow = calculatePointShadow(FragPos, currentLightPos, norm, shadowMapIndex);
     }
 
-    return attenuation *
-    (
-        ambient +
-        (1.0 - shadow) *
-        (
-            diffuse +
-            specular
-        )
-    );
+    return attenuation * (ambient + (1.0 - shadow) * (diffuse + specular));
 }
 
-vec3 calculateFlashlight(
-    vec3 norm,
-    vec3 viewDir
-)
+vec3 calculateFlashlight(vec3 norm, vec3 viewDir)
 {
     vec3 baseColor = getBaseColor();
     vec3 specularColor = getSpecularColor();
@@ -346,29 +250,17 @@ vec3 calculateFlashlight(
     float linear = 0.25;
     float quadratic = 0.20;
 
-    float attenuation = 1.0 / (
-        constant +
-        linear * distanceToLight +
-        quadratic * distanceToLight * distanceToLight
-    );
+    float attenuation = 1.0 / (constant + linear * distanceToLight + quadratic * distanceToLight * distanceToLight);
 
     diffuse *= attenuation * intensity;
     specular *= attenuation * intensity;
 
     vec3 ambient = 0.001 * baseColor;
 
-    return ambient +
-        attenuation *
-        intensity *
-        (diffuse + specular);
+    return ambient + attenuation * intensity * (diffuse + specular);
 }
 
-vec3 calculateDirectionalLight(
-    vec3 lightDirection,
-    vec3 currentLightColor,
-    vec3 norm,
-    vec3 viewDir
-)
+vec3 calculateDirectionalLight(vec3 lightDirection, vec3 currentLightColor, vec3 norm, vec3 viewDir)
 {
     vec3 baseColor = getBaseColor();
     vec3 specularColor = getSpecularColor();
@@ -400,15 +292,12 @@ void main()
         vec3 I = normalize(FragPos - viewPos);
         vec3 R = refract(I, norm, ratio);
 
-        FragColor = vec4(
-            texture(skybox, R).rgb,
-            1.0
-        );
+        FragColor = vec4(texture(skybox, R).rgb, 1.0);
 
         return;
     }
 
-    vec3 result = vec3(0.0);    
+    vec3 result = vec3(0.0);
 
     for (int i = 0; i < POINT_LIGHT_COUNT; ++i)
     {
@@ -417,48 +306,26 @@ void main()
             continue;
         }
 
-        result += calculatePointLight(
-            pointLights[i].position,
-            pointLights[i].color,
-            norm,
-            viewDir,
-            pointShadowsEnabled,
-            i
-        );
+        result +=
+            calculatePointLight(pointLights[i].position, pointLights[i].color, norm, viewDir, pointShadowsEnabled, i);
     }
 
     if (light2Enabled)
     {
-        result += calculatePointLight(
-            secondLightPos,
-            secondLightColor,
-            norm,
-            viewDir,
-            false,
-            0
-        );
+        result += calculatePointLight(secondLightPos, secondLightColor, norm, viewDir, false, 0);
     }
 
     if (directionalLightEnabled)
     {
-        result += calculateDirectionalLight(
-            directionalLightDirection,
-            directionalLightColor,
-            norm,
-            viewDir
-        );
+        result += calculateDirectionalLight(directionalLightDirection, directionalLightColor, norm, viewDir);
     }
 
     if (flashlightEnabled)
     {
-        result += calculateFlashlight(
-            norm,
-            viewDir
-        );
+        result += calculateFlashlight(norm, viewDir);
     }
 
     result += getEmissiveColor();
-
 
     FragColor = vec4(result, material.opacity);
 }

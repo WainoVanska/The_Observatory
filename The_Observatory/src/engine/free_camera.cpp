@@ -2,13 +2,13 @@
 
 FreeCamera::FreeCamera()
 {
-    cameraPos = glm::vec3(0.0f, 1.5f, 2.7f);         // the place in 3D space where the camera is located 
+    cameraPos = glm::vec3(0.0f, 1.5f, 2.7f); // the place in 3D space where the camera is located
     cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
     cameraRight = glm::vec3(1.0f, 0.0f, 0.0f);
 
-    yaw = -90.0f;               // turning left / right ("FPS POV" around the Y-axis)
-    pitch = 0.0f;               // looking up / down ( around the X-axis)
-    cameraSpeed = 0.01f;        // sensitivity of the mouse
+    yaw = -90.0f;        // turning left / right ("FPS POV" around the Y-axis)
+    pitch = 0.0f;        // looking up / down ( around the X-axis)
+    cameraSpeed = 0.01f; // sensitivity of the mouse
     sensitivity = 0.05f;
 
     bool firstMouse;
@@ -18,29 +18,37 @@ FreeCamera::FreeCamera()
 
 void FreeCamera::update(GLFWwindow* window)
 {
-    glm::vec3 cameraRight = glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f, 0.0f)));       // gives perpendicular vector to the camera (vec to the right)
+    glm::vec3 cameraRight = glm::normalize(
+        glm::cross(cameraFront,
+                   glm::vec3(0.0f, 1.0f, 0.0f))); // gives perpendicular vector to the camera (vec to the right)
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
         cameraPos += cameraSpeed * cameraFront;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
         cameraPos -= cameraSpeed * cameraFront;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    {
         cameraPos += cameraSpeed * cameraRight;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
         cameraPos -= cameraSpeed * cameraRight;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    {
         cameraPos.y += cameraSpeed;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+    {
         cameraPos.y -= cameraSpeed;
     }
 
@@ -71,22 +79,21 @@ void FreeCamera::update(GLFWwindow* window)
     if (pitch < -89.0f)
         pitch = -89.0f;
 
-    //converts the mouse's x and y values to angles --> then make them direction vectors
+    // converts the mouse's x and y values to angles --> then make them direction vectors
     cameraFront.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
     cameraFront.y = sin(glm::radians(pitch));
     cameraFront.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 
-    cameraFront = glm::normalize(cameraFront);          // normalize back to [0,1] range
+    cameraFront = glm::normalize(cameraFront); // normalize back to [0,1] range
 }
 
 glm::mat4 FreeCamera::getViewMatrix()
 {
-    return glm::lookAt(
-        cameraPos,                                  // camera position, where it's placed
-        cameraPos + cameraFront,                    // look at character, what direction the camera is in
-        glm::vec3(0.0f, 1.0f, 0.0f)                 // orientation, basically rotation of the camera itself
+    return glm::lookAt(cameraPos,                  // camera position, where it's placed
+                       cameraPos + cameraFront,    // look at character, what direction the camera is in
+                       glm::vec3(0.0f, 1.0f, 0.0f) // orientation, basically rotation of the camera itself
     );
-}       
+}
 
 glm::vec3 FreeCamera::getPosition() const
 {
