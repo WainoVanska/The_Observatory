@@ -70,15 +70,13 @@ The repository documents my weekly graphics-programming progress, including impl
 
 ### Requirements
 
-* Windows 10 or 11.
+* Windows 10 or 11 and an OpenGL 3.3-capable GPU.
 * Visual Studio with the **Desktop development with C++** workload.
-* Git and [vcpkg](https://learn.microsoft.com/en-us/vcpkg/get_started/get-started-msbuild).
-* An OpenGL 3.3-capable GPU.
-* FFmpeg available through the system `PATH` only if video recording is required.
+* Git.
 
 ### Set up vcpkg
 
-Install and integrate vcpkg once on your computer:
+Run in PowerShell:
 
 ```powershell
 git clone https://github.com/microsoft/vcpkg.git "$env:USERPROFILE\vcpkg"
@@ -86,13 +84,8 @@ git clone https://github.com/microsoft/vcpkg.git "$env:USERPROFILE\vcpkg"
 & "$env:USERPROFILE\vcpkg\vcpkg.exe" integrate install
 ```
 
-The repository's `vcpkg.json` manifest declares Assimp, GLM and GLFW. Visual Studio restores these dependencies automatically when the project is built.
-
 ### Build
 
-1. Clone this repository.
-2. Open `The_Observatory.slnx` in Visual Studio.
-3. Select the **x64 Debug** or **x64 Release** configuration.
-4. Build and run the project with **F5**.
-
-GLAD and stb_image are included directly in the repository. No computer-specific include or library paths are required.
+1. Clone this repository and open `The_Observatory.slnx` in Visual Studio.
+2. Select **x64 Debug** or **x64 Release**.
+3. Press **F5** to build and run.
