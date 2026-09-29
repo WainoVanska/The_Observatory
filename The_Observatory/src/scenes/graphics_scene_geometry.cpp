@@ -35,9 +35,18 @@ glm::mat4 GraphicsScene::createBackpackModelMatrix() const
 
 void GraphicsScene::createGlassPaneMesh()
 {
-    const float vertices[] = {-0.5f, 0.5f,  0.0f, 0.0f, 1.0f, -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
-                              0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, -0.5f, 0.5f,  0.0f, 0.0f, 1.0f,
-                              0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 0.5f,  0.5f,  0.0f, 1.0f, 1.0f};
+    // clang-format off
+    const float vertices[] = {
+        // Position              UV
+        -0.5f,  0.5f, 0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f, 0.0f,  0.0f, 0.0f,
+         0.5f, -0.5f, 0.0f,  1.0f, 0.0f,
+
+        -0.5f,  0.5f, 0.0f,  0.0f, 1.0f,
+         0.5f, -0.5f, 0.0f,  1.0f, 0.0f,
+         0.5f,  0.5f, 0.0f,  1.0f, 1.0f,
+    };
+    // clang-format on
 
     glGenVertexArrays(1, &glassVAO);
     glGenBuffers(1, &glassVBO);
@@ -113,90 +122,36 @@ void GraphicsScene::createNormalMappedPlane()
     const TangentBasis first = calculateTangentBasis(p1, p2, p3, uv1, uv2, uv3);
     const TangentBasis second = calculateTangentBasis(p1, p3, p4, uv1, uv3, uv4);
 
-    const float vertices[] = {p1.x,
-                              p1.y,
-                              p1.z,
-                              normal.x,
-                              normal.y,
-                              normal.z,
-                              uv1.x,
-                              uv1.y,
-                              first.tangent.x,
-                              first.tangent.y,
-                              first.tangent.z,
-                              first.bitangent.x,
-                              first.bitangent.y,
-                              first.bitangent.z,
-                              p2.x,
-                              p2.y,
-                              p2.z,
-                              normal.x,
-                              normal.y,
-                              normal.z,
-                              uv2.x,
-                              uv2.y,
-                              first.tangent.x,
-                              first.tangent.y,
-                              first.tangent.z,
-                              first.bitangent.x,
-                              first.bitangent.y,
-                              first.bitangent.z,
-                              p3.x,
-                              p3.y,
-                              p3.z,
-                              normal.x,
-                              normal.y,
-                              normal.z,
-                              uv3.x,
-                              uv3.y,
-                              first.tangent.x,
-                              first.tangent.y,
-                              first.tangent.z,
-                              first.bitangent.x,
-                              first.bitangent.y,
-                              first.bitangent.z,
-                              p1.x,
-                              p1.y,
-                              p1.z,
-                              normal.x,
-                              normal.y,
-                              normal.z,
-                              uv1.x,
-                              uv1.y,
-                              second.tangent.x,
-                              second.tangent.y,
-                              second.tangent.z,
-                              second.bitangent.x,
-                              second.bitangent.y,
-                              second.bitangent.z,
-                              p3.x,
-                              p3.y,
-                              p3.z,
-                              normal.x,
-                              normal.y,
-                              normal.z,
-                              uv3.x,
-                              uv3.y,
-                              second.tangent.x,
-                              second.tangent.y,
-                              second.tangent.z,
-                              second.bitangent.x,
-                              second.bitangent.y,
-                              second.bitangent.z,
-                              p4.x,
-                              p4.y,
-                              p4.z,
-                              normal.x,
-                              normal.y,
-                              normal.z,
-                              uv4.x,
-                              uv4.y,
-                              second.tangent.x,
-                              second.tangent.y,
-                              second.tangent.z,
-                              second.bitangent.x,
-                              second.bitangent.y,
-                              second.bitangent.z};
+    // clang-format off
+    const float vertices[] = {
+        // Position         Normal                          UV           Tangent / bitangent
+        // First triangle
+        p1.x, p1.y, p1.z,  normal.x, normal.y, normal.z,  uv1.x, uv1.y,
+        first.tangent.x, first.tangent.y, first.tangent.z,
+        first.bitangent.x, first.bitangent.y, first.bitangent.z,
+
+        p2.x, p2.y, p2.z,  normal.x, normal.y, normal.z,  uv2.x, uv2.y,
+        first.tangent.x, first.tangent.y, first.tangent.z,
+        first.bitangent.x, first.bitangent.y, first.bitangent.z,
+
+        p3.x, p3.y, p3.z,  normal.x, normal.y, normal.z,  uv3.x, uv3.y,
+        first.tangent.x, first.tangent.y, first.tangent.z,
+        first.bitangent.x, first.bitangent.y, first.bitangent.z,
+
+        // Second triangle
+        p1.x, p1.y, p1.z,  normal.x, normal.y, normal.z,  uv1.x, uv1.y,
+        second.tangent.x, second.tangent.y, second.tangent.z,
+        second.bitangent.x, second.bitangent.y, second.bitangent.z,
+
+        p3.x, p3.y, p3.z,  normal.x, normal.y, normal.z,  uv3.x, uv3.y,
+        second.tangent.x, second.tangent.y, second.tangent.z,
+        second.bitangent.x, second.bitangent.y, second.bitangent.z,
+
+        p4.x, p4.y, p4.z,  normal.x, normal.y, normal.z,  uv4.x, uv4.y,
+        second.tangent.x, second.tangent.y, second.tangent.z,
+        second.bitangent.x, second.bitangent.y, second.bitangent.z,
+    };
+    // clang-format on
 
     glGenVertexArrays(1, &normalMappedPlaneVAO);
     glGenBuffers(1, &normalMappedPlaneVBO);
