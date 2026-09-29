@@ -216,8 +216,18 @@ void GraphicsScene::blurBrightAreas()
 
 void GraphicsScene::createScreenQuad()
 {
-    const float vertices[] = {-1.0f, 1.0f, 0.0f, 1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, -1.0f, 1.0f, 0.0f,
-                              -1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  -1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  1.0f, 1.0f};
+    // clang-format off
+    const float vertices[] = {
+        // Position     UV
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f,
+    };
+    // clang-format on
 
     glGenVertexArrays(1, &screenQuadVAO);
     glGenBuffers(1, &screenQuadVBO);
