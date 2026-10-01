@@ -21,40 +21,22 @@ using namespace graphics_scene_detail;
 void GraphicsScene::init(int width, int height, FreeCamera* camera)
 {
     shaderProgram = createShaderProgram("assets/shaders/scene/vertex.glsl", "assets/shaders/scene/fragment.glsl");
-    lampShaderProgram =
-        createShaderProgram("assets/shaders/scene/lamp_vertex.glsl", "assets/shaders/scene/lamp_fragment.glsl");
-    normalDebugShaderProgram =
-        createShaderProgram("assets/shaders/scene/vertex.glsl", "assets/shaders/scene/normal_debug_fragment.glsl");
-    modelShaderProgram =
-        createShaderProgram("assets/shaders/scene/model_vertex.glsl", "assets/shaders/scene/model_fragment.glsl");
-    modelNormalDebugShaderProgram = createShaderProgram("assets/shaders/scene/model_vertex.glsl",
-                                                        "assets/shaders/scene/normal_debug_fragment.glsl");
-    depthDebugShaderProgram =
-        createShaderProgram("assets/shaders/scene/vertex.glsl", "assets/shaders/scene/depth_debug_fragment.glsl");
-    modelDepthDebugShaderProgram =
-        createShaderProgram("assets/shaders/scene/model_vertex.glsl", "assets/shaders/scene/depth_debug_fragment.glsl");
-    modelOutlineShaderProgram = createShaderProgram("assets/shaders/scene/model_vertex.glsl",
-                                                    "assets/shaders/scene/single_color_fragment.glsl");
-    glassShaderProgram =
-        createShaderProgram("assets/shaders/scene/glass_vertex.glsl", "assets/shaders/scene/glass_fragment.glsl");
-    screenShaderProgram =
-        createShaderProgram("assets/shaders/scene/screen_vertex.glsl", "assets/shaders/scene/screen_fragment.glsl");
-    brightPassShaderProgram = createShaderProgram("assets/shaders/scene/screen_vertex.glsl",
-                                                  "assets/shaders/scene/bright_pass_fragment.glsl");
-    gaussianBlurShaderProgram = createShaderProgram("assets/shaders/scene/screen_vertex.glsl",
-                                                    "assets/shaders/scene/gaussian_blur_fragment.glsl");
-    instancedModelShaderProgram = createShaderProgram("assets/shaders/scene/instanced_model_vertex.glsl",
-                                                      "assets/shaders/scene/instanced_rock_fragment.glsl");
-    directionalDepthShaderProgram = createShaderProgram("assets/shaders/scene/directional_depth_vertex.glsl",
-                                                        "assets/shaders/scene/directional_depth_fragment.glsl");
-    instancedDirectionalDepthShaderProgram =
-        createShaderProgram("assets/shaders/scene/instanced_directional_depth_vertex.glsl",
-                            "assets/shaders/scene/directional_depth_fragment.glsl");
-    pointDepthShaderProgram = createShaderProgram("assets/shaders/scene/point_depth_vertex.glsl",
-                                                  "assets/shaders/scene/point_depth_geometry.glsl",
-                                                  "assets/shaders/scene/point_depth_fragment.glsl");
-    normalMappingShaderProgram = createShaderProgram("assets/shaders/scene/normal_mapping_vertex.glsl",
-                                                     "assets/shaders/scene/normal_mapping_fragment.glsl");
+    lampShaderProgram = createShaderProgram("assets/shaders/scene/lamp_vertex.glsl", "assets/shaders/scene/lamp_fragment.glsl");
+    normalDebugShaderProgram = createShaderProgram("assets/shaders/scene/vertex.glsl", "assets/shaders/scene/normal_debug_fragment.glsl");
+    modelShaderProgram = createShaderProgram("assets/shaders/scene/model_vertex.glsl", "assets/shaders/scene/model_fragment.glsl");
+    modelNormalDebugShaderProgram = createShaderProgram("assets/shaders/scene/model_vertex.glsl", "assets/shaders/scene/normal_debug_fragment.glsl");
+    depthDebugShaderProgram = createShaderProgram("assets/shaders/scene/vertex.glsl", "assets/shaders/scene/depth_debug_fragment.glsl");
+    modelDepthDebugShaderProgram = createShaderProgram("assets/shaders/scene/model_vertex.glsl", "assets/shaders/scene/depth_debug_fragment.glsl");
+    modelOutlineShaderProgram = createShaderProgram("assets/shaders/scene/model_vertex.glsl", "assets/shaders/scene/single_color_fragment.glsl");
+    glassShaderProgram = createShaderProgram("assets/shaders/scene/glass_vertex.glsl", "assets/shaders/scene/glass_fragment.glsl");
+    screenShaderProgram = createShaderProgram("assets/shaders/scene/screen_vertex.glsl", "assets/shaders/scene/screen_fragment.glsl");
+    brightPassShaderProgram = createShaderProgram("assets/shaders/scene/screen_vertex.glsl", "assets/shaders/scene/bright_pass_fragment.glsl");
+    gaussianBlurShaderProgram = createShaderProgram("assets/shaders/scene/screen_vertex.glsl", "assets/shaders/scene/gaussian_blur_fragment.glsl");
+    instancedModelShaderProgram = createShaderProgram("assets/shaders/scene/instanced_model_vertex.glsl", "assets/shaders/scene/instanced_rock_fragment.glsl");
+    directionalDepthShaderProgram = createShaderProgram("assets/shaders/scene/directional_depth_vertex.glsl", "assets/shaders/scene/directional_depth_fragment.glsl");
+    instancedDirectionalDepthShaderProgram = createShaderProgram("assets/shaders/scene/instanced_directional_depth_vertex.glsl", "assets/shaders/scene/directional_depth_fragment.glsl");
+    pointDepthShaderProgram = createShaderProgram("assets/shaders/scene/point_depth_vertex.glsl", "assets/shaders/scene/point_depth_geometry.glsl", "assets/shaders/scene/point_depth_fragment.glsl");
+    normalMappingShaderProgram = createShaderProgram("assets/shaders/scene/normal_mapping_vertex.glsl", "assets/shaders/scene/normal_mapping_fragment.glsl");
 
     containerTexture = loadTexture("assets/textures/container.png", true);
     brickDiffuseTexture = loadTexture("assets/textures/brickwall.jpg", true);
