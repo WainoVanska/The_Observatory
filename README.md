@@ -21,12 +21,14 @@ https://github.com/user-attachments/assets/e302b108-f384-4bd5-9276-2b2b9fb43b94
 * Multisample antialiasing.
 * Normal and framebuffer-depth visualization modes.
 * In-engine video recording through FFmpeg.
+* Cinematic camera paths that are rendered to video frame by frame.
 
 ### Controls
 
 | Key | Action |
 |---|---|
 | **W, A, S, D** | Move the camera |
+| **Left Shift** | Move the camera slowly (hold) |
 | **Mouse** | Look around |
 | **Space / Left CTRL** | Move up / down |
 | **1** | Switch between stationary lights and movable light |
@@ -41,8 +43,23 @@ https://github.com/user-attachments/assets/e302b108-f384-4bd5-9276-2b2b9fb43b94
 | **H** | Toggle the backpack model material |
 | **P** | Toggle the backpack model outline |
 | **B** | Toggle framebuffer blur effect |
+| **G** | Toggle the extra glass surfaces |
 | **R** | Start / stop video recording |
+| **[ / ]** | Select the previous / next camera shot (1–9) |
+| **C** | Add a camera keyframe to the selected shot |
+| **Backspace** | Remove the last keyframe from the selected shot |
+| **T** | Play and record the selected shot / cancel playback |
 | **Esc** | Close the application |
+
+### Recording cinematic shots
+
+1. Select a shot with **[ / ]**. The window title shows the selected shot and how many keyframes it has.
+2. Fly to the starting point and press **C** to add a keyframe. Repeat for every point the camera should pass through.
+3. Press **T** to play the shot. The camera glides through the keyframes along a smooth curve and the shot is recorded to `recordings/shot_N.mp4`. Each new take replaces the previous one.
+
+Shots are saved to `camera_paths/shot_N.txt` with one keyframe per line (`x y z yaw pitch duration`), where `duration` is how many seconds the camera takes to reach the next keyframe. The file can be edited by hand while the application is running, and the changes are used on the next playback.
+
+During playback the scene moves forward exactly one video frame per rendered frame, so the video stays smooth even if rendering is slow. Feature toggles and the movable light can still be controlled by hand while a shot plays.
 
 ## Learning material
 
@@ -62,7 +79,7 @@ The repository documents my weekly graphics-programming progress, including impl
 * Normal debug mode doesn't contain the planet or asteroids.
 * When the backpack material is toggled to glass (H key) the material only takes the skybox texture into consideration. The stars reflecting on the backpack look messy, this isn't intended because the original implementation was made with a different skybox texture initially.
 * Video recording requires FFmpeg to be installed and available through the system `PATH`. On Windows, it can be installed with `winget install --id Gyan.FFmpeg --exact`.
-* Recordings are saved in the application's working directory as `observatory_1.mp4`, `observatory_2.mp4`, and so on. Audio isn't recorded in the current setup.
+* Recordings are saved in the `recordings` folder of the application's working directory as `observatory_1.mp4`, `observatory_2.mp4`, and so on. Audio isn't recorded in the current setup.
 * Window resizing has to be manually configured through `main.cpp` (`WINDOW_WIDTH` / `WINDOW_HEIGHT` values).
 
 ## How to build
