@@ -1,0 +1,7 @@
+# Camera path for The Observatory
+# One keyframe per line: x y z yaw pitch duration
+# duration = seconds to travel to the next keyframe (unused on the last keyframe)
+-0.138 1.450 -0.538 89.850 -21.550 2.000
+-0.141 1.887 -1.647 89.850 -21.550 2.000
+-0.144 2.269 -2.587 89.750 -24.550 2.000
+-0.147 2.702 -3.351 89.550 -35.900 2.000
