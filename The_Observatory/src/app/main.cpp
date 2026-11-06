@@ -12,7 +12,7 @@
 #include "../engine/light_controller.h"
 #include "../engine/window.h"
 #include "../scenes/graphics_scene.h"
-#include "../engine/FrameRecorder.h"
+#include "../engine/frame_recorder.h"
 
 namespace
 {

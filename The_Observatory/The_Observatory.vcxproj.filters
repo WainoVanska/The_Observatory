@@ -19,7 +19,7 @@
     <ClCompile Include="src\scenes\graphics_scene_geometry.cpp" />
     <ClCompile Include="src\scenes\graphics_scene_postprocess.cpp" />
     <ClCompile Include="src\scenes\graphics_scene_shadows.cpp" />
-    <ClCompile Include="src\engine\FrameRecorder.cpp" />
+    <ClCompile Include="src\engine\frame_recorder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\cube.h" />
@@ -36,7 +36,7 @@
     <ClInclude Include="src\engine\window.h" />
     <ClInclude Include="src\scenes\graphics_scene.h" />
     <ClInclude Include="src\scenes\graphics_scene_support.h" />
-    <ClInclude Include="src\engine\FrameRecorder.h" />
+    <ClInclude Include="src\engine\frame_recorder.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\scene\depth_debug_fragment.glsl">

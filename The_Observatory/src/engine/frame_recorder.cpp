@@ -1,4 +1,4 @@
-#include "FrameRecorder.h"
+#include "frame_recorder.h"
 
 #include <glad/glad.h>
 
