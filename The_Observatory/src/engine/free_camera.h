@@ -27,6 +27,10 @@ class FreeCamera
     FreeCamera();
 
     void update(GLFWwindow* window, float deltaTime);
+
+    // Places the camera directly, e.g. when a camera path is playing.
+    void setPose(const glm::vec3& position, float newYaw, float newPitch);
+
     glm::mat4 getViewMatrix();
 
   private:

@@ -97,7 +97,7 @@ void GraphicsScene::createAsteroidInstances()
 
 glm::mat4 GraphicsScene::createAsteroidSystemModel() const
 {
-    const float orbitAngle = static_cast<float>(glfwGetTime()) * glm::radians(3.0f);
+    const float orbitAngle = sceneTime * glm::radians(3.0f);
 
     glm::mat4 model = glm::translate(glm::mat4(1.0f), DISTANT_PLANET_POSITION);
 

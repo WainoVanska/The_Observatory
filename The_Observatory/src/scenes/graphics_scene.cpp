@@ -331,6 +331,11 @@ void GraphicsScene::handleInput(GLFWwindow* window, float deltaTime)
     toggleOnKeyPress(window, GLFW_KEY_H, keyHWasPressed, glassBackpackEnabled);
 }
 
+void GraphicsScene::advanceTime(float deltaTime)
+{
+    sceneTime += deltaTime;
+}
+
 void GraphicsScene::draw(const glm::mat4& view,
                          const glm::mat4& projection,
                          const glm::vec3& cameraPos,

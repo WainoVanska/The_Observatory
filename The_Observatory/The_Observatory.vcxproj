@@ -87,6 +87,8 @@
     <ClCompile Include="src\engine\cube.cpp" />
     <ClCompile Include="src\engine\cubemap_texture.cpp" />
     <ClCompile Include="src\engine\frame_recorder.cpp" />
+    <ClCompile Include="src\engine\camera_path.cpp" />
+    <ClCompile Include="src\engine\camera_path_player.cpp" />
     <ClCompile Include="src\engine\free_camera.cpp" />
     <ClCompile Include="src\engine\light_controller.cpp" />
     <ClCompile Include="src\engine\material.cpp" />
@@ -106,6 +108,8 @@
     <ClInclude Include="src\engine\cube.h" />
     <ClInclude Include="src\engine\cubemap_texture.h" />
     <ClInclude Include="src\engine\frame_recorder.h" />
+    <ClInclude Include="src\engine\camera_path.h" />
+    <ClInclude Include="src\engine\camera_path_player.h" />
     <ClInclude Include="src\engine\free_camera.h" />
     <ClInclude Include="src\engine\light_controller.h" />
     <ClInclude Include="src\engine\material.h" />

@@ -96,6 +96,19 @@ void FreeCamera::update(GLFWwindow* window, float deltaTime)
     updateFront();
 }
 
+void FreeCamera::setPose(const glm::vec3& position, float newYaw, float newPitch)
+{
+    cameraPos = position;
+    yaw = newYaw;
+    pitch = newPitch;
+
+    updateFront();
+
+    // The mouse may have moved while the camera was placed from code.
+    // Starting fresh avoids a sudden jump when mouse look takes over again.
+    firstMouse = true;
+}
+
 void FreeCamera::updateFront()
 {
     // converts the yaw and pitch angles into a direction vector

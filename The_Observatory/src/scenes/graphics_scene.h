@@ -22,6 +22,9 @@ class GraphicsScene
     void init(int width, int height, FreeCamera* camera);
     void handleInput(GLFWwindow* window, float deltaTime);
 
+    // Moves the scene clock forward, which drives the animated objects (the asteroid orbit).
+    void advanceTime(float deltaTime);
+
     void draw(const glm::mat4& view,
               const glm::mat4& projection,
               const glm::vec3& cameraPos,
@@ -384,6 +387,7 @@ class GraphicsScene
     float bloomStrength = 0.55f;
     float parallaxHeightScale = 0.017f;
     float parallaxHeightScaleSpeed = 0.03f; // change per second while Q / E is held
+    float sceneTime = 0.0f;
 
     CubeMesh cube{};
     SphereMesh sphere{};

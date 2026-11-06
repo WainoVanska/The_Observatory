@@ -367,3 +367,6 @@ FodyWeavers.xsd
 
 # vcpkg manifest-mode dependencies
 vcpkg_installed/
+
+# Videos recorded by the application
+The_Observatory/recordings/
