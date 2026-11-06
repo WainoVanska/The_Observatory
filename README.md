@@ -45,21 +45,8 @@ https://github.com/user-attachments/assets/b5647946-5dc7-4940-89ed-c57e5c343851
 | **B** | Toggle framebuffer blur effect |
 | **G** | Toggle the extra glass surfaces |
 | **R** | Start / stop video recording |
-| **[ / ]** | Select the previous / next camera shot (1–9) |
-| **C** | Add a camera keyframe to the selected shot |
-| **Backspace** | Remove the last keyframe from the selected shot |
-| **T** | Play and record the selected shot / cancel playback |
+| **[ / ], C, Backspace, T** | Select shot, add / remove keyframe, play and record |
 | **Esc** | Close the application |
-
-### Recording cinematic shots
-
-1. Select a shot with **[ / ]**. The window title shows the selected shot and how many keyframes it has.
-2. Fly to the starting point and press **C** to add a keyframe. Repeat for every point the camera should pass through.
-3. Press **T** to play the shot. The camera glides through the keyframes along a smooth curve and the shot is recorded to `recordings/shot_N.mp4`. Each new take replaces the previous one.
-
-Shots are saved to `camera_paths/shot_N.txt` with one keyframe per line (`x y z yaw pitch duration`), where `duration` is how many seconds the camera takes to reach the next keyframe. The file can be edited by hand while the application is running, and the changes are used on the next playback.
-
-During playback the scene moves forward exactly one video frame per rendered frame, so the video stays smooth even if rendering is slow. Feature toggles and the movable light can still be controlled by hand while a shot plays.
 
 ## Learning material
 
