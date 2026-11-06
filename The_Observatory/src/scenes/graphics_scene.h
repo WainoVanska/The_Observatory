@@ -20,7 +20,7 @@ class GraphicsScene
 {
   public:
     void init(int width, int height, FreeCamera* camera);
-    void handleInput(GLFWwindow* window);
+    void handleInput(GLFWwindow* window, float deltaTime);
 
     void draw(const glm::mat4& view,
               const glm::mat4& projection,
@@ -383,6 +383,7 @@ class GraphicsScene
     bool bloomEnabled = true;
     float bloomStrength = 0.55f;
     float parallaxHeightScale = 0.017f;
+    float parallaxHeightScaleSpeed = 0.03f; // change per second while Q / E is held
 
     CubeMesh cube{};
     SphereMesh sphere{};

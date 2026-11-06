@@ -26,6 +26,11 @@ class FreeCamera
 
     FreeCamera();
 
-    void update(GLFWwindow* window);
+    void update(GLFWwindow* window, float deltaTime);
     glm::mat4 getViewMatrix();
+
+  private:
+    static constexpr float SLOW_SPEED_MULTIPLIER = 0.25f;
+
+    void updateFront();
 };

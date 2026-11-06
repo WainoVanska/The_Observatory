@@ -9,7 +9,7 @@ class LightController
   public:
     LightController();
 
-    void update(GLFWwindow* window);
+    void update(GLFWwindow* window, float deltaTime);
     glm::vec3 getPosition() const;
 
   private:

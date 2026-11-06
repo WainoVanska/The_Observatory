@@ -20,6 +20,9 @@ constexpr int WINDOW_WIDTH = 1920;
 constexpr int WINDOW_HEIGHT = 1080;
 constexpr const char* WINDOW_TITLE = "---";
 
+// Limits the time step after a long stall (e.g. dragging the window) so nothing jumps across the scene.
+constexpr float MAX_DELTA_TIME = 0.1f;
+
 std::filesystem::path nextRecordingPath()
 {
     for (int number = 1;; ++number)
@@ -103,11 +106,17 @@ int main()
     constexpr double RECORDING_INTERVAL = 1.0 / 60.0;
     double nextRecordingFrame = 0.0;
 
+    double previousFrameTime = glfwGetTime();
+
     while (!glfwWindowShouldClose(window))
     {
-        camera.update(window);
-        lightController.update(window);
-        scene.handleInput(window);
+        const double frameTime = glfwGetTime();
+        const float deltaTime = glm::min(static_cast<float>(frameTime - previousFrameTime), MAX_DELTA_TIME);
+        previousFrameTime = frameTime;
+
+        camera.update(window, deltaTime);
+        lightController.update(window, deltaTime);
+        scene.handleInput(window, deltaTime);
 
         const bool recordKeyPressed = glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS;
 

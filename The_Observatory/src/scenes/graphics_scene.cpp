@@ -298,7 +298,7 @@ void GraphicsScene::init(int width, int height, FreeCamera* camera)
     glUniform1i(gaussianBlurUniforms.image, 0);
 }
 
-void GraphicsScene::handleInput(GLFWwindow* window)
+void GraphicsScene::handleInput(GLFWwindow* window, float deltaTime)
 {
     toggleOnKeyPress(window, GLFW_KEY_1, key1WasPressed, movableLightModeEnabled);
     toggleOnKeyPress(window, GLFW_KEY_2, key2WasPressed, light2Enabled);
@@ -317,11 +317,11 @@ void GraphicsScene::handleInput(GLFWwindow* window)
 
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
     {
-        parallaxHeightScale = glm::max(0.0f, parallaxHeightScale - 0.0005f);
+        parallaxHeightScale = glm::max(0.0f, parallaxHeightScale - parallaxHeightScaleSpeed * deltaTime);
     }
     else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
     {
-        parallaxHeightScale = glm::min(0.1f, parallaxHeightScale + 0.0005f);
+        parallaxHeightScale = glm::min(0.1f, parallaxHeightScale + parallaxHeightScaleSpeed * deltaTime);
     }
 
     toggleOnKeyPress(window, GLFW_KEY_P, keyPWasPressed, outlineEnabled);
