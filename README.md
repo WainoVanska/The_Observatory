@@ -92,3 +92,12 @@ git clone https://github.com/microsoft/vcpkg.git "$env:USERPROFILE\vcpkg"
 1. Clone this repository and open `The_Observatory.slnx` in Visual Studio.
 2. Select **x64 Debug** or **x64 Release**.
 3. Press **F5** to build and run.
+
+## Credits
+
+* **Backpack model:** by Berk Gedik ([Sketchfab](https://sketchfab.com/3d-models/survival-guitar-backpack-low-poly-799f8c4511f84fab8c3f12887f7e6b36)), with materials adapted by Joey de Vries for LearnOpenGL.
+* **Planet model:** by Gerhald3D ([TurboSquid](https://www.turbosquid.com/3d-models/realistic-mars-photorealistic-2k-3d-1277433)), modified by Joey de Vries for LearnOpenGL.
+* **Rock model, brick wall textures and container textures:** from the [LearnOpenGL](https://github.com/JoeyDeVries/LearnOpenGL) resources by Joey de Vries.
+* **Brick displacement map:** made by me from the brick wall texture.
+* **Observatory window texture:** AI-generated.
+* **Space skybox, plaster and wood floor textures:** free assets downloaded during development; their original sources weren't recorded.
